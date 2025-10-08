@@ -1,0 +1,207 @@
+.settings-menu-item {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  user-select: none;
+}
+
+/* Hover scale effect on menu items (0.2s ease) */
+.settings-menu-item:hover {
+  background: rgba(0, 255, 136, 0.1);
+  transform: scale(1.02);
+}
+
+.settings-menu-item:focus {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  background: rgba(0, 255, 136, 0.05);
+}
+
+.settings-menu-item:focus:not(:focus-visible) {
+  outline: none;
+  background: transparent;
+}
+
+.settings-menu-item:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  background: rgba(0, 255, 136, 0.05);
+  box-shadow: 0 0 0 4px rgba(0, 255, 136, 0.1);
+}
+
+[data-theme="light"] .settings-menu-item:focus-visible {
+  background: rgba(102, 126, 234, 0.05);
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+}
+
+.settings-menu-item.active {
+  background: rgba(0, 255, 136, 0.15);
+  border-left: 3px solid var(--accent-primary);
+  padding-left: 13px;
+}
+
+.settings-menu-item-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-menu-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.settings-menu-item-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.settings-menu-item-children {
+  margin-top: 8px;
+  padding-left: 32px;
+}
+
+.settings-menu-divider {
+  height: 1px;
+  background: var(--border-secondary);
+  margin: 8px 0;
+  opacity: 0.5;
+}
+
+/* Light theme adjustments */
+[data-theme="light"] .settings-menu-item:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+[data-theme="light"] .settings-menu-item.active {
+  background: rgba(102, 126, 234, 0.15);
+  border-left-color: var(--accent-primary);
+}
+
+/* Mobile devices (< 480px) */
+@media (max-width: 480px) {
+  .settings-menu-item {
+    padding: 16px;
+    min-height: 48px; /* Larger touch target for mobile */
+    border-radius: 0; /* Simpler on mobile */
+  }
+
+  .settings-menu-item-content {
+    gap: 14px;
+  }
+
+  .settings-menu-item-label {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  .settings-menu-item-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .settings-menu-item-children {
+    padding-left: 38px;
+    margin-top: 12px;
+  }
+
+  .settings-menu-divider {
+    margin: 4px 0;
+  }
+}
+
+/* Tablet devices (481px - 767px) */
+@media (min-width: 481px) and (max-width: 767px) {
+  .settings-menu-item {
+    padding: 14px 16px;
+    min-height: 44px;
+  }
+
+  .settings-menu-item-label {
+    font-size: 15px;
+  }
+
+  .settings-menu-item-icon {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* Desktop devices (> 768px) */
+@media (min-width: 768px) {
+  .settings-menu-item {
+    padding: 12px 16px;
+    min-height: 40px;
+  }
+
+  .settings-menu-item-label {
+    font-size: 14px;
+  }
+
+  .settings-menu-item-icon {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .settings-menu-item {
+    /* Ensure adequate touch targets */
+    min-height: 48px;
+  }
+
+  .settings-menu-item:hover {
+    transform: none;
+  }
+
+  .settings-menu-item:active {
+    background: rgba(0, 255, 136, 0.2);
+    transform: scale(0.98);
+  }
+
+  [data-theme="light"] .settings-menu-item:active {
+    background: rgba(102, 126, 234, 0.2);
+  }
+}
+
+/* Landscape mobile optimization */
+@media (max-width: 767px) and (orientation: landscape) {
+  .settings-menu-item {
+    padding: 10px 16px;
+    min-height: 44px;
+  }
+
+  .settings-menu-item-children {
+    margin-top: 8px;
+  }
+}
+
+/* Accessibility - Reduced motion: respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .settings-menu-item {
+    transition: background 0.1s ease;
+  }
+
+  .settings-menu-item:hover {
+    transform: none;
+  }
+}
+
+/* High contrast mode support for focus indicators */
+@media (prefers-contrast: high) {
+  .settings-menu-item:focus,
+  .settings-menu-item:focus-visible {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 3px;
+  }
+}

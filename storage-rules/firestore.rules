@@ -1,0 +1,603 @@
+// Cloud Firestore Security Rules for AmaPlayer
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read all user documents for search, write their own, and update follower counts
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null 
+        && !isGuestUser() 
+        && request.auth.uid == userId;
+      allow update: if request.auth != null 
+        && !isGuestUser() 
+        && (request.auth.uid == userId || onlyFollowCountsChanged());
+    }
+    
+    function onlyFollowCountsChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['following']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fcmTokens']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fcmTokens', 'lastTokenUpdate']);
+    }
+    
+    // Posts collection rules
+    match /posts/{postId} {
+      // Anyone can read posts (including guests)
+      allow read: if true;
+      
+      // Only authenticated non-guest users can create posts
+      allow create: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == request.resource.data.userId
+        && validatePostData();
+      
+      // Allow updates for likes (all users), comments (non-guests only), and shares (non-guests only)
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.userId || 
+        onlyLikesChanged() ||
+        (!isGuestUser() && onlyCommentsChanged()) ||
+        (!isGuestUser() && onlySharesChanged())
+      );
+      
+      // Users can delete their own posts (guests cannot)
+      allow delete: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == resource.data.userId;
+    }
+    
+    // Comments collection (separate from posts)
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if request.auth != null && !isGuestUser() && validateCommentData();
+      allow update, delete: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == resource.data.userId;
+    }
+    
+    // Helper functions
+    function isGuestUser() {
+      return request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+    
+    function validatePostData() {
+      return request.resource.data.keys().hasAll(['caption', 'userId', 'userDisplayName', 'timestamp'])
+        && request.resource.data.caption is string
+        && request.resource.data.caption.size() <= 1000
+        && request.resource.data.userId is string
+        && request.resource.data.userDisplayName is string;
+    }
+    
+    function validateCommentData() {
+      return request.resource.data.keys().hasAll(['text', 'userId', 'userDisplayName', 'timestamp', 'postId'])
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 500
+        && request.resource.data.userId is string
+        && request.resource.data.userDisplayName is string
+        && request.resource.data.postId is string
+        && request.resource.data.userId == request.auth.uid;
+    }
+    
+    function onlyCommentsChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments']);
+    }
+    
+    function onlyLikesChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']);
+    }
+    
+    function onlySharesChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['shares', 'shareCount']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['shares']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['shareCount']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['shareMetadata']);
+    }
+    
+    // Friend requests collection
+    match /friendRequests/{requestId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.senderId ||
+        request.auth.uid == resource.data.receiverId
+      );
+      allow create: if request.auth != null && !isGuestUser() && validateFriendRequestData();
+      allow update: if request.auth != null && !isGuestUser() && (
+        request.auth.uid == resource.data.receiverId ||
+        request.auth.uid == resource.data.senderId
+      );
+      allow delete: if request.auth != null && !isGuestUser() && (
+        request.auth.uid == resource.data.senderId ||
+        request.auth.uid == resource.data.receiverId
+      );
+    }
+    
+    // Friendships collection
+    match /friendships/{friendshipId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.user1 ||
+        request.auth.uid == resource.data.user2
+      );
+      allow create: if request.auth != null && !isGuestUser() && (
+        request.auth.uid == request.resource.data.user1 ||
+        request.auth.uid == request.resource.data.user2
+      );
+      allow delete: if request.auth != null && !isGuestUser() && (
+        request.auth.uid == resource.data.user1 ||
+        request.auth.uid == resource.data.user2
+      );
+    }
+    
+    // Messages collection
+    match /messages/{messageId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.senderId ||
+        request.auth.uid == resource.data.receiverId
+      );
+      allow create: if request.auth != null && !isGuestUser() && validateMessageData();
+      allow update: if request.auth != null && !isGuestUser() && (
+        request.auth.uid == resource.data.senderId ||
+        request.auth.uid == resource.data.receiverId
+      );
+      allow delete: if request.auth != null && !isGuestUser() && request.auth.uid == resource.data.senderId;
+    }
+    
+    function validateFriendRequestData() {
+      return request.resource.data.keys().hasAll(['senderId', 'receiverId', 'senderName', 'status', 'timestamp'])
+        && request.resource.data.senderId is string
+        && request.resource.data.receiverId is string
+        && request.resource.data.senderName is string
+        && request.resource.data.status in ['pending', 'accepted', 'rejected']
+        && request.resource.data.senderId == request.auth.uid;
+    }
+    
+    function validateMessageData() {
+      return request.resource.data.keys().hasAll(['senderId', 'receiverId', 'message', 'timestamp'])
+        && request.resource.data.senderId is string
+        && request.resource.data.receiverId is string
+        && request.resource.data.message is string
+        && request.resource.data.message.size() <= 1000
+        && request.resource.data.senderId == request.auth.uid;
+    }
+    
+    // Follows collection
+    match /follows/{followId} {
+      // Allow reading follows for viewing followers/following lists (public info)
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && !isGuestUser() && 
+        request.auth.uid == request.resource.data.followerId &&
+        validateFollowData();
+      allow delete: if request.auth != null && !isGuestUser() &&
+        request.auth.uid == resource.data.followerId;
+    }
+    
+    function validateFollowData() {
+      return request.resource.data.keys().hasAll(['followerId', 'followerName', 'followingId', 'followingName', 'timestamp'])
+        && request.resource.data.followerId is string
+        && request.resource.data.followerName is string
+        && request.resource.data.followingId is string
+        && request.resource.data.followingName is string
+        && request.resource.data.followerId == request.auth.uid;
+    }
+    
+    // Content Reports collection - for user-generated reports of inappropriate content
+    match /contentReports/{reportId} {
+      // Users can read their own reports
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.reporterId ||
+        isAdminUser()
+      );
+      // Users can create reports (non-guests only)
+      allow create: if request.auth != null && !isGuestUser() && validateReportData();
+      // Only admins can update/delete reports (mark as reviewed, resolved, etc.)
+      allow update, delete: if request.auth != null && isAdminUser();
+    }
+    
+    // Content Moderation Logs - for tracking moderator actions
+    match /moderationLogs/{logId} {
+      // Only admins can read/write moderation logs
+      allow read, write: if request.auth != null && isAdminUser();
+    }
+    
+    // User Violations - track user violations for repeat offenders
+    match /userViolations/{userId} {
+      // Only admins can read/write user violation records
+      allow read, write: if request.auth != null && isAdminUser();
+    }
+    
+    function validateReportData() {
+      return request.resource.data.keys().hasAll(['contentId', 'contentType', 'reporterId', 'reasons', 'timestamp'])
+        && request.resource.data.contentId is string
+        && request.resource.data.contentType in ['post', 'message', 'user', 'comment']
+        && request.resource.data.reporterId is string
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.reasons is list
+        && request.resource.data.reasons.size() > 0
+        && request.resource.data.timestamp != null;
+    }
+    
+    // Admin user check - in production, this should check against admin roles in users collection
+    function isAdminUser() {
+      // For demo purposes, check if user has admin in email
+      // In production, you would check a custom claim or admin role in the users collection
+      return request.auth != null 
+        && request.auth.token.email != null 
+        && (request.auth.token.email.matches('.*admin.*') || 
+            request.auth.token.email.matches('.*moderator.*'));
+    }
+    
+    // Stories collection rules
+    match /stories/{storyId} {
+      // Anyone can read stories (including guests)
+      allow read: if true;
+      
+      // Only authenticated non-guest users can create stories
+      allow create: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == request.resource.data.userId
+        && validateStoryData();
+      
+      // Users can update their own stories (view counts, etc.)
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.userId ||
+        onlyViewDataChanged()
+      );
+      
+      // Users can delete their own stories
+      allow delete: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == resource.data.userId;
+    }
+    
+    // Highlights collection rules
+    match /highlights/{highlightId} {
+      // Anyone can read highlights
+      allow read: if true;
+      
+      // Only authenticated non-guest users can create highlights
+      allow create: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == request.resource.data.userId
+        && validateHighlightData();
+      
+      // Users can update their own highlights
+      allow update: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == resource.data.userId;
+      
+      // Users can delete their own highlights
+      allow delete: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == resource.data.userId;
+    }
+    
+    // Story Views collection (for analytics)
+    match /storyViews/{viewId} {
+      // Anyone can read story views
+      allow read: if true;
+      
+      // Anyone can create story views (for tracking)
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.viewerId;
+      
+      // Only view creator can update
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.viewerId;
+    }
+    
+    function validateStoryData() {
+      return request.resource.data.keys().hasAll(['userId', 'userDisplayName', 'mediaType', 'mediaUrl', 'caption', 'timestamp', 'expiresAt'])
+        && request.resource.data.userId is string
+        && request.resource.data.userDisplayName is string
+        && request.resource.data.mediaType in ['image', 'video']
+        && request.resource.data.mediaUrl is string
+        && request.resource.data.caption is string
+        && request.resource.data.caption.size() <= 200;
+    }
+    
+    function validateHighlightData() {
+      return request.resource.data.keys().hasAll(['userId', 'title', 'storyIds'])
+        && request.resource.data.userId is string
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 30
+        && request.resource.data.storyIds is list;
+    }
+    
+    function onlyViewDataChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount', 'viewers', 'likes', 'likesCount']);
+    }
+
+    // Story Comments collection
+    match /storyComments/{commentId} {
+      allow read: if true;
+      allow create: if request.auth != null && !isGuestUser() && validateStoryCommentData();
+      allow update, delete: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == resource.data.userId;
+    }
+    
+    function validateStoryCommentData() {
+      return request.resource.data.keys().hasAll(['storyId', 'userId', 'userDisplayName', 'text', 'timestamp'])
+        && request.resource.data.storyId is string
+        && request.resource.data.userId is string
+        && request.resource.data.userDisplayName is string
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 500
+        && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Shares collection - for tracking post shares
+    match /shares/{shareId} {
+      // Users can read shares they created or shares of their posts
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.sharerId ||
+        request.auth.uid == resource.data.originalAuthorId ||
+        // Allow reading shares to friends if user is in targets array
+        (resource.data.shareType == 'friends' && resource.data.targets.hasAny([request.auth.uid]))
+      );
+      
+      // Only authenticated non-guest users can create shares
+      allow create: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == request.resource.data.sharerId
+        && validateShareData();
+      
+      // Users can update their own shares (for analytics tracking)
+      allow update: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == resource.data.sharerId;
+      
+      // Users can delete their own shares
+      allow delete: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == resource.data.sharerId;
+    }
+    
+    // Groups collection - for group management
+    match /groups/{groupId} {
+      // Anyone can read public groups, members can read private groups
+      allow read: if resource.data.privacy == 'public' || (
+        request.auth != null && 
+        resource.data.members.hasAny([request.auth.uid])
+      );
+      
+      // Only authenticated non-guest users can create groups
+      allow create: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid in request.resource.data.admins
+        && validateGroupData();
+      
+      // Group admins can update group settings
+      allow update: if request.auth != null 
+        && !isGuestUser()
+        && resource.data.admins.hasAny([request.auth.uid]);
+      
+      // Group admins can delete groups
+      allow delete: if request.auth != null 
+        && !isGuestUser()
+        && resource.data.admins.hasAny([request.auth.uid]);
+    }
+
+    // Notifications collection
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.receiverId ||
+        request.auth.uid == resource.data.senderId
+      );
+      allow create: if request.auth != null && !isGuestUser() && validateNotificationData();
+      allow update: if request.auth != null && request.auth.uid == resource.data.receiverId;
+      allow delete: if request.auth != null && (
+        request.auth.uid == resource.data.receiverId ||
+        request.auth.uid == resource.data.senderId
+      );
+    }
+    
+    function validateShareData() {
+      return request.resource.data.keys().hasAll(['postId', 'originalAuthorId', 'sharerId', 'shareType', 'targets', 'timestamp', 'privacy'])
+        && request.resource.data.postId is string
+        && request.resource.data.originalAuthorId is string
+        && request.resource.data.sharerId is string
+        && request.resource.data.sharerId == request.auth.uid
+        && request.resource.data.shareType in ['friends', 'feed', 'groups']
+        && request.resource.data.targets is list
+        && request.resource.data.targets.size() > 0
+        && request.resource.data.targets.size() <= 50 // Limit targets per share
+        && request.resource.data.privacy in ['public', 'friends', 'private']
+        && request.resource.data.timestamp != null
+        && (request.resource.data.message == null || (request.resource.data.message is string && request.resource.data.message.size() <= 500))
+        && validateShareTargets(request.resource.data.shareType, request.resource.data.targets);
+    }
+    
+    function validateShareTargets(shareType, targets) {
+      return (shareType == 'friends' && targets.size() <= 50) ||
+             (shareType == 'feed' && targets.size() == 1 && targets[0] == 'feed') ||
+             (shareType == 'groups' && targets.size() <= 10);
+    }
+    
+    function validateGroupData() {
+      return request.resource.data.keys().hasAll(['name', 'description', 'members', 'admins', 'privacy', 'postingPermissions', 'createdAt', 'memberCount'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 500
+        && request.resource.data.members is list
+        && request.resource.data.admins is list
+        && request.resource.data.admins.size() > 0
+        && request.resource.data.privacy in ['public', 'private']
+        && request.resource.data.postingPermissions in ['all', 'admins', 'approved']
+        && request.resource.data.memberCount is number
+        && request.resource.data.memberCount >= 0;
+    }
+
+    function validateNotificationData() {
+      return request.resource.data.keys().hasAll(['type', 'senderId', 'senderName', 'receiverId', 'message', 'timestamp'])
+        && request.resource.data.type is string
+        && request.resource.data.senderId is string
+        && request.resource.data.senderName is string
+        && request.resource.data.receiverId is string
+        && request.resource.data.message is string
+        && (
+          // Normal notifications: sender must be the authenticated user
+          request.resource.data.senderId == request.auth.uid ||
+          // Test notifications: allow if it's a test type and user is creating for themselves
+          (request.resource.data.type == 'test' && request.resource.data.receiverId == request.auth.uid)
+        );
+    }
+    
+    
+    // Videos collection rules (for talent showcase)
+    match /videos/{videoId} {
+      // Anyone can read videos (including guests)
+      allow read: if true;
+      
+      // Only authenticated non-guest users can create videos
+      allow create: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == request.resource.data.userId
+        && validateVideoData();
+      
+      // Users can update their own videos (view counts, likes, etc.)
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.userId ||
+        onlyVideoEngagementChanged()
+      );
+      
+      // Users can delete their own videos
+      allow delete: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == resource.data.userId;
+    }
+    
+    function validateVideoData() {
+      return request.resource.data.keys().hasAll(['userId', 'userDisplayName', 'title', 'videoUrl', 'timestamp'])
+        && request.resource.data.userId is string
+        && request.resource.data.userDisplayName is string
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 100
+        && request.resource.data.videoUrl is string;
+    }
+    
+    function onlyVideoEngagementChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'likes', 'likesCount']);
+    }
+    
+    // Talent Videos collection rules (for profile talent showcase)
+    match /talentVideos/{videoId} {
+      // Anyone can read talent videos (including guests)
+      allow read: if true;
+      
+      // Only authenticated non-guest users can create talent videos
+      allow create: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == request.resource.data.userId
+        && validateTalentVideoData();
+      
+      // Users can update their own talent videos (view counts, likes, etc.)
+      // Admins can update any video for verification purposes
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.userId ||
+        onlyVideoEngagementChanged() ||
+        isAdminUser()
+      );
+      
+      // Users can delete their own talent videos
+      allow delete: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == resource.data.userId;
+    }
+    
+    function validateTalentVideoData() {
+      return request.resource.data.keys().hasAll(['userId', 'userDisplayName', 'videoUrl', 'fileName', 'uploadedAt'])
+        && request.resource.data.userId is string
+        && request.resource.data.userDisplayName is string
+        && request.resource.data.videoUrl is string
+        && request.resource.data.fileName is string
+        && request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Admin collection rules - for admin user management
+    match /admins/{adminId} {
+      // Only admins can read admin documents
+      allow read: if request.auth != null && (
+        isAdminUser() || 
+        request.auth.uid == adminId
+      );
+      
+      // Allow admin creation for specific admin email
+      allow create: if request.auth != null && (
+        request.auth.token.email == 'admin@amaplayer.com' ||
+        isAdminUser()
+      );
+      
+      // Only super admins can update admin documents
+      allow update: if request.auth != null && isAdminUser();
+      
+      // Only super admins can delete admin documents
+      allow delete: if request.auth != null && isAdminUser();
+    }
+    
+    // Events collection rules - for admin dashboard event management
+    match /events/{eventId} {
+      // Anyone can read active events (for mobile app)
+      allow read: if request.auth != null;
+      
+      // Only admins can create, update, delete events
+      allow create, update, delete: if request.auth != null && isAdminUser();
+    }
+    
+    // Admin logs collection - for tracking admin actions
+    match /adminLogs/{logId} {
+      // Only admins can read/write admin logs
+      allow read, write: if request.auth != null && isAdminUser();
+    }
+    
+    // Video verification collection - for admin dashboard video management
+    match /videoVerifications/{videoId} {
+      // Only admins can read/write video verifications
+      allow read, write: if request.auth != null && isAdminUser();
+    }
+    
+    // Verification Requests collection - for user verification system
+    match /verificationRequests/{requestId} {
+      // Anyone can read verification requests (for public verification page)
+      allow read: if true;
+      
+      // Only authenticated users can create verification requests for themselves
+      allow create: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == request.resource.data.userId;
+      
+      // Users can update their own requests, or system can update for verifications
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.userId ||
+        onlyVerificationDataChanged()
+      );
+      
+      // Users can delete their own verification requests
+      allow delete: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == resource.data.userId;
+    }
+    
+    // Verifications collection - for tracking individual verification votes
+    match /verifications/{verificationId} {
+      // Anyone can read verifications (for public stats)
+      allow read: if true;
+      
+      // Anyone can create verifications (public voting)
+      allow create: if validateVerificationData();
+      
+      // No updates or deletes allowed (immutable verification records)
+      allow update, delete: if false;
+    }
+    
+    
+    function validateVerificationData() {
+      return request.resource.data.keys().hasAll(['verificationId', 'userId', 'verifiedAt'])
+        && request.resource.data.verificationId is string
+        && request.resource.data.userId is string
+        && request.resource.data.verifiedAt != null;
+    }
+    
+    function onlyVerificationDataChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['verificationCount', 'verificationIPs', 'verifiedBy', 'status', 'verifiedAt']);
+    }
+  }
+}

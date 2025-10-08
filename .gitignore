@@ -24,6 +24,8 @@ yarn-debug.log*
 yarn-error.log*
 .claude
 .claude.md
+.kiro
+.vscode
 
 # Documentation files  
 *.md
@@ -42,3 +44,6 @@ firebase.appcheck.config.json
 firebase.remoteconfig.config.json
 firebase.messaging.config.json
 firebase.auth.config.json
+
+#folder
+/docs

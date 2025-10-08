@@ -7,6 +7,13 @@ This directory contains all documentation for the AmaPlayer project. Below is an
 ### Main Documentation
 - **[README.md](README.md)** - Main project overview and getting started guide
 
+### Frontend Architecture
+- **[Home Component Architecture](../src/pages/home/README.md)** - Modular Home component architecture and usage guide
+- **[Component Library](../src/pages/home/components/README.md)** - Reusable UI components documentation
+- **[Custom Hooks](../src/hooks/README.md)** - Business logic hooks and usage examples
+- **[Migration Guide](HOME_COMPONENT_MIGRATION_GUIDE.md)** - Guide for migrating from the old monolithic Home component
+- **[Refactor Summary](HOME_REFACTOR_SUMMARY.md)** - Complete summary of the Home component refactoring project
+
 ### Firebase & Backend Setup
 - **[FIREBASE_SETUP.md](FIREBASE_SETUP.md)** - Firebase project configuration and setup instructions
 - **[FIREBASE_DATABASE_SCHEMAS.md](FIREBASE_DATABASE_SCHEMAS.md)** - Complete Firestore database schema documentation

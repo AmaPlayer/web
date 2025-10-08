@@ -136,6 +136,14 @@
   gap: 24px;
 }
 
+/* Ensure ShareButton integrates seamlessly with other action buttons */
+.feed-card-actions .share-btn {
+  padding: 0;
+  min-width: auto;
+  background: none;
+  border-radius: 0;
+}
+
 .action-btn {
   display: flex;
   align-items: center;

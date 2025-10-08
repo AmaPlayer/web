@@ -1,7 +1,7 @@
 module.exports = {
   env: {
     browser: true,
-    es6: true,
+    es2020: true,
     node: true,
     jest: true,
   },
@@ -38,11 +38,13 @@ module.exports = {
 
     // General code quality
     'no-console': 'warn',
-    'no-unused-vars': 'warn',
+    'no-unused-vars': 'off', // Turn off for TypeScript (use @typescript-eslint/no-unused-vars instead)
     'no-debugger': 'warn',
     'prefer-const': 'off',
     'no-var': 'error',
     'no-empty': 'off',
+    'no-undef': 'off', // Turn off for TypeScript - TypeScript handles this
+    'no-dupe-class-members': 'off', // Turn off for TypeScript - TypeScript handles this
 
     // Accessibility
     'jsx-a11y/alt-text': 'error',
@@ -56,6 +58,7 @@ module.exports = {
     'import/resolver': {
       node: {
         moduleDirectory: ['node_modules', 'src/'],
+        extensions: ['.js', '.jsx', '.ts', '.tsx'],
       },
     },
   },
