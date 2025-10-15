@@ -2,6 +2,8 @@ import { useState, FormEvent, ChangeEvent } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import ThemeToggle from '../../components/common/ui/ThemeToggle';
+import LanguageSelector from '../../components/common/forms/LanguageSelector';
+import { runFirebaseDiagnostics } from '../../utils/diagnostics/firebaseDiagnostic';
 import './Auth.css';
 
 export default function Signup() {
@@ -11,8 +13,22 @@ export default function Signup() {
   const [displayName, setDisplayName] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [diagnosticLoading, setDiagnosticLoading] = useState<boolean>(false);
   const { signup, googleLogin, appleLogin } = useAuth();
   const navigate = useNavigate();
+
+  async function handleDiagnostic(): Promise<void> {
+    setDiagnosticLoading(true);
+    try {
+      await runFirebaseDiagnostics();
+      alert('Diagnostic complete! Check the browser console for results.');
+    } catch (error) {
+      console.error('Diagnostic error:', error);
+      alert('Diagnostic failed. Check the browser console for details.');
+    } finally {
+      setDiagnosticLoading(false);
+    }
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
@@ -24,10 +40,17 @@ export default function Signup() {
     try {
       setError('');
       setLoading(true);
+      
+      console.log('Signup form data:', { email, displayName, passwordLength: password.length });
+      
       await signup(email, password, displayName);
       navigate('/home');
-    } catch (error) {
-      setError('Failed to create an account');
+    } catch (error: any) {
+      console.error('Signup form error:', error);
+      
+      // Display the specific error message from the auth context
+      const errorMessage = error.message || 'Failed to create an account';
+      setError(errorMessage);
     }
     setLoading(false);
   }
@@ -71,17 +94,9 @@ export default function Signup() {
 
   return (
     <div className="auth-container auth-page">
-      <div className="auth-header">
-        <button 
-          className="homepage-btn"
-          onClick={() => navigate('/')}
-          title="Go to Homepage"
-        >
-          🏠 <span>Home</span>
-        </button>
-        <div className="auth-controls">
-          <ThemeToggle />
-        </div>
+      <div className="auth-controls-only">
+        <LanguageSelector />
+        <ThemeToggle />
       </div>
       <div className="auth-card">
         <h1>AmaPlayer</h1>
@@ -143,6 +158,29 @@ export default function Signup() {
             Sign up with Apple
           </button>
         </div>
+        
+        {/* Diagnostic button for debugging */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="diagnostic-section" style={{ marginTop: '20px', padding: '10px', border: '1px dashed #ccc', borderRadius: '5px' }}>
+            <p style={{ fontSize: '12px', color: '#666', margin: '0 0 10px 0' }}>
+              Development Tools
+            </p>
+            <button 
+              disabled={diagnosticLoading}
+              className="auth-btn"
+              onClick={handleDiagnostic}
+              style={{ 
+                backgroundColor: '#f0f0f0', 
+                color: '#333', 
+                fontSize: '12px',
+                padding: '8px 16px'
+              }}
+            >
+              {diagnosticLoading ? 'Running Diagnostics...' : 'Test Firebase Connection'}
+            </button>
+          </div>
+        )}
+        
         <div className="auth-link-section">
           <p>Already have an account?</p>
           <button 

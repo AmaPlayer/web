@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Camera, Trash2, Upload } from 'lucide-react';
 import OptimizedImage from '../../../components/common/media/OptimizedImage';
 import CoverPhotoCropper from '../../../components/common/media/CoverPhotoCropper';
-import { getPlaceholderImage, PlaceholderImages } from '../../../utils/placeholderImages';
+import { getPlaceholderImage, PlaceholderImages } from '../../../utils/media/placeholderImages';
 import '../styles/CoverPhotoManager.css';
 
 interface CoverPhotoManagerProps {
@@ -134,26 +134,22 @@ const CoverPhotoManager = ({
             placeholder={PlaceholderImages.loading(800, 300)}
           />
 
-          {/* Upload overlay for own profile */}
+          {/* Centered upload button for own profile */}
           {isOwnProfile && !isGuest && (
             <div className="cover-photo-overlay">
-              <div className="cover-photo-actions">
-                <label htmlFor="cover-photo-upload" className="upload-cover-btn">
-                  <Camera size={16} />
-                  <span>
-                    {uploading ? 'Uploading...' : (hasCoverPhoto ? 'Change Cover' : 'Add Cover')}
-                  </span>
+              <div className="cover-photo-actions-centered">
+                <label htmlFor="cover-photo-upload" className="upload-cover-btn-centered">
+                  <Camera size={24} />
                 </label>
                 
                 {hasCoverPhoto && (
                   <button 
-                    className="delete-cover-btn"
+                    className="delete-cover-btn-small"
                     onClick={handleDelete}
                     disabled={uploading}
                     title="Delete cover photo"
                   >
                     <Trash2 size={16} />
-                    <span>Remove</span>
                   </button>
                 )}
               </div>

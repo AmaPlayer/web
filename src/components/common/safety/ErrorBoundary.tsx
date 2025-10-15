@@ -1,5 +1,5 @@
 import React, { Component, ReactNode, ErrorInfo, useCallback } from 'react';
-import errorHandler from '../../../utils/errorHandler';
+import errorHandler from '../../../utils/error/errorHandler';
 import './ErrorBoundary.css';
 
 interface ErrorBoundaryProps {

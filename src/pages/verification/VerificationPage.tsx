@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import VerificationService from '../../services/api/verificationService';
 import { Play, CheckCircle, Clock, Users, Video, User } from 'lucide-react';
+import SafeImage from '../../components/common/SafeImage';
 import './VerificationPage.css';
 
 interface VerificationData {
@@ -215,9 +216,10 @@ const VerificationPage: React.FC = () => {
         <div className="user-profile-section">
           <div className="profile-card">
             <div className="profile-image-container">
-              <img 
-                src={verificationData.userPhotoURL || 'https://via.placeholder.com/120'} 
+              <SafeImage 
+                src={verificationData.userPhotoURL || ''} 
                 alt="Profile" 
+                placeholder="avatar"
                 className="profile-image"
               />
               <div className="role-badge">

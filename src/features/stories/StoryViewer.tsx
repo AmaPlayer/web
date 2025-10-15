@@ -8,6 +8,7 @@ import { db } from '../../lib/firebase';
 import { addDoc, collection, query, where, getDocs, deleteDoc, doc, updateDoc, increment, arrayUnion, arrayRemove, Timestamp } from 'firebase/firestore';
 import notificationService from '../../services/notificationService';
 import { SafeCommentsList } from '../../components/common/safety/SafeComment';
+import SafeImage from '../../components/common/SafeImage';
 import { Story } from '../../types/models/story';
 
 interface UserStoriesGroup {
@@ -460,9 +461,10 @@ export default function StoryViewer({ userStories, currentStoryIndex, onClose, o
         {/* Header */}
         <div className="story-viewer-header">
           <div className="story-user-info">
-            <img 
-              src={userStories.userPhotoURL || 'https://via.placeholder.com/40'} 
+            <SafeImage 
+              src={userStories.userPhotoURL || ''} 
               alt={userStories.userDisplayName}
+              placeholder="avatar"
               className="story-user-avatar"
             />
             <div className="story-user-details">

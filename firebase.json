@@ -1,9 +1,9 @@
 {
   "firestore": {
-    "rules": "firestore.rules"
+    "rules": "storage-rules/firestore.rules"
   },
   "storage": {
-    "rules": "storage.rules"
+    "rules": "storage-rules/storage.rules"
   },
   "hosting": {
     "public": "build",

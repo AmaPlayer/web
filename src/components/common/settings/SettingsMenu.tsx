@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState, lazy, Suspense, RefObject } from 'react';
-import { Sun, Globe, Lock, FileText } from 'lucide-react';
+import { Sun, Globe, Lock, FileText, LogOut, Settings } from 'lucide-react';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { User } from 'firebase/auth';
 import SettingsMenuItem from './SettingsMenuItem';
 import ThemeToggle from '../ui/ThemeToggle';
 import LanguageSelector from '../forms/LanguageSelector';
@@ -12,9 +15,12 @@ interface SettingsMenuProps {
   onClose: () => void;
   isGuest: boolean;
   triggerButtonRef?: RefObject<HTMLButtonElement>;
+  currentUser?: User | null;
 }
 
-const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose, isGuest, triggerButtonRef }) => {
+const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose, isGuest, triggerButtonRef, currentUser }) => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
   const [showPasswordForm, setShowPasswordForm] = useState<boolean>(false);
   const firstFocusableRef = useRef<HTMLElement | null>(null);
@@ -127,6 +133,21 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose, isGuest, t
     window.open('/privacy-policy.html', '_blank');
   };
 
+  const handleSettingsPageClick = () => {
+    onClose();
+    navigate('/settings');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      onClose();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to log out:', error);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -140,6 +161,16 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose, isGuest, t
         <h3>Settings</h3>
       </div>
       <div className="settings-menu-content">
+        {!isGuest && (
+          <SettingsMenuItem
+            icon={Settings}
+            label="Account Settings"
+            onClick={handleSettingsPageClick}
+            showDivider={true}
+            ariaLabel="Go to account settings page"
+          />
+        )}
+
         <SettingsMenuItem
           icon={Sun}
           label="Theme"
@@ -172,8 +203,16 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose, isGuest, t
           icon={FileText}
           label="Privacy Policy"
           onClick={handlePrivacyPolicyClick}
-          showDivider={false}
+          showDivider={true}
           ariaLabel="View privacy policy"
+        />
+
+        <SettingsMenuItem
+          icon={LogOut}
+          label={isGuest ? 'Sign In' : 'Logout'}
+          onClick={handleLogout}
+          showDivider={false}
+          ariaLabel={isGuest ? 'Sign in to your account' : 'Logout from your account'}
         />
       </div>
 

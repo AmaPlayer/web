@@ -57,25 +57,46 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: none;
-  border: none;
+  width: 44px;
+  height: 44px;
+  background: var(--bg-card, rgba(255, 255, 255, 0.1));
+  border: 2px solid var(--border-secondary, rgba(255, 255, 255, 0.1));
   border-radius: 50%;
   cursor: pointer;
   color: var(--text-secondary, #666);
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-primary, 0 2px 8px rgba(0, 0, 0, 0.1));
+}
+
+/* Force icon sizes to remain consistent */
+.settings-btn svg,
+.logout-btn svg {
+  width: 24px !important;
+  height: 24px !important;
+  flex-shrink: 0;
+  transition: none !important;
 }
 
 .settings-btn:hover,
 .logout-btn:hover {
-  background: var(--bg-secondary, #f5f5f5);
+  background: var(--bg-hover, rgba(255, 255, 255, 0.15));
   color: var(--text-primary, #333);
+  border-color: var(--accent-primary, #007bff);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+}
+
+.settings-btn:active,
+.logout-btn:active {
+  transform: translateY(0);
 }
 
 .settings-btn[aria-expanded="true"] {
-  background: var(--primary-color-light, #e3f2fd);
-  color: var(--primary-color, #007bff);
+  background: var(--accent-primary, #007bff);
+  color: white;
+  border-color: var(--accent-primary, #007bff);
+  transform: translateY(-1px);
 }
 
 .sr-only {
@@ -115,7 +136,15 @@
   
   .settings-btn,
   .logout-btn {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-btn,
+  .logout-btn {
+    width: 38px;
+    height: 38px;
   }
 }

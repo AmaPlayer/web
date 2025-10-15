@@ -2,135 +2,243 @@
 import { memo, useState, useCallback, useEffect, FormEvent } from 'react';
 import { X, Send, Heart, MoreHorizontal, User } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { validateComment, getCharacterCount } from '../../../utils/validation/validation';
+import { handleCommentError, retryWithBackoff } from '../../../utils/error/engagementErrorHandler';
+import { useToast } from '../../../hooks/useToast';
 import LazyImage from '../ui/LazyImage';
-import { Post } from '../../../types/models';
+import LoadingSpinner from '../feedback/LoadingSpinner';
+import ErrorMessage from '../feedback/ErrorMessage';
+import { Post, Comment, CreateCommentData } from '../../../types/models';
+import postsService from '../../../services/api/postsService';
 import './Modal.css';
-
-interface Comment {
-  id: string;
-  postId: string;
-  userId: string;
-  userDisplayName: string;
-  userPhotoURL: string;
-  text: string;
-  createdAt: Date;
-  likesCount: number;
-  isLiked: boolean;
-}
 
 interface CommentModalProps {
   post: Post;
   onClose: () => void;
+  onCommentAdded?: (comment: Comment) => void;
 }
 
-const CommentModal = memo<CommentModalProps>(({ post, onClose }) => {
+const CommentModal = memo<CommentModalProps>(({ post, onClose, onCommentAdded }) => {
   const { currentUser } = useAuth();
+  const { showToast } = useToast();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState<number>(0);
+  
+  const MAX_COMMENT_LENGTH = 500;
 
-  // Mock API functions (replace with real API calls)
-  const fetchComments = useCallback(async (postId: string): Promise<Comment[]> => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const mockComments: Comment[] = Array.from({ length: 15 }, (_, index) => ({
-      id: `comment-${index}`,
-      postId,
-      userId: `user-${Math.floor(Math.random() * 20)}`,
-      userDisplayName: `User ${Math.floor(Math.random() * 20)}`,
-      userPhotoURL: `https://picsum.photos/40/40?random=${index}`,
-      text: [
-        'Great post! 🔥',
-        'Amazing content, keep it up!',
-        'This is exactly what I needed to see today',
-        'Incredible work! How did you do this?',
-        'Thanks for sharing this with us',
-        'This deserves more views',
-        'Absolutely love this! Can\'t wait to see more',
-        'Perfect timing for this post',
-        'This made my day! Thank you',
-        'Outstanding quality as always'
-      ][Math.floor(Math.random() * 10)],
-      createdAt: new Date(Date.now() - Math.random() * 86400000 * 3),
-      likesCount: Math.floor(Math.random() * 20),
-      isLiked: Math.random() > 0.7
-    }));
+  // Fetch comments from the post data
+  const fetchComments = useCallback(async (postData: Post): Promise<Comment[]> => {
+    try {
+      // Get fresh post data to ensure we have the latest comments
+      const freshPost = await postsService.getById(postData.id);
+      if (!freshPost) {
+        throw new Error('Post not found');
+      }
 
-    return mockComments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const postComments = (freshPost.comments || []) as Comment[];
+      
+      // Sort comments by newest first (timestamp descending)
+      return postComments.sort((a, b) => {
+        const aTime = a.timestamp && typeof a.timestamp === 'object' && 'seconds' in a.timestamp 
+          ? (a.timestamp as any).seconds * 1000
+          : new Date(a.timestamp as string).getTime();
+        const bTime = b.timestamp && typeof b.timestamp === 'object' && 'seconds' in b.timestamp 
+          ? (b.timestamp as any).seconds * 1000
+          : new Date(b.timestamp as string).getTime();
+        return bTime - aTime;
+      });
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      throw error;
+    }
   }, []);
 
   const submitComment = useCallback(async (postId: string, text: string): Promise<Comment> => {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    return {
-      id: `comment-${Date.now()}`,
-      postId,
-      userId: currentUser?.uid || 'guest',
-      userDisplayName: currentUser?.displayName || 'Guest User',
-      userPhotoURL: currentUser?.photoURL || '/default-avatar.jpg',
-      text,
-      createdAt: new Date(),
-      likesCount: 0,
-      isLiked: false
+    if (!currentUser) {
+      throw new Error('User must be authenticated to comment');
+    }
+
+    const commentData: CreateCommentData = {
+      text: text.trim(),
+      userId: currentUser.uid,
+      userDisplayName: currentUser.displayName || 'Anonymous User',
+      userPhotoURL: currentUser.photoURL || null,
     };
+
+    try {
+      const serviceComment = await postsService.addComment(postId, commentData);
+      
+      // Convert service comment to model comment
+      const modelComment: Comment = {
+        id: serviceComment.id,
+        text: serviceComment.text,
+        userId: serviceComment.userId,
+        userDisplayName: serviceComment.userDisplayName,
+        userPhotoURL: serviceComment.userPhotoURL,
+        timestamp: serviceComment.timestamp,
+        likes: serviceComment.likes as string[], // Convert unknown[] to string[]
+        likesCount: 0,
+      };
+      
+      return modelComment;
+    } catch (error) {
+      console.error('Error submitting comment:', error);
+      throw error;
+    }
   }, [currentUser]);
 
   const likeComment = useCallback(async (commentId: string, liked: boolean): Promise<{ success: boolean; liked: boolean }> => {
+    // TODO: Implement comment liking functionality
+    // For now, return success to maintain UI functionality
     await new Promise(resolve => setTimeout(resolve, 300));
     return { success: true, liked };
   }, []);
 
+  // Load comments with retry mechanism
+  const loadComments = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const commentsData = await retryWithBackoff(
+        () => fetchComments(post),
+        {
+          maxAttempts: retryCount < 2 ? 3 : 1,
+          baseDelay: 1000,
+          maxDelay: 5000
+        }
+      );
+      
+      setComments(commentsData);
+      setRetryCount(0); // Reset on success
+      
+    } catch (error) {
+      const engagementError = handleCommentError(error, post.id, 'load');
+      setError(engagementError.userMessage);
+      
+      if (engagementError.canRetry) {
+        setRetryCount(prev => prev + 1);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [post, fetchComments, retryCount]);
+
   // Load comments
   useEffect(() => {
-    const loadComments = async () => {
-      try {
-        setLoading(true);
-        const commentsData = await fetchComments(post.id);
-        setComments(commentsData);
-      } catch (error) {
-        console.error('Error loading comments:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (post?.id) {
       loadComments();
     }
-  }, [post?.id, fetchComments]);
+  }, [post?.id, loadComments]);
+
+  // Validate comment input
+  const validateCommentInput = useCallback((text: string) => {
+    const validation = validateComment(text, {
+      maxLength: MAX_COMMENT_LENGTH,
+      allowEmpty: false,
+      requireAlphanumeric: true
+    });
+    
+    setValidationError(validation.isValid ? null : validation.error || null);
+    return validation.isValid;
+  }, []);
+
+  // Handle comment input change with validation
+  const handleCommentChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewComment(value);
+    
+    // Clear validation error when user starts typing
+    if (validationError && value.trim().length > 0) {
+      setValidationError(null);
+    }
+  }, [validationError]);
 
   // Handle comment submission
   const handleSubmitComment = useCallback(async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!newComment.trim() || submitting) return;
+    if (submitting || !currentUser) return;
+
+    const commentText = newComment.trim();
+    
+    // Validate comment before submission
+    if (!validateCommentInput(commentText)) {
+      return;
+    }
 
     try {
       setSubmitting(true);
-      const comment = await submitComment(post.id, newComment.trim());
+      setError(null);
+      setValidationError(null);
+      
+      const comment = await retryWithBackoff(
+        () => submitComment(post.id, commentText),
+        {
+          maxAttempts: 3,
+          baseDelay: 1000,
+          maxDelay: 5000
+        }
+      );
+      
+      // Add comment to local state (sorted by newest first)
       setComments(prev => [comment, ...prev]);
       setNewComment('');
+      
+      // Notify parent component about the new comment for counter updates
+      onCommentAdded?.(comment);
+      
+      // Show success feedback
+      showToast('Success', 'Comment posted successfully!', {
+        type: 'success',
+        duration: 3000
+      });
+      
     } catch (error) {
-      console.error('Error submitting comment:', error);
-      alert('Failed to post comment. Please try again.');
+      const engagementError = handleCommentError(error, post.id, 'add');
+      
+      if (engagementError.canRetry) {
+        showToast('Comment Failed', engagementError.userMessage, {
+          type: 'error',
+          duration: 5000,
+          action: {
+            label: 'Retry',
+            onClick: () => handleSubmitComment(e)
+          }
+        });
+      } else {
+        setValidationError(engagementError.userMessage);
+      }
     } finally {
       setSubmitting(false);
     }
-  }, [newComment, submitting, post.id, submitComment]);
+  }, [newComment, submitting, currentUser, post.id, submitComment, onCommentAdded, validateCommentInput, showToast]);
 
   // Handle comment like
   const handleLikeComment = useCallback(async (commentId: string) => {
     const comment = comments.find(c => c.id === commentId);
-    if (!comment) return;
+    if (!comment || !currentUser) return;
     
-    void likeComment; // Use the function to avoid unused warning
-
-    const newLiked = !comment.isLiked;
+    // Check if user has already liked this comment
+    const userLikes = Array.isArray(comment.likes) ? comment.likes : [];
+    const isCurrentlyLiked = userLikes.some((like: any) => 
+      typeof like === 'string' ? like === currentUser.uid : like.userId === currentUser.uid
+    );
+    
+    const newLiked = !isCurrentlyLiked;
+    const currentLikesCount = comment.likesCount || userLikes.length;
     
     // Optimistic update
     setComments(prev => prev.map(c => 
       c.id === commentId 
-        ? { ...c, isLiked: newLiked, likesCount: newLiked ? c.likesCount + 1 : c.likesCount - 1 }
+        ? { 
+            ...c, 
+            likesCount: newLiked ? currentLikesCount + 1 : Math.max(0, currentLikesCount - 1)
+          }
         : c
     ));
 
@@ -140,22 +248,39 @@ const CommentModal = memo<CommentModalProps>(({ post, onClose }) => {
       // Revert on error
       setComments(prev => prev.map(c => 
         c.id === commentId 
-          ? { ...c, isLiked: !newLiked, likesCount: newLiked ? c.likesCount - 1 : c.likesCount + 1 }
+          ? { 
+              ...c, 
+              likesCount: newLiked ? Math.max(0, currentLikesCount - 1) : currentLikesCount + 1
+            }
           : c
       ));
       console.error('Error liking comment:', error);
+      setError('Failed to like comment. Please try again.');
     }
-  }, [comments, likeComment]);
+  }, [comments, likeComment, currentUser]);
 
-  const formatTime = useCallback((timestamp: Date): string => {
+  const formatTime = useCallback((timestamp: any): string => {
     const now = new Date();
-    const time = new Date(timestamp);
+    let time: Date;
+    
+    // Handle Firestore Timestamp objects
+    if (timestamp && typeof timestamp === 'object' && 'seconds' in timestamp) {
+      time = new Date(timestamp.seconds * 1000);
+    } else if (timestamp instanceof Date) {
+      time = timestamp;
+    } else if (typeof timestamp === 'string') {
+      time = new Date(timestamp);
+    } else {
+      return 'now';
+    }
+    
     const diff = now.getTime() - time.getTime();
     
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
     
+    if (minutes < 1) return 'now';
     if (minutes < 60) return `${minutes}m ago`;
     if (hours < 24) return `${hours}h ago`;
     return `${days}d ago`;
@@ -191,50 +316,65 @@ const CommentModal = memo<CommentModalProps>(({ post, onClose }) => {
 
         {/* Comments List */}
         <div className="comments-container">
+          {error && (
+            <ErrorMessage
+              message={error}
+              type="error"
+              onDismiss={() => setError(null)}
+              onRetry={loadComments}
+              retryLabel="Reload Comments"
+              className="comment-error"
+            />
+          )}
+          
           {loading ? (
             <div className="loading-comments">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="comment-skeleton">
-                  <div className="skeleton-avatar" />
-                  <div className="skeleton-content">
-                    <div className="skeleton-line" />
-                    <div className="skeleton-line short" />
-                  </div>
-                </div>
-              ))}
+              <LoadingSpinner size="medium" text="Loading comments..." className="center" />
             </div>
           ) : comments.length > 0 ? (
             <div className="comments-list">
-              {comments.map(comment => (
-                <div key={comment.id} className="comment">
-                  <LazyImage
-                    src={comment.userPhotoURL}
-                    alt={comment.userDisplayName}
-                    className="comment-avatar"
-                    placeholder="/default-avatar.jpg"
-                  />
-                  <div className="comment-content">
-                    <div className="comment-header">
-                      <h5 className="comment-author">{comment.userDisplayName}</h5>
-                      <span className="comment-time">{formatTime(comment.createdAt)}</span>
-                      <button className="comment-options">
-                        <MoreHorizontal size={16} />
-                      </button>
-                    </div>
-                    <p className="comment-text">{comment.text}</p>
-                    <div className="comment-actions">
-                      <button 
-                        className={`comment-like ${comment.isLiked ? 'liked' : ''}`}
-                        onClick={() => handleLikeComment(comment.id)}
-                      >
-                        <Heart size={14} fill={comment.isLiked ? '#e91e63' : 'none'} />
-                        {comment.likesCount > 0 && <span>{comment.likesCount}</span>}
-                      </button>
-                      <button className="comment-reply">Reply</button>
+              {comments.map(comment => {
+                const userLikes = Array.isArray(comment.likes) ? comment.likes : [];
+                const isLiked = currentUser ? userLikes.some((like: any) => 
+                  typeof like === 'string' ? like === currentUser.uid : like.userId === currentUser.uid
+                ) : false;
+                const likesCount = comment.likesCount || userLikes.length;
+                
+                return (
+                  <div key={comment.id} className="comment">
+                    <LazyImage
+                      src={comment.userPhotoURL || '/default-avatar.jpg'}
+                      alt={comment.userDisplayName}
+                      className="comment-avatar"
+                      placeholder="/default-avatar.jpg"
+                    />
+                    <div className="comment-content">
+                      <div className="comment-header">
+                        <h5 className="comment-author">{comment.userDisplayName}</h5>
+                        <span className="comment-time">{formatTime(comment.timestamp)}</span>
+                        {currentUser?.uid === comment.userId && (
+                          <button className="comment-options">
+                            <MoreHorizontal size={16} />
+                          </button>
+                        )}
+                      </div>
+                      <p className="comment-text">{comment.text}</p>
+                      <div className="comment-actions">
+                        {currentUser && (
+                          <button 
+                            className={`comment-like ${isLiked ? 'liked' : ''}`}
+                            onClick={() => handleLikeComment(comment.id)}
+                          >
+                            <Heart size={14} fill={isLiked ? '#e91e63' : 'none'} />
+                            {likesCount > 0 && <span>{likesCount}</span>}
+                          </button>
+                        )}
+                        <button className="comment-reply">Reply</button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="empty-comments">
@@ -249,35 +389,55 @@ const CommentModal = memo<CommentModalProps>(({ post, onClose }) => {
 
         {/* Comment Input */}
         {currentUser && (
-          <form className="comment-form" onSubmit={handleSubmitComment}>
-            <LazyImage
-              src={currentUser.photoURL || '/default-avatar.jpg'}
-              alt={currentUser.displayName || 'User'}
-              className="user-avatar small"
-              placeholder="/default-avatar.jpg"
-            />
-            <div className="comment-input-container">
-              <input
-                type="text"
-                placeholder="Add a comment..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                disabled={submitting}
-                maxLength={500}
+          <div className="comment-form-section">
+            {validationError && (
+              <ErrorMessage
+                message={validationError}
+                type="warning"
+                onDismiss={() => setValidationError(null)}
+                className="comment-validation-error"
               />
-              <button 
-                type="submit" 
-                className="send-btn"
-                disabled={!newComment.trim() || submitting}
-              >
-                {submitting ? (
-                  <div className="loading-spinner small" />
-                ) : (
-                  <Send size={18} />
-                )}
-              </button>
+            )}
+            
+            <form className="comment-form" onSubmit={handleSubmitComment}>
+              <LazyImage
+                src={currentUser.photoURL || '/default-avatar.jpg'}
+                alt={currentUser.displayName || 'User'}
+                className="user-avatar small"
+                placeholder="/default-avatar.jpg"
+              />
+              <div className="comment-input-container">
+                <input
+                  type="text"
+                  placeholder="Add a comment..."
+                  value={newComment}
+                  onChange={handleCommentChange}
+                  disabled={submitting}
+                  maxLength={MAX_COMMENT_LENGTH}
+                  aria-describedby={validationError ? 'comment-error' : undefined}
+                />
+                <button 
+                  type="submit" 
+                  className="send-btn"
+                  disabled={!newComment.trim() || submitting || !!validationError}
+                  aria-label="Send comment"
+                >
+                  {submitting ? (
+                    <LoadingSpinner size="small" color="white" />
+                  ) : (
+                    <Send size={18} />
+                  )}
+                </button>
+              </div>
+            </form>
+            
+            {/* Character counter */}
+            <div className="comment-meta">
+              <span className={`character-count ${getCharacterCount(newComment, MAX_COMMENT_LENGTH).isOverLimit ? 'over-limit' : ''}`}>
+                {getCharacterCount(newComment, MAX_COMMENT_LENGTH).remaining} characters remaining
+              </span>
             </div>
-          </form>
+          </div>
         )}
 
         {!currentUser && (

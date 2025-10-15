@@ -2,12 +2,8 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { Post, Comment } from '../types/models';
 
-// Mock implementations
-const postsService = {
-  getPosts: async (options: any) => ({ posts: [] as Post[], nextPageToken: null }),
-  getUserPosts: async (userId: string, limit?: number) => [] as Post[],
-  getPostById: async (postId: string) => ({} as Post)
-};
+// Import the enhanced posts service
+import postsService from '../services/api/postsService';
 
 const queryKeys = {
   posts: () => ['posts'],
@@ -104,7 +100,7 @@ interface AddCommentMutationOptions {
   onError?: (error: any) => void;
 }
 
-// Hook for getting posts feed with infinite scrolling
+// Hook for getting posts feed with infinite scrolling and enhanced engagement metrics
 export const usePostsFeed = (userId: string, options: InfinitePostsQueryOptions = {}) => {
   return useInfiniteQuery<PaginatedResponse<Post>>({
     queryKey: queryKeys.posts(),
@@ -120,18 +116,26 @@ export const usePostsFeed = (userId: string, options: InfinitePostsQueryOptions 
         }
       }
 
-      // Fetch from API
-      const posts = await postsService.getPosts({ 
+      // Fetch from API with enhanced engagement metrics
+      const result = await postsService.getPosts({ 
         limit: options.limit || 10,
-        startAfter: pageParam as string | null
+        startAfter: pageParam as any,
+        includeEngagementMetrics: true,
+        currentUserId: userId
       });
       
+      // Transform to expected format
+      const response: PaginatedResponse<Post> = {
+        posts: result.posts,
+        nextPageToken: result.lastDocument ? result.lastDocument.id : null
+      };
+      
       // Cache first page
-      if (!pageParam && cacheManager && posts?.posts) {
-        await cacheManager.cacheUserData('USER_POSTS', posts, 'feed');
+      if (!pageParam && cacheManager && result.posts) {
+        await cacheManager.cacheUserData('USER_POSTS', response, 'feed');
       }
       
-      return posts;
+      return response;
     },
     getNextPageParam: (lastPage) => lastPage.nextPageToken || null,
     ...QUERY_CONFIGS.POSTS,
@@ -139,12 +143,12 @@ export const usePostsFeed = (userId: string, options: InfinitePostsQueryOptions 
   });
 };
 
-// Hook for getting posts by specific user
-export const useUserPosts = (userId: string, options: PostsQueryOptions = {}) => {
+// Hook for getting posts by specific user with enhanced engagement metrics
+export const useUserPosts = (userId: string, currentUserId?: string, options: PostsQueryOptions = {}) => {
   return useQuery<Post[]>({
     queryKey: queryKeys.postsByUser(userId),
     queryFn: async () => {
-      const cacheManager = getUserCacheManager(userId);
+      const cacheManager = getUserCacheManager(currentUserId || userId);
       if (cacheManager) {
         const cached = await cacheManager.getCachedUserData('USER_POSTS', 'userPosts');
         if (cached) {
@@ -152,7 +156,7 @@ export const useUserPosts = (userId: string, options: PostsQueryOptions = {}) =>
         }
       }
 
-      const posts = await postsService.getUserPosts(userId, (options as any).limit || 20);
+      const posts = await postsService.getUserPosts(userId, (options as any).limit || 20, currentUserId);
       
       if (cacheManager && posts) {
         await cacheManager.cacheUserData('USER_POSTS', posts, 'userPosts');
@@ -166,7 +170,7 @@ export const useUserPosts = (userId: string, options: PostsQueryOptions = {}) =>
   });
 };
 
-// Hook for getting following users' posts
+// Hook for getting following users' posts with enhanced engagement metrics
 export const useFollowingPosts = (userId: string, options: PostsQueryOptions = {}) => {
   return useQuery<Post[]>({
     queryKey: ['posts', 'following', userId],
@@ -179,9 +183,7 @@ export const useFollowingPosts = (userId: string, options: PostsQueryOptions = {
         }
       }
 
-      // This would need to be implemented in postsService - placeholder for now
-      console.log('Following posts placeholder - method not yet implemented in postsService');
-      const posts: Post[] = [];
+      const posts = await postsService.getFollowingPosts(userId, (options as any).limit || 20);
       
       if (cacheManager && posts) {
         await cacheManager.cacheUserData('FOLLOWED_CONTENT', posts, 'posts');
@@ -195,25 +197,24 @@ export const useFollowingPosts = (userId: string, options: PostsQueryOptions = {
   });
 };
 
-// Hook for getting single post details
-export const usePostDetail = (postId: string, options: PostQueryOptions = {}) => {
+// Hook for getting single post details with enhanced engagement metrics
+export const usePostDetail = (postId: string, currentUserId?: string, options: PostQueryOptions = {}) => {
   return useQuery<Post>({
     queryKey: queryKeys.postDetail(postId),
-    queryFn: () => postsService.getPostById(postId),
+    queryFn: () => postsService.getPostById(postId, currentUserId),
     enabled: !!postId,
     ...QUERY_CONFIGS.POSTS,
     ...options,
   });
 };
 
-// Hook for getting post comments
-export const usePostComments = (postId: string, options: PostsQueryOptions = {}) => {
+// Hook for getting post comments (extracted from post data)
+export const usePostComments = (postId: string, currentUserId?: string, options: PostsQueryOptions = {}) => {
   return useQuery<Comment[]>({
     queryKey: queryKeys.postComments(postId),
-    queryFn: () => {
-      // Placeholder - getPostComments method not yet implemented
-      console.log('Post comments placeholder - method not yet implemented');
-      return [] as Comment[];
+    queryFn: async () => {
+      const post = await postsService.getPostById(postId, currentUserId);
+      return post?.comments || [];
     },
     enabled: !!postId,
     staleTime: 2 * 60 * 1000, // 2 minutes - comments change frequently
@@ -222,15 +223,22 @@ export const usePostComments = (postId: string, options: PostsQueryOptions = {})
   });
 };
 
-// Hook for searching posts
-export const useSearchPosts = (searchTerm: string, options: PostsQueryOptions = {}) => {
+// Hook for getting trending posts with enhanced engagement metrics
+export const useTrendingPosts = (currentUserId?: string, options: PostsQueryOptions = {}) => {
+  return useQuery<Post[]>({
+    queryKey: ['posts', 'trending'],
+    queryFn: () => postsService.getTrendingPosts((options as any).limit || 20, currentUserId),
+    staleTime: 10 * 60 * 1000, // 10 minutes for trending posts
+    cacheTime: 15 * 60 * 1000, // 15 minutes cache retention
+    ...options,
+  });
+};
+
+// Hook for searching posts with enhanced engagement metrics
+export const useSearchPosts = (searchTerm: string, currentUserId?: string, options: PostsQueryOptions = {}) => {
   return useQuery<Post[]>({
     queryKey: queryKeys.searchPosts(searchTerm),
-    queryFn: () => {
-      // Placeholder - searchPosts method not yet implemented
-      console.log('Search posts placeholder - method not yet implemented');
-      return [] as Post[];
-    },
+    queryFn: () => postsService.searchPosts(searchTerm, (options as any).limit || 20, currentUserId),
     enabled: !!searchTerm && searchTerm.length >= 2,
     staleTime: 3 * 60 * 1000, // 3 minutes for search results
     cacheTime: 5 * 60 * 1000, // 5 minutes cache retention

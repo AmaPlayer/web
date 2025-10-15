@@ -5,7 +5,7 @@ import { adaptFirebaseUser } from '../../utils/auth/userAdapter';
 import { usePostOperations } from '../../hooks/usePostOperations';
 import { useCommentOperations } from '../../hooks/useCommentOperations';
 import { useNotifications } from '../../hooks/useNotifications';
-import { useSimpleAnalytics } from '../../utils/simpleAnalytics';
+import { useSimpleAnalytics } from '../../utils/analytics/simpleAnalytics';
 import { sharePost } from './utils/shareUtils';
 import { initializeHomeFeatures } from './utils/initializationUtils';
 import { handleCommentSubmission, handleCommentDeletion } from './utils/commentUtils';
@@ -16,7 +16,7 @@ import {
   handlePostDeletion,
   handlePostCreation
 } from './utils/postUtils';
-import NavigationBar from './components/NavigationBar';
+import NavigationBar from '../../components/layout/NavigationBar';
 import NotificationPrompt from './components/NotificationPrompt';
 import PostComposer from './components/PostComposer';
 // Use optimized PostsFeed with progressive loading
@@ -24,6 +24,7 @@ import PostsFeed from './components/PostsFeed';
 import StoriesContainer from '../../features/stories/StoriesContainer';
 import FooterNav from '../../components/layout/FooterNav';
 import ErrorBoundary from '../../components/common/safety/ErrorBoundary';
+
 import { Post } from '../../types/models/post';
 // Removed performance monitoring hooks to prevent re-renders and hook violations
 import './Home.css';
@@ -138,7 +139,7 @@ function Home(): React.JSX.Element {
   const setPrefetchUser = useMemo(() => prefetch?.setUser, [prefetch?.setUser]);
   const trackBehavior = useMemo(() => prefetch?.trackBehavior, [prefetch?.trackBehavior]);
   const performHealthCheck = useMemo(() => cacheInvalidation?.performHealthCheck, [cacheInvalidation?.performHealthCheck]);
-  const notifyContent = useMemo(() => pushNotifications?.notifyContent, [pushNotifications?.notifyContent]);
+  const notifyContent = useMemo(() => pushNotifications?.notifyContent || (() => {}), [pushNotifications?.notifyContent]);
 
 
   const handleTitleClick = useCallback(() => {
@@ -146,14 +147,7 @@ function Home(): React.JSX.Element {
     refreshPosts();
   }, [refreshPosts]);
 
-  const handleLogout = useCallback(async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Failed to log out:', error);
-    }
-  }, [logout, navigate]);
+
 
   // Initialize features and load posts - simplified to prevent infinite re-renders
   useEffect(() => {
@@ -178,7 +172,7 @@ function Home(): React.JSX.Element {
         cleanup();
       }
     };
-  }, [firebaseUser]); // Only depend on firebaseUser to prevent infinite loops
+  }, [firebaseUser, isGuestUser]); // Only depend on firebaseUser to prevent infinite loops
 
 
   const handleLike = useCallback(async (postId: string, currentLikes: string[], isSample: boolean, postData: Post) => {
@@ -282,25 +276,31 @@ function Home(): React.JSX.Element {
   // Memoized callback for navigating to post to prevent recreation
   const handleNavigateToPost = useCallback((postId: string) => navigate(`/post/${postId}`), [navigate]);
 
+  // Memoized callback for navigating to user profile
+  const handleUserClick = useCallback((userId: string) => {
+    navigate(`/profile/${userId}`);
+  }, [navigate]);
+
   // Simplified props for PostsFeed - only stable callbacks and data
   const postsFeedProps = useMemo(() => ({
-    posts, 
-    loading, 
-    hasMore, 
-    error: postsError, 
-    currentUser: firebaseUser, 
+    posts,
+    loading,
+    hasMore,
+    error: postsError,
+    currentUser: firebaseUser,
     isGuest: isGuestUser,
-    onLoadMore: handleLoadMore, 
-    onRefresh: refreshPosts, 
+    onLoadMore: handleLoadMore,
+    onRefresh: refreshPosts,
     onLike: handleLike,
-    onEditPost: handleEditPost, 
-    onSharePost: handleSharePost, 
+    onEditPost: handleEditPost,
+    onSharePost: handleSharePost,
     onDeletePost: handleDeletePost,
-    onCommentSubmit: handleCommentSubmit, 
-    onDeleteComment: handleDeleteComment
-  }), [posts, loading, hasMore, postsError, firebaseUser, isGuestUser, 
-    handleLoadMore, refreshPosts, handleLike, handleEditPost, handleSharePost, 
-    handleDeletePost, handleCommentSubmit, handleDeleteComment]);
+    onCommentSubmit: handleCommentSubmit,
+    onDeleteComment: handleDeleteComment,
+    onUserClick: handleUserClick
+  }), [posts, loading, hasMore, postsError, firebaseUser, isGuestUser,
+    handleLoadMore, refreshPosts, handleLike, handleEditPost, handleSharePost,
+    handleDeletePost, handleCommentSubmit, handleDeleteComment, handleUserClick]);
 
   return (
     <ErrorBoundary name="Home">
@@ -309,7 +309,6 @@ function Home(): React.JSX.Element {
           currentUser={firebaseUser}
           isGuest={isGuestUser}
           onTitleClick={handleTitleClick}
-          onLogout={handleLogout}
         />
 
         <div className="main-content home-content">
@@ -335,7 +334,7 @@ function Home(): React.JSX.Element {
 
         <FooterNav />
         
-        {/* Performance Debug Panel - Removed to prevent re-renders */}
+
       </div>
     </ErrorBoundary>
   );

@@ -39,6 +39,9 @@ export interface Post {
   tags?: string[];
   isActive: boolean;
   deletedAt?: string;
+  // User interaction states (computed fields)
+  isLiked?: boolean;
+  hasShared?: boolean;
 }
 
 /**

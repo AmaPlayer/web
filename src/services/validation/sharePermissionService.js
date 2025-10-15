@@ -322,7 +322,7 @@ class SharePermissionService {
           allowedTargets: ['friends', 'feed', 'groups']
         };
       
-      case PRIVACY_LEVELS.FRIENDS:
+      case PRIVACY_LEVELS.FRIENDS: {
         // Check if sharer is friends with post author
         const areFriends = await friendsService.areFriends(userId, post.userId);
         if (areFriends) {
@@ -337,6 +337,7 @@ class SharePermissionService {
             allowedTargets: []
           };
         }
+      }
       
       case PRIVACY_LEVELS.PRIVATE:
         return {

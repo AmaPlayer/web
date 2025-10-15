@@ -1,6 +1,6 @@
 import React, { Component, ReactNode, ErrorInfo } from 'react';
 import { AlertCircle, RefreshCw, X, WifiOff, LucideIcon } from 'lucide-react';
-import errorHandler from '../../../utils/errorHandler';
+import errorHandler from '../../../utils/error/errorHandler';
 import './ShareErrorBoundary.css';
 
 type ErrorType = 'network' | 'permission' | 'rateLimit' | 'notFound' | 'unknown';

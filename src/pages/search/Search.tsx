@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, addDoc, serverTimestamp, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
-import { Search as SearchIcon, UserPlus, Check, X, Filter, MapPin, User, Award, Target, Calendar } from 'lucide-react';
+import { Search as SearchIcon, UserPlus, Check, X, Filter, MapPin, User, Award, Target, Calendar, Settings, Bell } from 'lucide-react';
 import FooterNav from '../../components/layout/FooterNav';
-import ThemeToggle from '../../components/common/ui/ThemeToggle';
-import LanguageSelector from '../../components/common/forms/LanguageSelector';
+import SettingsMenu from '../../components/common/settings/SettingsMenu';
+import NotificationDropdown from '../../components/common/notifications/NotificationDropdown';
+import SafeImage from '../../components/common/SafeImage';
 import './Search.css';
 
 interface UserData {
@@ -77,6 +78,13 @@ export default function Search() {
     sex: '',
     age: ''
   });
+  
+  // Notification and Settings state
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+  const [notificationsOpen, setNotificationsOpen] = useState<boolean>(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const settingsButtonRef = useRef<HTMLButtonElement>(null);
+  const notificationButtonRef = useRef<HTMLButtonElement>(null);
 
   const fetchSentRequests = useCallback(() => {
     if (!currentUser) return;
@@ -185,6 +193,42 @@ export default function Search() {
       }
     };
   }, [searchTerm, filters]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch unread notification count
+  useEffect(() => {
+    if (!currentUser || isGuest()) {
+      setUnreadCount(0);
+      return;
+    }
+
+    let unsubscribe: (() => void) | null = null;
+
+    try {
+      const notificationsRef = collection(db, 'notifications');
+      const q = query(
+        notificationsRef,
+        where('receiverId', '==', currentUser.uid),
+        where('read', '==', false)
+      );
+
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        setUnreadCount(snapshot.size);
+      }, (error) => {
+        console.error('Error fetching notification count:', error);
+        setUnreadCount(0);
+      });
+
+    } catch (error) {
+      console.error('Error setting up notification listener:', error);
+      setUnreadCount(0);
+    }
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [currentUser, isGuest]);
 
   const fetchFriendships = () => {
     if (!currentUser) return;
@@ -497,6 +541,25 @@ export default function Search() {
 
   const hasActiveFilters = Object.values(filters).some(filter => filter.trim().length > 0) || searchTerm.trim().length > 0;
 
+  // Notification and Settings handlers
+  const handleSettingsToggle = () => {
+    setSettingsOpen(!settingsOpen);
+    setNotificationsOpen(false); // Close notifications if open
+  };
+
+  const handleSettingsClose = () => {
+    setSettingsOpen(false);
+  };
+
+  const handleNotificationsToggle = () => {
+    setNotificationsOpen(!notificationsOpen);
+    setSettingsOpen(false); // Close settings if open
+  };
+
+  const handleNotificationsClose = () => {
+    setNotificationsOpen(false);
+  };
+
   // Guest view
   if (isGuest()) {
     return (
@@ -505,8 +568,30 @@ export default function Search() {
           <div className="nav-content">
             <h1>Search</h1>
             <div className="nav-controls">
-              <LanguageSelector />
-              <ThemeToggle />
+              {/* Settings for guest */}
+              <div className="settings-container">
+                <button
+                  ref={settingsButtonRef}
+                  className="settings-btn"
+                  onClick={handleSettingsToggle}
+                  aria-label="Open settings menu"
+                  aria-expanded={settingsOpen}
+                  aria-haspopup="true"
+                  title="Settings"
+                  type="button"
+                >
+                  <Settings size={20} aria-hidden="true" />
+                  <span className="sr-only">Settings</span>
+                </button>
+                
+                <SettingsMenu
+                  isOpen={settingsOpen}
+                  onClose={handleSettingsClose}
+                  isGuest={true}
+                  triggerButtonRef={settingsButtonRef}
+                  currentUser={null}
+                />
+              </div>
             </div>
           </div>
         </nav>
@@ -539,8 +624,60 @@ export default function Search() {
         <div className="nav-content">
           <h1>Search</h1>
           <div className="nav-controls">
-            <LanguageSelector />
-            <ThemeToggle />
+            {/* Notifications */}
+            <div className="notifications-container">
+              <button
+                ref={notificationButtonRef}
+                className="notification-btn"
+                onClick={handleNotificationsToggle}
+                aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+                aria-expanded={notificationsOpen}
+                aria-haspopup="true"
+                title="Notifications"
+                type="button"
+              >
+                <Bell size={20} aria-hidden="true" />
+                {unreadCount > 0 && (
+                  <span className="notification-badge">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+                <span className="sr-only">
+                  Notifications{unreadCount > 0 ? ` (${unreadCount} unread)` : ''}
+                </span>
+              </button>
+
+              <NotificationDropdown
+                isOpen={notificationsOpen}
+                onClose={handleNotificationsClose}
+                triggerButtonRef={notificationButtonRef}
+              />
+            </div>
+            
+            {/* Settings */}
+            <div className="settings-container">
+              <button
+                ref={settingsButtonRef}
+                className="settings-btn"
+                onClick={handleSettingsToggle}
+                aria-label="Open settings menu"
+                aria-expanded={settingsOpen}
+                aria-haspopup="true"
+                title="Settings"
+                type="button"
+              >
+                <Settings size={20} aria-hidden="true" />
+                <span className="sr-only">Settings</span>
+              </button>
+              
+              <SettingsMenu
+                isOpen={settingsOpen}
+                onClose={handleSettingsClose}
+                isGuest={false}
+                triggerButtonRef={settingsButtonRef}
+                currentUser={currentUser}
+              />
+            </div>
           </div>
         </div>
       </nav>
@@ -712,9 +849,11 @@ export default function Search() {
             return (
               <div key={user.id} className="user-result">
                 <div className="user-avatar" onClick={() => navigate(`/profile/${user.id}`)}>
-                  <img 
-                    src={user.photoURL || 'https://via.placeholder.com/50/2d3748/00ff88?text=👤'} 
+                  <SafeImage 
+                    src={user.photoURL || ''} 
                     alt={user.displayName}
+                    placeholder="avatar"
+                    className="user-avatar-image"
                   />
                 </div>
                 <div className="user-info" onClick={() => navigate(`/profile/${user.id}`)}>

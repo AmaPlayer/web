@@ -4,7 +4,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useInfiniteScroll } from '../../utils/performance/infiniteScroll';
 import { useDebounce } from '../../utils/performance/optimization';
 import { usePostInteractions } from '../../hooks/usePostInteractions';
+import { useToast } from '../../hooks/useToast';
 import FeedCard, { TalentCard, ProfileCard } from '../../components/common/feed/FeedCard';
+import ToastContainer from '../../components/common/ui/ToastContainer';
 import { LoadingFallback } from '../../utils/performance/lazyLoading';
 import { RefreshCw, Filter, Search, Plus, CheckCircle, AlertCircle } from 'lucide-react';
 import { User } from '../../types/models/user';
@@ -91,12 +93,12 @@ const feedAPI = {
         type,
         userId: `user-${Math.floor(Math.random() * 100)}`,
         userDisplayName: `User ${Math.floor(Math.random() * 100)}`,
-        userPhotoURL: `https://picsum.photos/100/100?random=${id}`,
+        userPhotoURL: `/assets/placeholders/default-avatar.svg`,
         caption: `This is a sample ${type} post #${id}`,
         mediaUrl: type === 'video' 
           ? `https://sample-videos.com/zip/10/mp4/SampleVideo_${Math.random() > 0.5 ? '720x480' : '1280x720'}_1mb.mp4`
-          : `https://picsum.photos/800/600?random=${id}`,
-        thumbnailUrl: type === 'video' ? `https://picsum.photos/800/450?random=${id}` : null,
+          : `/assets/placeholders/default-post.svg`,
+        thumbnailUrl: type === 'video' ? `/assets/placeholders/default-post.svg` : null,
         likesCount: Math.floor(Math.random() * 1000),
         commentsCount: Math.floor(Math.random() * 100),
         sharesCount: Math.floor(Math.random() * 50),
@@ -147,11 +149,20 @@ const feedAPI = {
 
 const FeedPage = memo(() => {
   const { currentUser } = useAuth();
+  const { toasts, showToast, dismissToast } = useToast();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filters, setFilters] = useState<FeedFilters>({});
   const [activeModal, setActiveModal] = useState<'profile' | 'comment' | 'share' | 'filter' | null>(null);
   const [selectedItem, setSelectedItem] = useState<FeedItem | { userId: string } | null>(null);
   const [shareNotification, setShareNotification] = useState<ShareNotification | null>(null);
+  const [loadingStates, setLoadingStates] = useState<{
+    likes: Set<string>;
+    comments: Set<string>;
+  }>({
+    likes: new Set(),
+    comments: new Set()
+  });
+  const [scrollPosition, setScrollPosition] = useState<number>(0);
   
   const debouncedSearch = useDebounce(searchQuery, 500);
   
@@ -195,25 +206,83 @@ const FeedPage = memo(() => {
     );
   }, [items, debouncedSearch]);
 
+  // Save scroll position before modal interactions
+  const saveScrollPosition = useCallback(() => {
+    if (containerRef.current) {
+      setScrollPosition(containerRef.current.scrollTop);
+    } else {
+      // Fallback to window scroll position
+      setScrollPosition(window.scrollY);
+    }
+  }, [containerRef]);
+
+  // Restore scroll position after modal interactions
+  const restoreScrollPosition = useCallback(() => {
+    if (containerRef.current && scrollPosition > 0) {
+      containerRef.current.scrollTop = scrollPosition;
+    } else if (scrollPosition > 0) {
+      // Fallback to window scroll position
+      window.scrollTo(0, scrollPosition);
+    }
+  }, [containerRef, scrollPosition]);
+
   // Event handlers
   const handleLike = useCallback(async (itemId: string, liked: boolean) => {
+    // Set loading state
+    setLoadingStates(prev => ({
+      ...prev,
+      likes: new Set([...prev.likes, itemId])
+    }));
+
     try {
       await feedAPI.likePost(itemId, liked);
     } catch (error) {
       console.error('Error liking post:', error);
       throw error;
+    } finally {
+      // Clear loading state
+      setLoadingStates(prev => ({
+        ...prev,
+        likes: new Set([...prev.likes].filter(id => id !== itemId))
+      }));
     }
   }, []);
 
   const handleComment = useCallback((itemId: string) => {
+    // Save scroll position before opening modal
+    saveScrollPosition();
+    
+    // Set loading state
+    setLoadingStates(prev => ({
+      ...prev,
+      comments: new Set([...prev.comments, itemId])
+    }));
+
     setSelectedItem(items.find(item => item.id === itemId) || null);
     setActiveModal('comment');
-  }, [items]);
+
+    // Clear loading state after modal opens
+    setTimeout(() => {
+      setLoadingStates(prev => ({
+        ...prev,
+        comments: new Set([...prev.comments].filter(id => id !== itemId))
+      }));
+    }, 100);
+  }, [items, saveScrollPosition]);
+
+  const handleCommentAdded = useCallback((itemId: string) => {
+    // This could be enhanced to update the items array with new comment count
+    // For now, we'll rely on the FeedCard's local state management
+    console.log('Comment added to post:', itemId);
+  }, []);
 
   const handleShare = useCallback((itemId: string) => {
+    // Save scroll position before opening modal
+    saveScrollPosition();
+    
     setSelectedItem(items.find(item => item.id === itemId) || null);
     setActiveModal('share');
-  }, [items]);
+  }, [items, saveScrollPosition]);
 
   // Handle share completion with success/error feedback
   const handleShareComplete = useCallback(async (shareData: ShareData) => {
@@ -283,7 +352,12 @@ const FeedPage = memo(() => {
   const closeModal = useCallback(() => {
     setActiveModal(null);
     setSelectedItem(null);
-  }, []);
+    
+    // Restore scroll position after modal closes
+    setTimeout(() => {
+      restoreScrollPosition();
+    }, 100);
+  }, [restoreScrollPosition]);
 
   const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -325,7 +399,11 @@ const FeedPage = memo(() => {
       onLike: handleLike,
       onComment: handleComment,
       onShare: handleShare,
-      onUserClick: handleUserClick
+      onUserClick: handleUserClick,
+      onCommentAdded: handleCommentAdded,
+      // Pass loading states
+      isLikeLoading: loadingStates.likes.has(item.id),
+      isCommentLoading: loadingStates.comments.has(item.id)
     };
 
     switch (item.type) {
@@ -350,10 +428,16 @@ const FeedPage = memo(() => {
       default:
         return <FeedCard {...commonProps} />;
     }
-  }, [currentUser, handleLike, handleComment, handleShare, handleUserClick, handleFollow, getShareState, hasUserSharedPost, getShareRateLimit]);
+  }, [currentUser, handleLike, handleComment, handleShare, handleUserClick, handleFollow, getShareState, hasUserSharedPost, getShareRateLimit, loadingStates]);
 
   return (
     <div className="feed-page">
+      {/* Toast Container */}
+      <ToastContainer 
+        toasts={toasts} 
+        position="top-right"
+      />
+      
       {/* Header */}
       <div className="feed-header">
         <div className="feed-title">
@@ -449,6 +533,10 @@ const FeedPage = memo(() => {
           <CommentModal
             post={selectedItem as any}
             onClose={closeModal}
+            onCommentAdded={(comment) => {
+              // Update the comment count in the feed item
+              handleCommentAdded(selectedItem.id);
+            }}
           />
         )}
         

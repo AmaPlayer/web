@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, CSSProperties, MouseEvent } from 'react';
+import { createPlaceholderUrl } from '../../../utils/placeholderUtils';
 
 interface LazyLoadImageProps {
   src: string;
@@ -24,7 +25,7 @@ const LazyLoadImage: React.FC<LazyLoadImageProps> = ({
   width,
   height,
   placeholder = null,
-  fallback = 'https://via.placeholder.com/400x300/e2e8f0/64748b?text=Image+Not+Found',
+  fallback = createPlaceholderUrl(400, 300, 'post', 'Image Not Found'),
   quality = 85,
   webp = true,
   responsive = true,

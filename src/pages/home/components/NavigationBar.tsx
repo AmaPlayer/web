@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { LogOut, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import SettingsMenu from '../../../components/common/settings/SettingsMenu';
 import { User } from 'firebase/auth';
 import './NavigationBar.css';
@@ -8,7 +8,7 @@ interface NavigationBarProps {
   currentUser: User | null;
   isGuest: boolean;
   onTitleClick: () => void;
-  onLogout: () => void;
+  title?: string;
 }
 
 /**
@@ -16,7 +16,7 @@ interface NavigationBarProps {
  * 
  * Handles top navigation, user actions, and app branding.
  */
-const NavigationBar = ({ currentUser, isGuest, onTitleClick, onLogout }: NavigationBarProps) => {
+const NavigationBar = ({ currentUser, isGuest, onTitleClick, title = "AmaPlayer" }: NavigationBarProps) => {
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -36,7 +36,7 @@ const NavigationBar = ({ currentUser, isGuest, onTitleClick, onLogout }: Navigat
           onClick={onTitleClick}
           role="button"
           tabIndex={0}
-          aria-label="AmaPlayer - Click to refresh and scroll to top"
+          aria-label={`${title} - Click to refresh and scroll to top`}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
@@ -44,7 +44,7 @@ const NavigationBar = ({ currentUser, isGuest, onTitleClick, onLogout }: Navigat
             }
           }}
         >
-          AmaPlayer
+          {title}
         </h1>
         
         <div className="nav-links">
@@ -69,7 +69,7 @@ const NavigationBar = ({ currentUser, isGuest, onTitleClick, onLogout }: Navigat
               title="Settings"
               type="button"
             >
-              <Settings size={20} aria-hidden="true" />
+              <Settings size={24} aria-hidden="true" />
               <span className="sr-only">Settings</span>
             </button>
             
@@ -78,21 +78,9 @@ const NavigationBar = ({ currentUser, isGuest, onTitleClick, onLogout }: Navigat
               onClose={handleSettingsClose}
               isGuest={isGuest}
               triggerButtonRef={settingsButtonRef}
+              currentUser={currentUser}
             />
           </div>
-          
-          <button
-            className="logout-btn"
-            onClick={onLogout}
-            aria-label={isGuest ? 'Sign In' : 'Logout'}
-            title={isGuest ? 'Sign In' : 'Logout'}
-            type="button"
-          >
-            <LogOut size={20} aria-hidden="true" />
-            <span className="sr-only">
-              {isGuest ? 'Sign In' : 'Logout'}
-            </span>
-          </button>
         </div>
       </div>
     </nav>

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, CSSProperties } from 'react';
 import { ImageOptimizer } from '../../../utils/performance/optimization';
-import { TRANSPARENT_PIXEL } from '../../../utils/placeholderImages';
+import { TRANSPARENT_PIXEL } from '../../../utils/media/placeholderImages';
 import './OptimizedImage.css';
 
 interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {

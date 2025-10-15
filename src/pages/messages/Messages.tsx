@@ -3,10 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../lib/firebase';
 import { collection, query, where, onSnapshot, addDoc, updateDoc, doc, serverTimestamp, getDoc, getDocs, deleteDoc } from 'firebase/firestore';
-import { MessageSquare, UserPlus, Check, X, Send, Users, Edit3, Trash2, Save, XCircle, AlertTriangle, Bell, Heart, Play } from 'lucide-react';
+import { MessageSquare, UserPlus, Check, X, Send, Users, Edit3, Trash2, Save, XCircle, AlertTriangle } from 'lucide-react';
+import NavigationBar from '../../components/layout/NavigationBar';
 import FooterNav from '../../components/layout/FooterNav';
-import ThemeToggle from '../../components/common/ui/ThemeToggle';
-import LanguageSelector from '../../components/common/forms/LanguageSelector';
+import SendButton from '../../features/messaging/components/SendButton';
+import FriendsList from '../../features/messaging/components/FriendsList';
+import ChatHeader from '../../features/messaging/components/ChatHeader';
+import UserAvatar from '../../components/common/user/UserAvatar';
+import { navigateToProfile } from '../../utils/navigation/profileNavigation';
 import { filterChatMessage, getChatViolationMessage, logChatViolation } from '../../utils/content/chatFilter';
 import './Messages.css';
 
@@ -44,20 +48,7 @@ interface Message {
   deletedFor: string[];
 }
 
-interface Notification {
-  id: string;
-  type: string;
-  senderId: string;
-  senderName: string;
-  senderPhotoURL?: string;
-  receiverId: string;
-  message: string;
-  read: boolean;
-  timestamp: any;
-  postId?: string;
-  storyId?: string;
-  url?: string;
-}
+// Notification interface moved to NavigationBar
 
 interface FilterResult {
   isClean: boolean;
@@ -69,16 +60,20 @@ interface FilterResult {
   maxSeverity?: string | null;
 }
 
-type TabType = 'friends' | 'requests' | 'notifications';
+type TabType = 'friends' | 'requests';
 
 export default function Messages() {
   const navigate = useNavigate();
   const { currentUser, isGuest } = useAuth();
+
+  const handleTitleClick = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const [activeTab, setActiveTab] = useState<TabType>('friends');
   const [messages, setMessages] = useState<Message[]>([]);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [friends, setFriends] = useState<Friend[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  // Notifications moved to NavigationBar
   const [selectedChat, setSelectedChat] = useState<Friend | null>(null);
   const [newMessage, setNewMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -89,8 +84,11 @@ export default function Messages() {
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [messageViolation, setMessageViolation] = useState<FilterResult | null>(null);
   const [showMessageWarning, setShowMessageWarning] = useState<boolean>(false);
+  const [inputValidationState, setInputValidationState] = useState<'normal' | 'warning' | 'success' | 'error'>('normal');
   const [followedUsers, setFollowedUsers] = useState<string[]>([]);
   const [followingUser, setFollowingUser] = useState<string | null>(null);
+  const [sendButtonError, setSendButtonError] = useState<boolean>(false);
+  const [showScrollToBottom, setShowScrollToBottom] = useState<boolean>(false);
 
   useEffect(() => {
     console.log('📱 Messages: Initializing component', { currentUser: !!currentUser, isGuest: isGuest() });
@@ -102,7 +100,7 @@ export default function Messages() {
         const unsubscribeFriends = fetchFriends();
         const unsubscribeMessages = fetchMessages();
         fetchFollowedUsers();
-        const unsubscribeNotifications = fetchNotifications();
+        // Notifications moved to NavigationBar
         
         // Set loading to false after a brief delay to allow data to load
         setTimeout(() => {
@@ -115,7 +113,7 @@ export default function Messages() {
           if (unsubscribeFriendRequests) unsubscribeFriendRequests();
           if (unsubscribeFriends) unsubscribeFriends();
           if (unsubscribeMessages) unsubscribeMessages();
-          if (unsubscribeNotifications) unsubscribeNotifications();
+          // Notifications cleanup moved to NavigationBar
         };
       } catch (error) {
         console.error('Error initializing data:', error);
@@ -150,64 +148,9 @@ export default function Messages() {
     };
   }, [currentUser]);
 
-  // Mark all notifications as read when notifications tab is opened
-  useEffect(() => {
-    if (activeTab === 'notifications' && currentUser && !isGuest() && notifications.length > 0) {
-      console.log('📱 Notifications tab opened, marking all as read...');
-      // Add a small delay to ensure notifications are loaded
-      const timer = setTimeout(() => {
-        markAllNotificationsAsRead();
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [activeTab, notifications, currentUser]);
+  // Notifications moved to NavigationBar
 
-  // Handle notification click - mark as read and redirect
-  const handleNotificationClick = async (notification: Notification): Promise<void> => {
-    try {
-      // Mark notification as read
-      await markNotificationAsRead(notification.id);
-      
-      // Redirect based on notification type
-      if (notification.type === 'like' || notification.type === 'comment') {
-        // Redirect to the specific post detail page
-        if (notification.postId) {
-          console.log('📱 Redirecting to post detail:', notification.postId);
-          navigate(`/post/${notification.postId}`);
-        } else if (notification.url) {
-          // Fallback to URL if postId not available
-          const url = notification.url.startsWith('/') ? notification.url : `/${notification.url}`;
-          navigate(url);
-        }
-      } else if (notification.type === 'story_like' || notification.type === 'story_view' || notification.type === 'story_comment') {
-        // Redirect to the specific story page
-        if (notification.storyId) {
-          console.log('📱 Redirecting to story:', notification.storyId);
-          navigate(`/story/${notification.storyId}`);
-        } else if (notification.url) {
-          // Fallback to URL if storyId not available
-          const url = notification.url.startsWith('/') ? notification.url : `/${notification.url}`;
-          navigate(url);
-        }
-      } else if (notification.type === 'follow') {
-        // Redirect to the follower's profile
-        if (notification.senderId) {
-          console.log('📱 Redirecting to profile:', notification.senderId);
-          navigate(`/profile/${notification.senderId}`);
-        }
-      } else if (notification.type === 'friend_request') {
-        // Stay on messages page but switch to requests tab
-        console.log('📱 Switching to requests tab');
-        setActiveTab('requests');
-      } else {
-        console.log('📱 Unknown notification type:', notification.type);
-      }
-      
-    } catch (error) {
-      console.error('Error handling notification click:', error);
-    }
-  };
+  // Notification handling moved to NavigationBar
 
   const fetchFriendRequests = () => {
     if (!currentUser) return;
@@ -419,110 +362,9 @@ export default function Messages() {
     };
   };
 
-  const fetchNotifications = () => {
-    if (!currentUser) return;
-    
-    console.log('🔍 Setting up notifications listener for user:', currentUser.uid);
-    
-    const q = query(
-      collection(db, 'notifications'),
-      where('receiverId', '==', currentUser.uid)
-    );
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('📱 Notifications snapshot received, docs count:', snapshot.docs.length);
-      
-      const notificationsList: Notification[] = [];
-      let unreadCount = 0;
-      
-      snapshot.forEach((doc) => {
-        const notificationData = { id: doc.id, ...doc.data() } as Notification;
-        console.log('📋 Processing notification:', {
-          id: doc.id,
-          type: notificationData.type,
-          senderName: notificationData.senderName,
-          message: notificationData.message,
-          read: notificationData.read,
-          receiverId: notificationData.receiverId,
-          timestamp: notificationData.timestamp
-        });
-        notificationsList.push(notificationData);
-        
-        if (!notificationData.read) {
-          unreadCount++;
-        }
-      });
-      
-      console.log('📱 Notifications processed:', {
-        total: notificationsList.length,
-        unread: unreadCount,
-        notifications: notificationsList.map(n => ({ 
-          id: n.id, 
-          type: n.type, 
-          read: n.read,
-          senderName: n.senderName,
-          message: n.message
-        }))
-      });
-      
-      // Sort by timestamp (newest first)
-      notificationsList.sort((a, b) => {
-        const timeA = a.timestamp?.toDate?.() || new Date(a.timestamp);
-        const timeB = b.timestamp?.toDate?.() || new Date(b.timestamp);
-        return timeB.getTime() - timeA.getTime();
-      });
-      
-      console.log('📱 Setting notifications state with', notificationsList.length, 'items');
-      setNotifications(notificationsList);
-    }, (error) => {
-      console.error('❌ Error in notifications listener:', error);
-    });
-    
-    return unsubscribe;
-  };
+  // Notifications functionality moved to NavigationBar
 
-  const markNotificationAsRead = async (notificationId: string): Promise<void> => {
-    try {
-      await updateDoc(doc(db, 'notifications', notificationId), {
-        read: true // Changed from isRead to read to match Firestore indexes
-      });
-      console.log('📝 Marked notification as read:', notificationId);
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-    }
-  };
-
-
-  // Mark all notifications as read when notifications tab is opened
-  const markAllNotificationsAsRead = async (): Promise<void> => {
-    try {
-      const unreadNotifications = notifications.filter(n => !n.read);
-      
-      if (unreadNotifications.length === 0) {
-        console.log('📝 No unread notifications to mark');
-        return;
-      }
-
-      console.log('📝 Marking notifications as read:', {
-        count: unreadNotifications.length,
-        ids: unreadNotifications.map(n => n.id)
-      });
-      
-      // Update all unread notifications
-      const updatePromises = unreadNotifications.map(notification => {
-        console.log(`📝 Marking notification ${notification.id} as read`);
-        return updateDoc(doc(db, 'notifications', notification.id), {
-          read: true
-        });
-      });
-      
-      await Promise.all(updatePromises);
-      console.log('✅ All notifications marked as read successfully');
-      
-    } catch (error) {
-      console.error('❌ Error marking all notifications as read:', error);
-    }
-  };
+  // Notification functions moved to NavigationBar
 
   const handleAcceptRequest = async (requestId: string, senderId: string): Promise<void> => {
     if (isGuest()) {
@@ -581,22 +423,126 @@ export default function Messages() {
     }
   };
 
-  // Auto-scroll to bottom function
-  const scrollToBottom = (): void => {
-    const chatMessages = document.getElementById('chat-messages');
-    if (chatMessages) {
-      chatMessages.scrollTop = chatMessages.scrollHeight;
+  // Enhanced auto-scroll to bottom function with smooth scrolling
+  const scrollToBottom = (smooth: boolean = true): void => {
+    const chatMessagesContainer = document.querySelector('.chat-messages-container') as HTMLElement;
+    if (chatMessagesContainer) {
+      if (smooth) {
+        chatMessagesContainer.scrollTo({
+          top: chatMessagesContainer.scrollHeight,
+          behavior: 'smooth'
+        });
+      } else {
+        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+      }
+      // Hide scroll to bottom button after scrolling
+      setShowScrollToBottom(false);
     }
   };
 
-  // Auto-scroll when messages change
+  // Handle scroll events to show/hide scroll-to-bottom button
+  const handleScroll = (): void => {
+    const chatMessagesContainer = document.querySelector('.chat-messages-container') as HTMLElement;
+    if (chatMessagesContainer) {
+      const { scrollTop, scrollHeight, clientHeight } = chatMessagesContainer;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      const hasScrollableContent = scrollHeight > clientHeight + 10; // Add small buffer
+      setShowScrollToBottom(!isNearBottom && hasScrollableContent);
+    }
+  };
+
+  // Auto-scroll when messages change with improved logic
   useEffect(() => {
     if (selectedChat && messages.length > 0) {
-      setTimeout(scrollToBottom, 100);
+      const chatMessagesContainer = document.querySelector('.chat-messages-container') as HTMLElement;
+      if (chatMessagesContainer) {
+        // Check if user is near bottom before auto-scrolling
+        const isNearBottom = chatMessagesContainer.scrollHeight - chatMessagesContainer.scrollTop - chatMessagesContainer.clientHeight < 100;
+        
+        // Always scroll to bottom when chat is first opened or user is near bottom
+        if (isNearBottom || chatMessagesContainer.scrollTop === 0) {
+          // Use requestAnimationFrame for better performance
+          requestAnimationFrame(() => {
+            setTimeout(() => scrollToBottom(true), 50);
+          });
+        }
+      }
     }
   }, [messages, selectedChat]);
 
-  // Real-time message content filtering as user types
+  // Set up scroll listener for selected chat
+  useEffect(() => {
+    if (selectedChat) {
+      const chatMessagesContainer = document.querySelector('.chat-messages-container') as HTMLElement;
+      if (chatMessagesContainer) {
+        chatMessagesContainer.addEventListener('scroll', handleScroll);
+        // Initial check and scroll to bottom for new chat
+        setTimeout(() => {
+          handleScroll();
+          scrollToBottom(false); // Instant scroll for new chat
+        }, 100);
+        
+        return () => {
+          chatMessagesContainer.removeEventListener('scroll', handleScroll);
+        };
+      }
+    } else {
+      // Reset scroll button state when no chat is selected
+      setShowScrollToBottom(false);
+    }
+  }, [selectedChat]);
+
+  // Virtual keyboard handling for mobile devices
+  useEffect(() => {
+    const handleViewportChange = () => {
+      // Detect virtual keyboard on mobile
+      const viewport = window.visualViewport;
+      if (viewport) {
+        const chatInterface = document.querySelector('.chat-interface') as HTMLElement;
+        const messageInputArea = document.querySelector('.message-input-area') as HTMLElement;
+        
+        if (chatInterface && messageInputArea) {
+          const keyboardHeight = window.innerHeight - viewport.height;
+          
+          if (keyboardHeight > 150) { // Virtual keyboard is likely open
+            chatInterface.style.height = `${viewport.height - 180}px`;
+            messageInputArea.style.paddingBottom = '8px';
+            // Scroll to bottom when keyboard opens
+            setTimeout(() => scrollToBottom(false), 200);
+          } else {
+            // Reset to normal height
+            chatInterface.style.height = 'calc(100vh - 180px)';
+            messageInputArea.style.paddingBottom = '16px';
+          }
+        }
+      }
+    };
+
+    // Listen for viewport changes (virtual keyboard)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleViewportChange);
+      return () => {
+        window.visualViewport?.removeEventListener('resize', handleViewportChange);
+      };
+    }
+
+    // Fallback for older browsers
+    const handleResize = () => {
+      const chatInterface = document.querySelector('.chat-interface') as HTMLElement;
+      if (chatInterface && window.innerHeight < 500) {
+        // Likely virtual keyboard is open
+        chatInterface.style.height = `${window.innerHeight - 120}px`;
+        setTimeout(() => scrollToBottom(false), 200);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [selectedChat]);
+
+  // Enhanced real-time message content filtering with smooth transitions
   const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const newMessageText = e.target.value;
     setNewMessage(newMessageText);
@@ -614,13 +560,24 @@ export default function Messages() {
       if (!filterResult.isClean && filterResult.shouldBlock) {
         setMessageViolation(filterResult);
         setShowMessageWarning(true);
+        setInputValidationState('error');
+      } else if (!filterResult.isClean && filterResult.shouldWarn) {
+        setMessageViolation(filterResult);
+        setShowMessageWarning(true);
+        setInputValidationState('warning');
       } else {
         setMessageViolation(null);
         setShowMessageWarning(false);
+        setInputValidationState('success');
+        // Reset to normal after showing success briefly
+        setTimeout(() => {
+          setInputValidationState('normal');
+        }, 2000);
       }
     } else {
       setMessageViolation(null);
       setShowMessageWarning(false);
+      setInputValidationState('normal');
     }
   };
 
@@ -629,6 +586,9 @@ export default function Messages() {
     if (!newMessage.trim() || !selectedChat || isGuest() || sendingMessage || !currentUser) return;
 
     const messageText = newMessage.trim();
+    
+    // Reset send button error state
+    setSendButtonError(false);
     
     // Content filtering check for messages
     console.log('🔍 Checking message content for inappropriate material...', messageText);
@@ -653,6 +613,9 @@ export default function Messages() {
       if (filterResult.shouldBlock || filterResult.shouldWarn) {
         const violationMsg = getChatViolationMessage(filterResult.violations, filterResult.categories);
         alert(`❌ You can't send this message: ${violationMsg}`);
+        setSendButtonError(true);
+        // Auto-clear error state after 3 seconds
+        setTimeout(() => setSendButtonError(false), 3000);
         return; // Don't send the message
       }
     } else {
@@ -686,12 +649,15 @@ export default function Messages() {
       console.log('✅ Message sent successfully');
       
       // Scroll to bottom after sending
-      setTimeout(scrollToBottom, 200);
+      setTimeout(() => scrollToBottom(true), 200);
       
     } catch (error: any) {
       console.error('❌ Error sending message:', error);
       setNewMessage(messageText); // Restore message if failed
+      setSendButtonError(true);
       alert('Failed to send message: ' + error.message);
+      // Auto-clear error state after 5 seconds
+      setTimeout(() => setSendButtonError(false), 5000);
     }
     
     setSendingMessage(false);
@@ -772,35 +738,103 @@ export default function Messages() {
     setEditText('');
   };
 
-  // Long press handlers
-  const handleMouseDown = (message: Message): void => {
+  // Smart positioning for options menu
+  const positionOptionsMenu = (messageElement: HTMLElement, messageId: string): void => {
+    // Wait for menu to be rendered
+    setTimeout(() => {
+      const optionsMenu = document.querySelector(`[data-message-id="${messageId}"] .options-menu`) as HTMLElement;
+      if (!optionsMenu) return;
+
+      const messageRect = messageElement.getBoundingClientRect();
+      const menuRect = optionsMenu.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // Calculate optimal position
+      let left = messageRect.right + 10; // Default to right side
+      let top = messageRect.top - 10;
+      
+      // Check if menu would go off-screen on the right
+      if (left + menuRect.width > viewportWidth - 20) {
+        // Position to the left of the message
+        left = messageRect.left - menuRect.width - 10;
+        optionsMenu.classList.add('position-left');
+        optionsMenu.classList.remove('position-right', 'position-center');
+      } else {
+        optionsMenu.classList.add('position-right');
+        optionsMenu.classList.remove('position-left', 'position-center');
+      }
+      
+      // Check if menu would go off-screen on the left
+      if (left < 20) {
+        // Center the menu above/below the message
+        left = messageRect.left + (messageRect.width / 2) - (menuRect.width / 2);
+        optionsMenu.classList.add('position-center');
+        optionsMenu.classList.remove('position-left', 'position-right');
+      }
+      
+      // Ensure menu doesn't go off-screen vertically
+      if (top + menuRect.height > viewportHeight - 20) {
+        top = messageRect.bottom - menuRect.height + 10;
+      }
+      
+      if (top < 20) {
+        top = 20;
+      }
+      
+      // Apply the calculated position
+      optionsMenu.style.left = `${Math.max(20, Math.min(left, viewportWidth - menuRect.width - 20))}px`;
+      optionsMenu.style.top = `${top}px`;
+    }, 10);
+  };
+
+  // Enhanced long press handlers with visual feedback
+  const handleMouseDown = (message: Message, event: React.MouseEvent): void => {
     if (!message.senderId || message.senderId !== currentUser?.uid) return;
+    
+    const messageElement = event.currentTarget as HTMLElement;
+    messageElement.classList.add('long-press-active');
     
     const timer = setTimeout(() => {
       setShowMessageOptions(message.id);
+      positionOptionsMenu(messageElement, message.id);
     }, 500); // 500ms long press
     
     setLongPressTimer(timer);
   };
 
-  const handleMouseUp = (): void => {
+  const handleMouseUp = (event: React.MouseEvent): void => {
+    const messageElement = event.currentTarget as HTMLElement;
+    messageElement.classList.remove('long-press-active');
+    
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
     }
   };
 
-  const handleTouchStart = (message: Message): void => {
+  const handleTouchStart = (message: Message, event: React.TouchEvent): void => {
     if (!message.senderId || message.senderId !== currentUser?.uid) return;
+    
+    const messageElement = event.currentTarget as HTMLElement;
+    messageElement.classList.add('long-press-active');
     
     const timer = setTimeout(() => {
       setShowMessageOptions(message.id);
+      positionOptionsMenu(messageElement, message.id);
+      // Provide haptic feedback on supported devices
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
     }, 500); // 500ms long press
     
     setLongPressTimer(timer);
   };
 
-  const handleTouchEnd = (): void => {
+  const handleTouchEnd = (event: React.TouchEvent): void => {
+    const messageElement = event.currentTarget as HTMLElement;
+    messageElement.classList.remove('long-press-active');
+    
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
@@ -896,15 +930,12 @@ export default function Messages() {
   if (isGuest()) {
     return (
       <div className="messages">
-        <nav className="nav-bar">
-          <div className="nav-content">
-            <h1>Messages</h1>
-            <div className="nav-controls">
-              <LanguageSelector />
-              <ThemeToggle />
-            </div>
-          </div>
-        </nav>
+        <NavigationBar
+          currentUser={currentUser}
+          isGuest={isGuest()}
+          onTitleClick={handleTitleClick}
+          title="Messages"
+        />
 
         <div className="main-content messages-content">
           <div className="guest-restriction">
@@ -931,11 +962,12 @@ export default function Messages() {
   if (loading) {
     return (
       <div className="messages">
-        <nav className="nav-bar">
-          <div className="nav-content">
-            <h1>Messages</h1>
-          </div>
-        </nav>
+        <NavigationBar
+          currentUser={currentUser}
+          isGuest={isGuest()}
+          onTitleClick={handleTitleClick}
+          title="Messages"
+        />
         <div className="main-content">
           <div className="loading">Loading messages...</div>
         </div>
@@ -946,15 +978,12 @@ export default function Messages() {
 
   return (
     <div className="messages">
-      <nav className="nav-bar">
-        <div className="nav-content">
-          <h1>Messages</h1>
-          <div className="nav-controls">
-            <LanguageSelector />
-            <ThemeToggle />
-          </div>
-        </div>
-      </nav>
+      <NavigationBar
+        currentUser={currentUser}
+        isGuest={isGuest()}
+        onTitleClick={handleTitleClick}
+        title="Messages"
+      />
 
       <div className="main-content messages-content">
         <div className="messages-tabs">
@@ -972,145 +1001,161 @@ export default function Messages() {
             <UserPlus size={20} />
             Requests ({friendRequests.length})
           </button>
-          <button 
-            className={`tab-btn ${activeTab === 'notifications' ? 'active' : ''}`}
-            onClick={() => setActiveTab('notifications')}
-          >
-            <Bell size={20} />
-            Notifications ({notifications.filter(n => !n.read).length})
-          </button>
+          {/* Notifications moved to NavigationBar */}
         </div>
 
         {activeTab === 'friends' && (
           <div className="friends-list">
-            {friends.length === 0 ? (
-              <div className="empty-state">
-                <Users size={48} />
-                <h3>No Friends Yet</h3>
-                <p>Accept friend requests to start chatting!</p>
-              </div>
-            ) : (
-              <>
-                {!selectedChat && (
-                  <div className="friends-grid">
-                    {friends.map((friend) => (
-                      <div 
-                        key={friend.id} 
-                        className="friend-card"
-                        onClick={() => setSelectedChat(friend)}
-                      >
-                        <img 
-                          src={friend.photoURL || 'https://via.placeholder.com/50'} 
-                          alt={friend.displayName}
-                        />
-                        <div className="friend-info">
-                          <strong>{friend.displayName || 'Anonymous User'}</strong>
-                          {friend.isOnline && <span className="online-indicator">● Online</span>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {selectedChat && (
-                  <div className="chat-container">
-                    <div className="chat-header">
-                      <button className="back-btn" onClick={() => setSelectedChat(null)}>
-                        ← Back
-                      </button>
-                      <img 
-                        src={selectedChat.photoURL || 'https://via.placeholder.com/40'} 
-                        alt={selectedChat.displayName}
-                      />
-                      <strong>{selectedChat.displayName || 'Anonymous User'}</strong>
-                    </div>
-
-                    <div className="chat-messages" id="chat-messages">
-                      {messages
-                        .filter(msg => 
-                          (msg.senderId === currentUser?.uid && msg.receiverId === selectedChat.id) ||
-                          (msg.senderId === selectedChat.id && msg.receiverId === currentUser?.uid)
-                        )
-                        .filter(msg => !msg.deletedFor.includes(currentUser!.uid))
-                        .map((message) => (
-                          <div 
-                            key={message.id} 
-                            className={`message ${message.senderId === currentUser?.uid ? 'sent' : 'received'}`}
-                            onMouseDown={() => handleMouseDown(message)}
-                            onMouseUp={handleMouseUp}
-                            onTouchStart={() => handleTouchStart(message)}
-                            onTouchEnd={handleTouchEnd}
-                          >
-                            {editingMessage === message.id ? (
-                              <div className="edit-message-form">
-                                <input
-                                  type="text"
-                                  value={editText}
-                                  onChange={(e) => setEditText(e.target.value)}
-                                  autoFocus
-                                />
-                                <div className="edit-actions">
-                                  <button onClick={() => handleEditMessage(message.id)}>
-                                    <Save size={16} />
-                                  </button>
-                                  <button onClick={cancelEdit}>
-                                    <XCircle size={16} />
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                <p>{message.message}</p>
-                                {message.edited && <span className="edited-indicator">(edited)</span>}
-                                <span className="message-time">
-                                  {message.timestamp?.toDate?.().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-
-                                {showMessageOptions === message.id && message.senderId === currentUser?.uid && (
-                                  <div className="message-options">
-                                    <button onClick={() => startEdit(message)}>
-                                      <Edit3 size={16} />
-                                      Edit
-                                    </button>
-                                    <button onClick={() => handleDeleteMessage(message.id, 'me')}>
-                                      <Trash2 size={16} />
-                                      Delete for me
-                                    </button>
-                                    <button onClick={() => handleDeleteMessage(message.id, 'everyone')}>
-                                      <Trash2 size={16} />
-                                      Delete for everyone
-                                    </button>
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        ))}
-                    </div>
-
-                    <form className="chat-input" onSubmit={handleSendMessage}>
-                      <input
-                        type="text"
-                        placeholder="Type a message..."
-                        value={newMessage}
-                        onChange={handleMessageChange}
-                        disabled={sendingMessage}
-                      />
-                      <button type="submit" disabled={sendingMessage || !newMessage.trim()}>
-                        <Send size={20} />
-                      </button>
-                    </form>
-
-                    {showMessageWarning && messageViolation && (
-                      <div className="message-warning">
-                        <AlertTriangle size={16} />
-                        <span>This message contains inappropriate content</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
+            {!selectedChat && (
+              <FriendsList
+                friends={friends}
+                onSelectFriend={setSelectedChat}
+                loading={loading}
+              />
             )}
+
+            {selectedChat && (
+              <div className="chat-interface">
+                <ChatHeader
+                  friend={selectedChat}
+                  onBack={() => setSelectedChat(null)}
+                />
+
+                    <div className="chat-messages-container">
+                      <div className="chat-messages" id="chat-messages">
+                        {messages
+                          .filter(msg => 
+                            (msg.senderId === currentUser?.uid && msg.receiverId === selectedChat.id) ||
+                            (msg.senderId === selectedChat.id && msg.receiverId === currentUser?.uid)
+                          )
+                          .filter(msg => !msg.deletedFor.includes(currentUser!.uid))
+                          .map((message) => (
+                            <div 
+                              key={message.id} 
+                              className={`message ${message.senderId === currentUser?.uid ? 'sent' : 'received'}`}
+                              data-message-id={message.id}
+                              onMouseDown={(e) => handleMouseDown(message, e)}
+                              onMouseUp={handleMouseUp}
+                              onTouchStart={(e) => handleTouchStart(message, e)}
+                              onTouchEnd={handleTouchEnd}
+                            >
+                              {editingMessage === message.id ? (
+                                <div className="edit-message-form">
+                                  <div className="edit-input-container">
+                                    <input
+                                      type="text"
+                                      value={editText}
+                                      onChange={(e) => setEditText(e.target.value)}
+                                      className="edit-input"
+                                      autoFocus
+                                    />
+                                    <div className="edit-actions">
+                                      <button className="save-btn" onClick={() => handleEditMessage(message.id)}>
+                                        <Save size={16} />
+                                      </button>
+                                      <button className="cancel-btn" onClick={cancelEdit}>
+                                        <XCircle size={16} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="message-content">
+                                  <div className="message-text">
+                                    <p>{message.message}</p>
+                                    {message.edited && <span className="edited-indicator">(edited)</span>}
+                                  </div>
+                                  <span className="message-time">
+                                    {message.timestamp?.toDate?.().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+
+                                  {showMessageOptions === message.id && message.senderId === currentUser?.uid && (
+                                    <div className="options-menu">
+                                      <button className="option-item edit-option" onClick={() => startEdit(message)}>
+                                        <Edit3 size={16} />
+                                        Edit
+                                      </button>
+                                      <button className="option-item delete-option" onClick={() => handleDeleteMessage(message.id, 'me')}>
+                                        <Trash2 size={16} />
+                                        Delete for me
+                                      </button>
+                                      <button className="option-item delete-everyone-option" onClick={() => handleDeleteMessage(message.id, 'everyone')}>
+                                        <Trash2 size={16} />
+                                        Delete for everyone
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                      
+                      {/* Scroll to bottom button */}
+                      {showScrollToBottom && (
+                        <button
+                          className="scroll-to-bottom-btn"
+                          onClick={() => scrollToBottom(true)}
+                          aria-label="Scroll to bottom"
+                          title="Scroll to bottom"
+                        >
+                          ↓
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="message-input-area">
+                      {showMessageWarning && messageViolation && (
+                        <div 
+                          className="message-violation-warning" 
+                          id="message-warning"
+                          role="alert"
+                          aria-live="polite"
+                        >
+                          <div className="warning-header">
+                            <AlertTriangle size={16} aria-hidden="true" />
+                            {inputValidationState === 'error' ? 'Content Blocked' : 'Content Warning'}
+                          </div>
+                          <div className="warning-message">
+                            {inputValidationState === 'error' 
+                              ? 'This message contains inappropriate content and cannot be sent.'
+                              : 'This message may contain inappropriate content. Please review before sending.'
+                            }
+                          </div>
+                          {messageViolation.violations && messageViolation.violations.length > 0 && (
+                            <div className="warning-suggestion">
+                              Issues detected: {messageViolation.violations.join(', ')}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <form className="message-input-form" onSubmit={handleSendMessage}>
+                        <input
+                          type="text"
+                          placeholder="Type a message..."
+                          value={newMessage}
+                          onChange={handleMessageChange}
+                          disabled={sendingMessage}
+                          className={`${inputValidationState === 'warning' || inputValidationState === 'error' ? 'content-warning' : ''} ${inputValidationState === 'success' ? 'content-success' : ''}`}
+                          aria-label="Message input"
+                          aria-describedby={showMessageWarning ? 'message-warning' : undefined}
+                          aria-invalid={inputValidationState === 'error'}
+                          autoComplete="off"
+                          autoCorrect="off"
+                          autoCapitalize="sentences"
+                          spellCheck={true}
+                        />
+                        <SendButton
+                          disabled={sendingMessage || !newMessage.trim()}
+                          loading={sendingMessage}
+                          error={sendButtonError}
+                          type="submit"
+                        />
+                      </form>
+                    </div>
+                  </div>
+                )}
           </div>
         )}
 
@@ -1125,12 +1170,21 @@ export default function Messages() {
             ) : (
               friendRequests.map((request) => (
                 <div key={request.id} className="friend-request-card">
-                  <img 
-                    src={request.senderPhoto || 'https://via.placeholder.com/50'} 
-                    alt={request.senderName}
+                  <UserAvatar
+                    userId={request.senderId}
+                    displayName={request.senderName}
+                    photoURL={request.senderPhoto}
+                    size="medium"
+                    clickable={true}
+                    showName={false}
                   />
                   <div className="request-info">
-                    <strong>{request.senderName}</strong>
+                    <strong 
+                      className="request-user-name clickable-name"
+                      onClick={() => navigateToProfile(navigate, request.senderId, currentUser?.uid)}
+                    >
+                      {request.senderName}
+                    </strong>
                     <p>wants to be your friend</p>
                   </div>
                   <div className="request-actions">
@@ -1155,50 +1209,7 @@ export default function Messages() {
           </div>
         )}
 
-        {activeTab === 'notifications' && (
-          <div className="notifications-list">
-            {notifications.length === 0 ? (
-              <div className="empty-state">
-                <Bell size={48} />
-                <h3>No Notifications</h3>
-                <p>You don't have any notifications yet</p>
-              </div>
-            ) : (
-              notifications.map((notification) => (
-                <div 
-                  key={notification.id} 
-                  className={`notification-card ${notification.read ? 'read' : 'unread'}`}
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <div className="notification-icon">
-                    {notification.type === 'like' && <Heart size={20} />}
-                    {notification.type === 'comment' && <MessageSquare size={20} />}
-                    {notification.type === 'follow' && <UserPlus size={20} />}
-                    {notification.type === 'story_like' && <Heart size={20} />}
-                    {notification.type === 'story_view' && <Play size={20} />}
-                    {notification.type === 'friend_request' && <UserPlus size={20} />}
-                  </div>
-                  <div className="notification-content">
-                    <div className="notification-header">
-                      <img 
-                        src={notification.senderPhotoURL || 'https://via.placeholder.com/40'} 
-                        alt={notification.senderName}
-                      />
-                      <div className="notification-text">
-                        <strong>{notification.senderName}</strong>
-                        <p>{notification.message}</p>
-                      </div>
-                    </div>
-                    <span className="notification-time">
-                      {notification.timestamp?.toDate?.().toLocaleString()}
-                    </span>
-                  </div>
-                  {!notification.read && <div className="unread-indicator"></div>}
-                </div>
-              ))
-            )}
-          </div>
-        )}
+        {/* Notifications tab content moved to NavigationBar */}
       </div>
       
       <FooterNav />

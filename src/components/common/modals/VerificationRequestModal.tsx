@@ -5,6 +5,7 @@ import { db } from '../../../lib/firebase';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import VerificationService from '../../../services/api/verificationService';
 import { X, Share2, Copy, CheckCircle, Video, User } from 'lucide-react';
+import SafeImage from '../SafeImage';
 import './VerificationRequestModal.css';
 
 interface UserProfile {
@@ -185,9 +186,10 @@ const VerificationRequestModal: React.FC<VerificationRequestModalProps> = ({ isO
               <div className="review-section">
                 <h3><User size={20} /> Your Profile</h3>
                 <div className="profile-preview">
-                  <img 
-                    src={userProfile.photoURL || 'https://via.placeholder.com/60'} 
+                  <SafeImage 
+                    src={userProfile.photoURL || ''} 
                     alt="Profile" 
+                    placeholder="avatar"
                     className="profile-image-preview"
                   />
                   <div className="profile-info-preview">

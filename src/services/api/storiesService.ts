@@ -134,8 +134,8 @@ export class StoriesService {
    */
   static async generateVideoThumbnail(_videoFile: File): Promise<string> {
     // TODO: Implement proper video thumbnail generation
-    // For now, return a placeholder
-    return 'https://via.placeholder.com/300x400/333/fff?text=Video+Story';
+    // For now, return a local placeholder
+    return '/assets/placeholders/default-post.svg';
   }
   
   /**

@@ -91,10 +91,14 @@ export const useCommentOperations = (): UseCommentOperationsReturn => {
       // Add comment to comments collection
       await addDoc(collection(db, 'comments'), commentData);
 
-      // Update post's comment count
+      // Update post's comments array with the comment data (without serverTimestamp)
       const postRef = doc(db, 'posts', postId);
+      const commentForPost = {
+        ...commentData,
+        timestamp: new Date() // Use Date object instead of serverTimestamp for the post update
+      };
       await updateDoc(postRef, {
-        comments: arrayUnion(commentData)
+        comments: arrayUnion(commentForPost)
       });
 
     } catch (err: any) {

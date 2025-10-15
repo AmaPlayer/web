@@ -6,6 +6,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { Image, Upload, X, Trash2 } from 'lucide-react';
 import { User } from 'firebase/auth';
+import SafeImage from '../../../components/common/SafeImage';
 import './PostComposer.css';
 
 interface PostComposerProps {
@@ -154,21 +155,25 @@ const PostComposer: React.FC<PostComposerProps> = ({
         mediaType = selectedMedia.type.startsWith('image/') ? 'image' : 'video';
       }
 
-      // Create post document
+      // Create post document with all required fields
       const postData: any = {
         userId: currentUser.uid,
         userDisplayName: currentUser.displayName || 'Anonymous User',
-        userPhotoURL: currentUser.photoURL || '',
+        userPhotoURL: currentUser.photoURL || null,
         caption: text,
+        mediaUrl: mediaUrl,
+        mediaType: mediaType,
         timestamp: serverTimestamp(),
+        createdAt: new Date(),
         likes: [],
-        comments: []
+        comments: [],
+        shares: [],
+        likesCount: 0,
+        commentsCount: 0,
+        sharesCount: 0,
+        isActive: true,
+        visibility: 'public'
       };
-
-      if (mediaUrl) {
-        postData.imageUrl = mediaUrl;
-        postData.mediaType = mediaType;
-      }
 
       await addDoc(collection(db, 'posts'), postData);
 
@@ -219,9 +224,11 @@ const PostComposer: React.FC<PostComposerProps> = ({
     <div className="post-composer">
       <div className="composer-header">
         <div className="composer-avatar">
-          <img
-            src={currentUser?.photoURL || 'https://via.placeholder.com/40'}
+          <SafeImage
+            src={currentUser?.photoURL || ''}
             alt="Your avatar"
+            placeholder="avatar"
+            className="composer-avatar-image"
           />
         </div>
         <textarea

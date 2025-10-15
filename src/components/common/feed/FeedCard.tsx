@@ -1,7 +1,10 @@
 // Memoized feed card components for optimal performance
-import { memo, useState, useCallback } from 'react';
-import { Heart, MessageCircle, MoreHorizontal, Play } from 'lucide-react';
+import { memo, useState, useCallback, useEffect } from 'react';
+import { MessageCircle, MoreHorizontal, Play } from 'lucide-react';
 import { useInViewport } from '../../../utils/performance/infiniteScroll';
+import { useToast } from '../../../hooks/useToast';
+import LoadingSpinner from '../feedback/LoadingSpinner';
+import LikeButton from '../../../features/social/components/LikeButton';
 // @ts-ignore - JS component not yet migrated
 import LazyImage from '../ui/LazyImage';
 // @ts-ignore - JS component not yet migrated
@@ -37,7 +40,10 @@ interface FeedCardProps {
   onComment?: (itemId: string) => void;
   onShare?: (itemId: string) => void;
   onUserClick?: (userId: string) => void;
+  onCommentAdded?: (itemId: string) => void;
   currentUserId?: string;
+  isLikeLoading?: boolean;
+  isCommentLoading?: boolean;
 }
 
 interface TalentCardProps {
@@ -56,6 +62,14 @@ interface ProfileCardProps {
   };
   onFollow?: (profileId: string, following: boolean) => Promise<void>;
   currentUserId?: string;
+  item?: FeedItem; // Add item prop for consistency
+  onLike?: (itemId: string, liked: boolean) => Promise<void>;
+  onComment?: (itemId: string) => void;
+  onShare?: (itemId: string) => void;
+  onUserClick?: (userId: string) => void;
+  onCommentAdded?: (itemId: string) => void;
+  isLikeLoading?: boolean;
+  isCommentLoading?: boolean;
 }
 
 // Base feed card with memoization
@@ -65,46 +79,56 @@ const FeedCard: React.FC<FeedCardProps> = memo(({
   onComment, 
   onShare, 
   onUserClick,
-  currentUserId 
+  onCommentAdded,
+  currentUserId,
+  isLikeLoading = false,
+  isCommentLoading = false
 }) => {
   const { elementRef, hasBeenInViewport } = useInViewport({ 
     rootMargin: '100px',
     threshold: 0.1 
   }) as { elementRef: React.RefObject<HTMLDivElement>; hasBeenInViewport: boolean };
 
-  const [liked, setLiked] = useState<boolean>(item.isLiked || false);
-  const [likeCount, setLikeCount] = useState<number>(item.likesCount || 0);
+  const { showToast } = useToast();
+  const [commentCount, setCommentCount] = useState<number>(item.commentsCount || 0);
 
-  const handleLike = useCallback(async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    // Optimistic update
-    const newLiked = !liked;
-    setLiked(newLiked);
-    setLikeCount(prev => newLiked ? prev + 1 : prev - 1);
+  // Update local state when item props change (for real-time updates)
+  useEffect(() => {
+    setCommentCount(item.commentsCount || 0);
+  }, [item.commentsCount]);
 
-    try {
-      await onLike?.(item.id, newLiked);
-    } catch (error) {
-      // Revert on error
-      setLiked(!newLiked);
-      setLikeCount(prev => newLiked ? prev - 1 : prev + 1);
-      console.error('Error liking post:', error);
+  // Handle like state changes from the LikeButton component
+  const handleLikeChange = useCallback((liked: boolean, count: number) => {
+    // Notify parent component if needed
+    if (onLike) {
+      onLike(item.id, liked);
     }
-  }, [liked, item.id, onLike]);
+  }, [item.id, onLike]);
 
   const handleComment = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault(); // Prevent any default behavior
+    
+    if (isCommentLoading) return; // Respect external loading state
+    
     onComment?.(item.id);
-  }, [item.id, onComment]);
+  }, [item.id, onComment, isCommentLoading]);
+
+  // Handle comment count updates when comments are added
+  const handleCommentCountUpdate = useCallback(() => {
+    setCommentCount(prev => prev + 1);
+    onCommentAdded?.(item.id);
+  }, [item.id, onCommentAdded]);
 
   const handleShare = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault(); // Prevent any default behavior
     onShare?.(item.id);
   }, [item.id, onShare]);
 
   const handleUserClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault(); // Prevent any default behavior
     onUserClick?.(item.userId);
   }, [item.userId, onUserClick]);
 
@@ -120,8 +144,20 @@ const FeedCard: React.FC<FeedCardProps> = memo(({
     );
   }
 
+  // Handle card content clicks (prevent navigation to post detail)
+  const handleCardClick = useCallback((e: React.MouseEvent) => {
+    // Only prevent default if the click is not on an interactive element
+    const target = e.target as HTMLElement;
+    const isInteractiveElement = target.closest('button, a, .user-info, .action-btn, .more-options, .share-btn, .play-overlay');
+    
+    if (!isInteractiveElement) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, []);
+
   return (
-    <div ref={elementRef} className="feed-card">
+    <div ref={elementRef} className="feed-card" onClick={handleCardClick}>
       {/* User Header */}
       <div className="feed-card-header">
         <div className="user-info" onClick={handleUserClick}>
@@ -180,18 +216,27 @@ const FeedCard: React.FC<FeedCardProps> = memo(({
 
       {/* Actions */}
       <div className="feed-card-actions">
-        <button 
-          className={`action-btn ${liked ? 'liked' : ''}`}
-          onClick={handleLike}
-          aria-label={liked ? 'Unlike' : 'Like'}
-        >
-          <Heart size={20} fill={liked ? '#e91e63' : 'none'} />
-          <span>{likeCount}</span>
-        </button>
+        <LikeButton
+          postId={item.id}
+          initialLiked={item.isLiked}
+          initialCount={item.likesCount}
+          size="medium"
+          onLikeChange={handleLikeChange}
+          className="action-btn"
+        />
         
-        <button className="action-btn" onClick={handleComment}>
-          <MessageCircle size={20} />
-          <span>{item.commentsCount || 0}</span>
+        <button 
+          className={`action-btn ${isCommentLoading ? 'loading' : ''}`}
+          onClick={handleComment}
+          disabled={isCommentLoading}
+          aria-label="Comment"
+        >
+          {isCommentLoading ? (
+            <LoadingSpinner size="small" color="primary" />
+          ) : (
+            <MessageCircle size={20} />
+          )}
+          <span>{commentCount}</span>
         </button>
         
         <ShareButton
@@ -212,8 +257,10 @@ const FeedCard: React.FC<FeedCardProps> = memo(({
     prevProps.item.id === nextProps.item.id &&
     prevProps.item.likesCount === nextProps.item.likesCount &&
     prevProps.item.commentsCount === nextProps.item.commentsCount &&
+    prevProps.item.sharesCount === nextProps.item.sharesCount &&
     prevProps.item.isLiked === nextProps.item.isLiked &&
-    prevProps.currentUserId === nextProps.currentUserId
+    prevProps.currentUserId === nextProps.currentUserId &&
+    prevProps.isCommentLoading === nextProps.isCommentLoading
   );
 });
 
@@ -221,7 +268,9 @@ const FeedCard: React.FC<FeedCardProps> = memo(({
 const TalentCard: React.FC<TalentCardProps> = memo(({ talent }) => {
   const [playing, setPlaying] = useState<boolean>(false);
 
-  const handlePlayToggle = useCallback(() => {
+  const handlePlayToggle = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
     setPlaying(prev => !prev);
   }, []);
 
@@ -272,10 +321,25 @@ const TalentCard: React.FC<TalentCardProps> = memo(({ talent }) => {
 });
 
 // Memoized profile card component
-const ProfileCard: React.FC<ProfileCardProps> = memo(({ profile, onFollow, currentUserId }) => {
+const ProfileCard: React.FC<ProfileCardProps> = memo(({ 
+  profile, 
+  onFollow, 
+  currentUserId,
+  item,
+  onLike,
+  onComment,
+  onShare,
+  onUserClick,
+  onCommentAdded,
+  isLikeLoading = false,
+  isCommentLoading = false
+}) => {
   const [isFollowing, setIsFollowing] = useState<boolean>(profile.isFollowing);
 
-  const handleFollow = useCallback(async () => {
+  const handleFollow = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
     const newFollowingState = !isFollowing;
     setIsFollowing(newFollowingState);
 
@@ -287,8 +351,19 @@ const ProfileCard: React.FC<ProfileCardProps> = memo(({ profile, onFollow, curre
     }
   }, [isFollowing, profile.id, onFollow]);
 
+  // Handle card content clicks (prevent navigation to post detail)
+  const handleCardClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const isInteractiveElement = target.closest('button, a, .follow-btn');
+    
+    if (!isInteractiveElement) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, []);
+
   return (
-    <div className="profile-card">
+    <div className="profile-card" onClick={handleCardClick}>
       <div className="profile-header">
         <LazyImage
           {...({

@@ -4,6 +4,7 @@ import OptimizedImage from '../../../components/common/media/OptimizedImage';
 import VideoPlayer from '../../../components/common/media/VideoPlayer';
 import LazyImage from '../../../components/common/ui/LazyImage';
 import LazyLoadImage from '../../../components/common/media/LazyLoadImage';
+import SafeImage from '../../../components/common/SafeImage';
 import ErrorBoundary from '../../../components/common/safety/ErrorBoundary';
 import { SafeCommentsList } from '../../../components/common/safety/SafeComment';
 import { Post as PostType, Like } from '../../../types/models';
@@ -37,6 +38,7 @@ interface PostProps {
   onSetNewComment: (postId: string, text: string) => void;
   onSetEditText: (text: string) => void;
   onNavigateToPost?: (postId: string) => void;
+  onUserClick?: (userId: string) => void;
 }
 
 /**
@@ -67,7 +69,8 @@ const Post: React.FC<PostProps> = ({
   onDeleteComment,
   onSetNewComment,
   onSetEditText,
-  onNavigateToPost
+  onNavigateToPost,
+  onUserClick
 }) => {
   // Handle both string[] and Like[] formats for backward compatibility
   const userLiked = Array.isArray(post.likes) && post.likes.length > 0 && typeof post.likes[0] === 'string' 
@@ -83,11 +86,25 @@ const Post: React.FC<PostProps> = ({
     }
   };
 
+  // Handle user click to navigate to profile
+  const handleUserClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onUserClick && post.userId) {
+      onUserClick(post.userId);
+    }
+  };
+
   return (
     <div className="post" data-testid={`post-${post.id}`}>
       <div className="post-header">
         <div className="post-user-info">
-          <h3>{post.userDisplayName}</h3>
+          <h3
+            className="post-username-clickable"
+            onClick={handleUserClick}
+            style={{ cursor: 'pointer' }}
+          >
+            {post.userDisplayName}
+          </h3>
           <span className="post-time">
             {post.timestamp ? (
               (post.timestamp as any)?.toDate ?
@@ -338,7 +355,13 @@ const Post: React.FC<PostProps> = ({
                 onClick={() => handleNavigateToPost(post.id)}
                 style={{ cursor: 'pointer' }}
               >
-                <strong>{post.userDisplayName}</strong> {post.caption}
+                <strong
+                  onClick={handleUserClick}
+                  style={{ cursor: 'pointer' }}
+                  className="post-username-clickable"
+                >
+                  {post.userDisplayName}
+                </strong> {post.caption}
                 {(post as any).editedAt && (
                   <span className="edited-indicator"> (edited)</span>
                 )}
@@ -379,9 +402,10 @@ const Post: React.FC<PostProps> = ({
                     if (input) (input as HTMLInputElement).focus();
                   }}
                 >
-                  <LazyLoadImage
-                    src={currentUser?.photoURL || 'https://via.placeholder.com/32/2d3748/00ff88?text=👤'}
+                  <SafeImage
+                    src={currentUser?.photoURL || ''}
                     alt="Your avatar"
+                    placeholder="avatar"
                     className="comment-avatar"
                     width={32}
                     height={32}

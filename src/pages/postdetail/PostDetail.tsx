@@ -9,6 +9,7 @@ import ThemeToggle from '../../components/common/ui/ThemeToggle';
 import LanguageSelector from '../../components/common/forms/LanguageSelector';
 import VideoPlayer from '../../components/common/media/VideoPlayer';
 import LazyImage from '../../components/common/ui/LazyImage';
+import SafeImage from '../../components/common/SafeImage';
 import notificationService from '../../services/notificationService';
 import { filterChatMessage, getChatViolationMessage, logChatViolation } from '../../utils/content/chatFilter';
 import FooterNav from '../../components/layout/FooterNav';
@@ -37,8 +38,10 @@ export default function PostDetail(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [isLiking, setIsLiking] = useState<boolean>(false);
   const [isCommenting, setIsCommenting] = useState<boolean>(false);
+  const [isDeletingComment, setIsDeletingComment] = useState<number | null>(null);
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
   const [shareNotification, setShareNotification] = useState<ShareNotification | null>(null);
+  const [engagementError, setEngagementError] = useState<string | null>(null);
   
   // Initialize post interactions hook for sharing functionality
   const {
@@ -90,6 +93,15 @@ export default function PostDetail(): React.JSX.Element {
             return comment;
           });
         }
+
+        // Ensure accurate engagement counts are calculated
+        const likes = postData.likes || [];
+        const comments = postData.comments || [];
+        const shares = postData.shares || [];
+
+        postData.likesCount = likes.length;
+        postData.commentsCount = comments.length;
+        postData.sharesCount = postData.sharesCount || shares.length;
         
         console.log('📱 Post loaded:', postData);
         
@@ -123,40 +135,54 @@ export default function PostDetail(): React.JSX.Element {
       ? (currentLikes as unknown as string[]).includes(currentUser.uid)
       : (currentLikes as Like[]).some(like => like.userId === currentUser.uid);
 
+    // Store original state for error rollback
+    const originalPost = { ...post };
+
     try {
       if (userLiked) {
+        // Optimistic update - remove like
+        const updatedLikes = Array.isArray(currentLikes) && currentLikes.length > 0 && typeof currentLikes[0] === 'string'
+          ? (currentLikes as unknown as string[]).filter(uid => uid !== currentUser.uid)
+          : (currentLikes as Like[]).filter(like => like.userId !== currentUser.uid);
+        
+        setPost(prev => prev ? ({
+          ...prev,
+          likes: updatedLikes as Like[],
+          likesCount: updatedLikes.length
+        }) : null);
+
         // Remove like - handle both string and Like object formats
         if (currentLikes.length > 0 && typeof currentLikes[0] === 'string') {
           // Handle legacy string format
           await updateDoc(postRef, {
-            likes: arrayRemove(currentUser.uid)
+            likes: arrayRemove(currentUser.uid),
+            likesCount: updatedLikes.length
           });
-          setPost(prev => prev ? ({
-            ...prev,
-            likes: (prev.likes as unknown as string[]).filter(uid => uid !== currentUser.uid) as unknown as Like[]
-          }) : null);
         } else {
           // Handle Like object format
           const likeToRemove = (currentLikes as Like[]).find(like => like.userId === currentUser.uid);
           if (likeToRemove) {
             await updateDoc(postRef, {
-              likes: arrayRemove(likeToRemove)
+              likes: arrayRemove(likeToRemove),
+              likesCount: updatedLikes.length
             });
-            setPost(prev => prev ? ({
-              ...prev,
-              likes: (prev.likes as Like[]).filter(like => like.userId !== currentUser.uid)
-            }) : null);
           }
         }
       } else {
-        // Add like as string for backward compatibility
-        await updateDoc(postRef, {
-          likes: arrayUnion(currentUser.uid)
-        });
+        // Optimistic update - add like
+        const newLikes = [...currentLikes, currentUser.uid] as unknown as Like[];
+        
         setPost(prev => prev ? ({
           ...prev,
-          likes: [...(prev.likes || []), currentUser.uid] as unknown as Like[]
+          likes: newLikes,
+          likesCount: newLikes.length
         }) : null);
+
+        // Add like as string for backward compatibility
+        await updateDoc(postRef, {
+          likes: arrayUnion(currentUser.uid),
+          likesCount: newLikes.length
+        });
         
         // Send notification to post owner (only when liking, not unliking)
         if (post.userId && post.userId !== currentUser.uid) {
@@ -177,6 +203,13 @@ export default function PostDetail(): React.JSX.Element {
       }
     } catch (error) {
       console.error('Error updating like:', error);
+      
+      // Rollback optimistic update on error
+      setPost(originalPost);
+      
+      // Show user-friendly error message
+      setEngagementError('Failed to update like. Please try again.');
+      setTimeout(() => setEngagementError(null), 5000);
     } finally {
       setIsLiking(false);
     }
@@ -214,6 +247,9 @@ export default function PostDetail(): React.JSX.Element {
       return;
     }
 
+    // Store original state for error rollback
+    const originalPost = { ...post };
+
     try {
       const commentData: Comment = {
         id: `comment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -225,20 +261,23 @@ export default function PostDetail(): React.JSX.Element {
         likes: []
       };
 
-      // Update post's comment array
-      const postRef = doc(db, 'posts', post.id);
-      await updateDoc(postRef, {
-        comments: arrayUnion(commentData)
-      });
-
-      // Update local state
+      // Optimistic update - add comment to local state immediately
+      const updatedComments = [...(post.comments || []), commentData];
       setPost(prev => prev ? ({
         ...prev,
-        comments: [...(prev.comments || []), commentData]
+        comments: updatedComments,
+        commentsCount: updatedComments.length
       }) : null);
 
-      // Clear input
+      // Clear input immediately for better UX
       setNewComment('');
+
+      // Update post's comment array in database
+      const postRef = doc(db, 'posts', post.id);
+      await updateDoc(postRef, {
+        comments: arrayUnion(commentData),
+        commentsCount: updatedComments.length
+      });
 
       // Send notification to post owner (only if commenting on someone else's post)
       if (post.userId && post.userId !== currentUser.uid) {
@@ -260,7 +299,14 @@ export default function PostDetail(): React.JSX.Element {
 
     } catch (error) {
       console.error('Error adding comment:', error);
-      alert('Failed to add comment. Please try again.');
+      
+      // Rollback optimistic update on error
+      setPost(originalPost);
+      setNewComment(commentText); // Restore the comment text
+      
+      // Show user-friendly error message
+      setEngagementError('Failed to add comment. Please try again.');
+      setTimeout(() => setEngagementError(null), 5000);
     } finally {
       setIsCommenting(false);
     }
@@ -339,32 +385,51 @@ export default function PostDetail(): React.JSX.Element {
   }, []);
 
   const handleDeleteComment = async (commentIndex: number): Promise<void> => {
-    if (!currentUser || !post) return;
+    if (!currentUser || !post || isDeletingComment === commentIndex) return;
+
+    const commentToDelete = post.comments?.[commentIndex];
+    
+    if (!commentToDelete) return;
+
+    // Only allow users to delete their own comments
+    if (commentToDelete.userId !== currentUser.uid) {
+      setEngagementError('You can only delete your own comments');
+      setTimeout(() => setEngagementError(null), 3000);
+      return;
+    }
+
+    setIsDeletingComment(commentIndex);
+    
+    // Store original state for error rollback
+    const originalPost = { ...post };
 
     try {
-      const commentToDelete = post.comments?.[commentIndex];
-      
-      if (!commentToDelete) return;
-
-      // Only allow users to delete their own comments
-      if (commentToDelete.userId !== currentUser.uid) {
-        alert('You can only delete your own comments');
-        return;
-      }
-
-      const postRef = doc(db, 'posts', post.id);
-      await updateDoc(postRef, {
-        comments: arrayRemove(commentToDelete)
-      });
-
-      // Update local state
+      // Optimistic update - remove comment from local state immediately
+      const updatedComments = post.comments?.filter((_, index) => index !== commentIndex) || [];
       setPost(prev => prev ? ({
         ...prev,
-        comments: prev.comments?.filter((_, index) => index !== commentIndex) || []
+        comments: updatedComments,
+        commentsCount: updatedComments.length
       }) : null);
+
+      // Update database
+      const postRef = doc(db, 'posts', post.id);
+      await updateDoc(postRef, {
+        comments: arrayRemove(commentToDelete),
+        commentsCount: updatedComments.length
+      });
 
     } catch (error) {
       console.error('Error deleting comment:', error);
+      
+      // Rollback optimistic update on error
+      setPost(originalPost);
+      
+      // Show user-friendly error message
+      setEngagementError('Failed to delete comment. Please try again.');
+      setTimeout(() => setEngagementError(null), 5000);
+    } finally {
+      setIsDeletingComment(null);
     }
   };
 
@@ -434,6 +499,11 @@ export default function PostDetail(): React.JSX.Element {
     ? (effectiveLikes as unknown as string[]).includes(currentUser?.uid || '')
     : (effectiveLikes as Like[]).some(like => like.userId === (currentUser?.uid || ''));
 
+  // Calculate accurate engagement counts
+  const likesCount = effectiveLikes.length;
+  const commentsCount = post.comments?.length || 0;
+  const sharesCount = post.sharesCount || post.shares?.length || 0;
+
   const formatTimestamp = (timestamp: any): string => {
     if (!timestamp) return 'now';
     
@@ -474,6 +544,16 @@ export default function PostDetail(): React.JSX.Element {
               <AlertCircle size={20} />
             )}
             <span>{shareNotification.message}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Engagement Error Notification */}
+      {engagementError && (
+        <div className="share-notification error">
+          <div className="notification-content">
+            <AlertCircle size={20} />
+            <span>{engagementError}</span>
           </div>
         </div>
       )}
@@ -526,6 +606,7 @@ export default function PostDetail(): React.JSX.Element {
                 onClick={handleLike}
                 className={userLiked ? 'liked' : ''}
                 disabled={!currentUser || isLiking}
+                title={currentUser ? (userLiked ? 'Unlike this post' : 'Like this post') : 'Sign in to like'}
               >
                 <Heart 
                   size={20} 
@@ -533,12 +614,15 @@ export default function PostDetail(): React.JSX.Element {
                   color={userLiked ? '#e74c3c' : 'currentColor'}
                   className={userLiked ? 'heart-liked' : ''}
                 />
-                <span>{effectiveLikes.length}</span>
+                <span>{likesCount}</span>
                 {isLiking && <span style={{marginLeft: '5px'}}>...</span>}
               </button>
-              <button className="active">
+              <button 
+                className="active"
+                title="View comments"
+              >
                 <MessageCircle size={20} />
-                <span>{post.comments?.length || 0}</span>
+                <span>{commentsCount}</span>
               </button>
               <button 
                 onClick={handleShare}
@@ -550,7 +634,7 @@ export default function PostDetail(): React.JSX.Element {
                   size={20} 
                   className={getShareState(post.id).loading ? 'spinning' : ''}
                 />
-                <span>{post.sharesCount || 0}</span>
+                <span>{sharesCount}</span>
                 {getShareState(post.id).loading && <span style={{marginLeft: '5px'}}>...</span>}
               </button>
               
@@ -610,9 +694,10 @@ export default function PostDetail(): React.JSX.Element {
                   onSubmit={handleCommentSubmit}
                 >
                   <div className="comment-input-container">
-                    <LazyImage 
-                      src={currentUser?.photoURL || 'https://via.placeholder.com/32/2d3748/00ff88?text=👤'} 
+                    <SafeImage 
+                      src={currentUser?.photoURL || ''} 
                       alt="Your avatar"
+                      placeholder="avatar"
                       className="comment-avatar"
                       width={32}
                       height={32}

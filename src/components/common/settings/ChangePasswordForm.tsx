@@ -1,6 +1,6 @@
 import React, { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
-import { Check, X, Loader } from 'lucide-react';
+import { Check, X, Loader, Info } from 'lucide-react';
 import './ChangePasswordForm.css';
 
 interface ChangePasswordFormProps {
@@ -20,7 +20,7 @@ interface Validation {
 }
 
 const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose, onSuccess }) => {
-  const { changePassword } = useAuth();
+  const { changePassword, currentUser } = useAuth();
   const [formData, setFormData] = useState<FormData>({
     currentPassword: '',
     newPassword: '',
@@ -29,6 +29,7 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose, onSucc
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
+  const [isSocialUser, setIsSocialUser] = useState<boolean>(false);
 
   useEffect(() => {
     if (success) {
@@ -39,6 +40,26 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose, onSucc
       return () => clearTimeout(timer);
     }
   }, [success, onSuccess, onClose]);
+
+  // Check if user signed up with social media
+  useEffect(() => {
+    if (currentUser) {
+      // Check if user has social providers (Google, Apple, etc.)
+      const hasEmailPassword = currentUser.providerData.some(
+        provider => provider.providerId === 'password'
+      );
+      const hasSocialProvider = currentUser.providerData.some(
+        provider => provider.providerId === 'google.com' || 
+                   provider.providerId === 'apple.com' ||
+                   provider.providerId === 'facebook.com' ||
+                   provider.providerId === 'twitter.com' ||
+                   provider.providerId === 'github.com'
+      );
+      
+      // User is considered a social user if they have social providers but no email/password
+      setIsSocialUser(hasSocialProvider && !hasEmailPassword);
+    }
+  }, [currentUser]);
 
   const validation: Validation = {
     newPasswordLength: formData.newPassword.length >= 6,
@@ -60,7 +81,8 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose, onSucc
     e.preventDefault();
     setError(null);
 
-    if (!formData.currentPassword) {
+    // For social users, they don't need to enter current password
+    if (!isSocialUser && !formData.currentPassword) {
       setError('Please enter your current password');
       return;
     }
@@ -78,10 +100,18 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose, onSucc
     setLoading(true);
 
     try {
-      const result = await changePassword(
-        formData.currentPassword,
-        formData.newPassword
-      );
+      let result;
+      
+      if (isSocialUser) {
+        // For social users, use a different method to set password
+        result = await changePassword('', formData.newPassword, true); // Pass true for social user
+      } else {
+        // For email/password users, use normal flow
+        result = await changePassword(
+          formData.currentPassword,
+          formData.newPassword
+        );
+      }
 
       if (result.success) {
         setSuccess(true);
@@ -103,7 +133,7 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose, onSucc
   return (
     <div className="change-password-form" aria-label="Change password form">
       <div className="change-password-header">
-        <h4>Change Password</h4>
+        <h4>{isSocialUser ? 'Set Password' : 'Change Password'}</h4>
         <button
           type="button"
           className="close-button"
@@ -113,6 +143,15 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose, onSucc
           <X size={20} />
         </button>
       </div>
+
+      {isSocialUser && (
+        <div className="info-message" role="alert">
+          <Info size={20} />
+          <span>
+            You signed up with a social account. Set a password to enable email/password login as an alternative.
+          </span>
+        </div>
+      )}
 
       {success && (
         <div className="success-message" role="alert">
@@ -129,22 +168,24 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose, onSucc
       )}
 
       <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label htmlFor="currentPassword">Current Password</label>
-          <input
-            type="password"
-            id="currentPassword"
-            name="currentPassword"
-            value={formData.currentPassword}
-            onChange={handleChange}
-            disabled={loading || success}
-            required
-            aria-required="true"
-          />
-        </div>
+        {!isSocialUser && (
+          <div className="form-group">
+            <label htmlFor="currentPassword">Current Password</label>
+            <input
+              type="password"
+              id="currentPassword"
+              name="currentPassword"
+              value={formData.currentPassword}
+              onChange={handleChange}
+              disabled={loading || success}
+              required
+              aria-required="true"
+            />
+          </div>
+        )}
 
         <div className="form-group">
-          <label htmlFor="newPassword">New Password</label>
+          <label htmlFor="newPassword">{isSocialUser ? 'Password' : 'New Password'}</label>
           <input
             type="password"
             id="newPassword"
@@ -180,7 +221,7 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose, onSucc
         </div>
 
         <div className="form-group">
-          <label htmlFor="confirmPassword">Confirm New Password</label>
+          <label htmlFor="confirmPassword">{isSocialUser ? 'Confirm Password' : 'Confirm New Password'}</label>
           <input
             type="password"
             id="confirmPassword"
@@ -228,7 +269,7 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose, onSucc
             disabled={
               loading ||
               success ||
-              !formData.currentPassword ||
+              (!isSocialUser && !formData.currentPassword) ||
               !validation.newPasswordLength ||
               !validation.passwordsMatch
             }
@@ -239,7 +280,7 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose, onSucc
                 <span>Changing...</span>
               </>
             ) : (
-              'Change Password'
+              isSocialUser ? 'Set Password' : 'Change Password'
             )}
           </button>
         </div>

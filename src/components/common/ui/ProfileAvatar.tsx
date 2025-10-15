@@ -1,5 +1,5 @@
 import React, { memo, useMemo, CSSProperties, SyntheticEvent } from 'react';
-import { getPlaceholderImage } from '../../../utils/placeholderImages';
+import { getPlaceholderImage } from '../../../utils/media/placeholderImages';
 
 interface ProfileAvatarProps {
   src?: string | null;

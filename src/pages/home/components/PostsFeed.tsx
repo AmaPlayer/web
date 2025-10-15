@@ -27,6 +27,7 @@ interface PostsFeedProps {
   onDeletePost?: (postId: string, post: PostType) => void;
   onCommentSubmit?: (postId: string, commentText: string) => void;
   onDeleteComment?: (postId: string, index: number) => void;
+  onUserClick?: (userId: string) => void;
 }
 
 /**
@@ -64,7 +65,8 @@ const PostsFeed: React.FC<PostsFeedProps> = memo(({
   onSharePost,
   onDeletePost,
   onCommentSubmit,
-  onDeleteComment
+  onDeleteComment,
+  onUserClick
 }) => {
   // Use PostInteractionsStore for UI state
   const {
@@ -263,6 +265,7 @@ const PostsFeed: React.FC<PostsFeedProps> = memo(({
           onDeleteComment={onDeleteComment!}
           onSetNewComment={setCommentText}
           onSetEditText={setEditText}
+          onUserClick={onUserClick}
         />
       ))}
 

@@ -5,6 +5,7 @@ import { StoriesService } from '../../services/api/storiesService';
 import { Plus, Play } from 'lucide-react';
 import StoryViewer from './StoryViewer';
 import StoryUpload from './StoryUpload';
+import SafeImage from '../../components/common/SafeImage';
 import { Story } from '../../types/models/story';
 import './Stories.css';
 
@@ -173,9 +174,11 @@ export default function StoriesContainer() {
             onClick={() => setShowUpload(true)}
           >
             <div className="story-avatar add-story-avatar">
-              <img 
-                src={currentUser?.photoURL || 'https://via.placeholder.com/60'} 
-                alt="Your avatar" 
+              <SafeImage 
+                src={currentUser?.photoURL || ''} 
+                alt="Your avatar"
+                placeholder="avatar"
+                className="story-avatar-image"
               />
               <div className="add-story-icon">
                 <Plus size={20} />
@@ -193,14 +196,15 @@ export default function StoriesContainer() {
             onClick={() => handleUserStoriesClick(userGroup)}
           >
             <div className={`story-avatar ${userGroup.hasUnviewedStories ? 'unviewed' : 'viewed'}`}>
-              <img 
+              <SafeImage 
                 src={
                   userGroup.userId === currentUser?.uid 
-                    ? (currentUser?.photoURL || 'https://via.placeholder.com/60')
-                    : (userGroup.userPhotoURL || 'https://via.placeholder.com/60')
+                    ? (currentUser?.photoURL || '')
+                    : (userGroup.userPhotoURL || '')
                 } 
                 alt={userGroup.userDisplayName}
-                onLoad={() => {}}
+                placeholder="avatar"
+                className="story-avatar-image"
               />
               {userGroup.stories.some(s => s.mediaType === 'video') && (
                 <div className="story-media-indicator">

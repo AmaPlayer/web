@@ -3,7 +3,7 @@
  * Provides user-friendly error messages and retry mechanisms for share failures
  */
 
-import errorHandler from '../errorHandler';
+import errorHandler from '../error/errorHandler';
 import { ERROR_MESSAGES } from '../../constants/sharing';
 
 // Share error context interface

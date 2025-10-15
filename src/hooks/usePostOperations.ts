@@ -21,6 +21,8 @@ import { db, storage } from '../lib/firebase';
 import { Post, User } from '../types/models';
 import { usePostsStore } from '../store/appStore';
 import { usePerformanceMonitor } from './usePerformanceMonitor';
+import postsService from '../services/api/postsService';
+import { sanitizeEngagementData } from '../utils/validation/engagementValidation';
 
 const notificationService = {
   sendLikeNotification: async (...args: any[]) => { }
@@ -86,7 +88,7 @@ export const usePostOperations = (): UsePostOperationsReturn => {
   } = usePostsStore();
 
   /**
-   * Load posts with pagination support
+   * Load posts with pagination support using enhanced service
    * @param {boolean} loadMore - Whether to load more posts or refresh
    */
   const loadPosts = useCallback(async (loadMore: boolean = false): Promise<void> => {
@@ -97,73 +99,16 @@ export const usePostOperations = (): UsePostOperationsReturn => {
 
     try {
       const apiCall = async () => {
-        let q;
-        if (loadMore && lastDoc) {
-          q = query(
-            collection(db, 'posts'),
-            orderBy('timestamp', 'desc'),
-            startAfter(lastDoc),
-            limit(POSTS_PER_PAGE)
-          );
-        } else {
-          q = query(
-            collection(db, 'posts'),
-            orderBy('timestamp', 'desc'),
-            limit(POSTS_PER_PAGE)
-          );
-        }
-
-        return await getDocs(q);
+        return await postsService.getPostsWithEngagement({
+          limit: POSTS_PER_PAGE,
+          startAfter: loadMore ? lastDoc : undefined,
+          includeEngagementMetrics: true,
+          currentUserId: undefined // Will be set by the calling component if available
+        });
       };
 
-      const querySnapshot = await measureApiCall(apiCall, 'loadPosts');
-      const postsData: Post[] = [];
-
-      querySnapshot.forEach((doc) => {
-        const docData = doc.data() as Record<string, any>;
-        if (!docData) return;
-        const postData = { id: doc.id, ...docData } as Post;
-
-        // Clean up comment objects to prevent React error #31
-        if (postData.comments && Array.isArray(postData.comments)) {
-          postData.comments = postData.comments.map(comment => {
-            if (typeof comment === 'object' && comment !== null) {
-              const { postId, ...cleanComment } = comment as any;
-              return {
-                id: cleanComment.id || '',
-                text: String(cleanComment.text || ''),
-                userId: String(cleanComment.userId || ''),
-                userDisplayName: String(cleanComment.userDisplayName || 'Unknown User'),
-                userPhotoURL: String(cleanComment.userPhotoURL || ''),
-                timestamp: cleanComment.timestamp || null,
-                likes: cleanComment.likes || [],
-                likesCount: cleanComment.likesCount || 0
-              };
-            }
-            return comment;
-          });
-        }
-
-        // Ensure share fields exist with defaults for backward compatibility
-        if (!postData.shares) {
-          postData.shares = [];
-        }
-        if (typeof postData.shareCount !== 'number') {
-          postData.shareCount = postData.shares?.length || 0;
-        }
-        if (!postData.shareMetadata) {
-          postData.shareMetadata = {
-            lastSharedAt: null,
-            shareBreakdown: {
-              friends: 0,
-              feeds: 0,
-              groups: 0
-            }
-          };
-        }
-
-        postsData.push(postData);
-      });
+      const result = await measureApiCall(apiCall, 'loadPosts');
+      const postsData = result.posts.map(post => sanitizeEngagementData(post));
 
       if (loadMore) {
         addPosts(postsData);
@@ -173,10 +118,9 @@ export const usePostOperations = (): UsePostOperationsReturn => {
       }
 
       // Update pagination state
-      if (querySnapshot.docs.length > 0) {
-        const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
-        setLastDoc(lastVisible);
-        setHasMore(querySnapshot.docs.length === POSTS_PER_PAGE);
+      if (result.posts.length > 0) {
+        setLastDoc(result.lastDocument);
+        setHasMore(result.hasMore);
       } else {
         // No more posts available
         setHasMore(false);

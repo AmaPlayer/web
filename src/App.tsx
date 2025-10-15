@@ -10,9 +10,9 @@ import CacheDetector from './components/CacheDetector';
 import ErrorBoundary from './components/common/safety/ErrorBoundary';
 import ChunkErrorBoundary from './components/ChunkErrorBoundary';
 
-import { registerSW } from './utils/serviceWorkerRegistration';
+import { registerSW } from './utils/service/serviceWorkerRegistration';
 import { queryClient } from './lib/queryClient';
-import errorHandler from './utils/errorHandler';
+import errorHandler from './utils/error/errorHandler';
 import './utils/logging/LoggingManager'; // Initialize centralized logging
 import './styles/global.css';
 import './styles/themes.css';
@@ -20,7 +20,9 @@ import './App.css';
 import './performance.css';
 
 // Lazy load components for better performance
-const LandingPage = React.lazy(() => import('./pages/landingpage/LandingPage'));
+const WelcomePage = React.lazy(() => import('./login_flow/components/WelcomePage'));
+const RoleSelectionPage = React.lazy(() => import('./login_flow/components/RoleSelectionPage'));
+const AboutPage = React.lazy(() => import('./login_flow/components/AboutPage'));
 const Login = React.lazy(() => import('./features/auth/Login'));
 const Signup = React.lazy(() => import('./features/auth/Signup'));
 const Home = React.lazy(() => import('./pages/home/Home'));
@@ -33,6 +35,15 @@ const PostDetail = React.lazy(() => import('./pages/postdetail/PostDetail'));
 const StoryDetail = React.lazy(() => import('./features/stories/StoryDetail'));
 const StorySharePage = React.lazy(() => import('./features/stories/StorySharePage'));
 const VerificationPage = React.lazy(() => import('./pages/verification/VerificationPage'));
+const Settings = React.lazy(() => import('./features/settings/pages/Settings'));
+
+// Athlete Onboarding Components
+const SportSelectionPage = React.lazy(() => import('./features/athlete-onboarding/components/SportSelectionPage'));
+const PositionSelectionPage = React.lazy(() => import('./features/athlete-onboarding/components/PositionSelectionPage'));
+const MultiSportPositionFlow = React.lazy(() => import('./features/athlete-onboarding/components/MultiSportPositionFlow'));
+const SubcategorySelectionPage = React.lazy(() => import('./features/athlete-onboarding/components/SubcategorySelectionPage'));
+const SpecializationPage = React.lazy(() => import('./features/athlete-onboarding/components/SpecializationPage'));
+const AthleteAboutPage = React.lazy(() => import('./features/athlete-onboarding/components/AthleteAboutPage'));
 
 // Optimized loading component for Suspense fallback
 const LoadingSpinner: React.FC = () => (
@@ -111,11 +122,21 @@ function AppContent(): React.JSX.Element {
         <Suspense fallback={<LoadingSpinner />}>
           <ErrorBoundary name="App-Routes" userFriendlyMessage="There was an issue loading this page. Please try again.">
             <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/app-landing" element={<LandingPage />} />
-              <Route path="/landing" element={<LandingPage />} />
+              {/* Login Flow Routes */}
+              <Route path="/" element={<WelcomePage />} />
+              <Route path="/role-selection" element={<RoleSelectionPage />} />
+              <Route path="/about/:role" element={<AboutPage />} />
+              <Route path="/login/:role" element={<Login />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              
+              {/* Athlete Onboarding Routes */}
+              <Route path="/athlete-onboarding/sport" element={<SportSelectionPage />} />
+              <Route path="/athlete-onboarding/position" element={<PositionSelectionPage />} />
+              <Route path="/athlete-onboarding/multi-position" element={<MultiSportPositionFlow />} />
+              <Route path="/athlete-onboarding/subcategory" element={<SubcategorySelectionPage />} />
+              <Route path="/athlete-onboarding/specialization" element={<SpecializationPage />} />
+              <Route path="/about/athlete" element={<AthleteAboutPage />} />
               <Route path="/home" element={
                 <PrivateRoute>
                   <Home />
@@ -149,6 +170,11 @@ function AppContent(): React.JSX.Element {
               <Route path="/profile/:userId" element={
                 <PrivateRoute>
                   <Profile />
+                </PrivateRoute>
+              } />
+              <Route path="/settings" element={
+                <PrivateRoute>
+                  <Settings />
                 </PrivateRoute>
               } />
               <Route path="/post/:postId" element={

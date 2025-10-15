@@ -118,7 +118,7 @@ export const handlePostCreation = async (
   refreshPosts: () => Promise<void>,
   trackBehavior: ((event: string, data: any) => void) | null,
   trackAnalytics: (event: string, data: any) => void,
-  notifyContent: ((type: string, data: any) => void) | null,
+  notifyContent: ((type: string, data: any) => void) | null | undefined,
   currentUser: User | null
 ): Promise<void> => {
   if (!currentUser) return;
@@ -126,7 +126,7 @@ export const handlePostCreation = async (
   try {
     await refreshPosts();
     
-    if (trackBehavior) {
+    if (trackBehavior && typeof trackBehavior === 'function') {
       trackBehavior('post_create', {
         userId: currentUser.uid,
         contentId: 'new_post',
@@ -135,12 +135,14 @@ export const handlePostCreation = async (
       });
     }
 
-    trackAnalytics('POST_CREATED', {
-      userId: currentUser.uid,
-      timestamp: Date.now()
-    });
+    if (trackAnalytics && typeof trackAnalytics === 'function') {
+      trackAnalytics('POST_CREATED', {
+        userId: currentUser.uid,
+        timestamp: Date.now()
+      });
+    }
 
-    if (notifyContent) {
+    if (notifyContent && typeof notifyContent === 'function') {
       notifyContent('ready', { contentCount: 1 });
     }
   } catch (error) {

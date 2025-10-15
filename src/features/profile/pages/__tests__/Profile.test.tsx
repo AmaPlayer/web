@@ -9,71 +9,32 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
 import Profile from '../Profile';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { describe } from 'node:test';
 
-// Wrapper component to provide Router context
-const ProfileWithRouter = () => (
-  <BrowserRouter>
-    <Profile />
-  </BrowserRouter>
-);
+// Mock react-router-dom
+jest.mock('react-router-dom', () => ({
+  useNavigate: () => jest.fn(),
+}));
+
+// Mock the FooterNav component
+jest.mock('../../../../components/layout/FooterNav', () => {
+  return function MockFooterNav() {
+    return <div data-testid="footer-nav">Footer Nav</div>;
+  };
+});
+
+// Wrapper component
+const ProfileWithMocks = () => <Profile />;
 
 describe('Profile Component', () => {
   describe('Component Rendering', () => {
     it('should render without errors', () => {
-      expect(() => render(<ProfileWithRouter />)).not.toThrow();
+      expect(() => render(<ProfileWithMocks />)).not.toThrow();
     });
 
     it('should render the main profile page container', () => {
-      render(<ProfileWithRouter />);
+      render(<ProfileWithMocks />);
       const mainElement = screen.getByRole('main');
       expect(mainElement).toBeInTheDocument();
       expect(mainElement).toHaveClass('profile-page');
@@ -82,7 +43,7 @@ describe('Profile Component', () => {
 
   describe('Navigation Section', () => {
     beforeEach(() => {
-      render(<ProfileWithRouter />);
+      render(<ProfileWithMocks />);
     });
 
     it('should display the profile navigation', () => {
@@ -111,7 +72,7 @@ describe('Profile Component', () => {
 
   describe('Profile Header Section', () => {
     beforeEach(() => {
-      render(<ProfileWithRouter />);
+      render(<ProfileWithMocks />);
     });
 
     it('should display the profile header', () => {
@@ -158,7 +119,7 @@ describe('Profile Component', () => {
 
   describe('Personal Details Section', () => {
     beforeEach(() => {
-      render(<ProfileWithRouter />);
+      render(<ProfileWithMocks />);
     });
 
     it('should display the personal details section', () => {
@@ -214,7 +175,7 @@ describe('Profile Component', () => {
 
   describe('Accessibility Features', () => {
     beforeEach(() => {
-      render(<ProfileWithRouter />);
+      render(<ProfileWithMocks />);
     });
 
     it('should use semantic HTML elements', () => {
@@ -260,7 +221,7 @@ describe('Profile Component', () => {
 
   describe('CSS Classes and Structure', () => {
     beforeEach(() => {
-      render(<ProfileWithRouter />);
+      render(<ProfileWithMocks />);
     });
 
     it('should apply correct CSS classes to main sections', () => {
@@ -293,7 +254,7 @@ describe('Profile Component', () => {
 
   describe('Responsive Design Elements', () => {
     beforeEach(() => {
-      render(<ProfileWithRouter />);
+      render(<ProfileWithMocks />);
     });
 
     it('should have responsive container structure', () => {
@@ -335,7 +296,7 @@ describe('Profile Component', () => {
 
   describe('Content Verification', () => {
     beforeEach(() => {
-      render(<ProfileWithRouter />);
+      render(<ProfileWithMocks />);
     });
 
     it('should display correct static content', () => {

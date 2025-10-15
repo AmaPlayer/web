@@ -14,6 +14,8 @@ import { ReactNode } from 'react';
 export interface PasswordChangeResult {
   success: boolean;
   error?: string;
+  requiresReauth?: boolean;
+  suggestedAction?: string;
 }
 
 /**
@@ -38,7 +40,7 @@ export interface AuthContextValue {
   signup: (email: string, password: string, displayName: string) => Promise<void>;
   
   /** Log in an existing user with email and password */
-  login: (email: string, password: string) => Promise<UserCredential>;
+  login: (email: string, password: string, keepLoggedIn?: boolean) => Promise<UserCredential>;
   
   /** Log in as a guest (anonymous user) */
   guestLogin: () => Promise<UserCredential>;
@@ -59,7 +61,16 @@ export interface AuthContextValue {
   refreshAuth: () => void;
   
   /** Change the current user's password */
-  changePassword: (currentPassword: string, newPassword: string) => Promise<PasswordChangeResult>;
+  changePassword: (currentPassword: string, newPassword: string, isSocialUser?: boolean) => Promise<PasswordChangeResult>;
+  
+  /** Get user-friendly error message for authentication errors */
+  getAuthErrorMessage: (error: unknown) => string;
+  
+  /** Validate current authentication state */
+  validateAuthState: () => Promise<boolean>;
+  
+  /** Refresh authentication token */
+  refreshAuthToken: () => Promise<void>;
 }
 
 /**

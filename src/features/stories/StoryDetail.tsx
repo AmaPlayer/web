@@ -21,6 +21,7 @@ import { Heart, MessageCircle, ArrowLeft, Share, Send, Download, User } from 'lu
 import ThemeToggle from '../../components/common/ui/ThemeToggle';
 import LanguageSelector from '../../components/common/forms/LanguageSelector';
 import LazyImage from '../../components/common/ui/LazyImage';
+import SafeImage from '../../components/common/SafeImage';
 import notificationService from '../../services/notificationService';
 import { filterChatMessage, getChatViolationMessage, logChatViolation } from '../../utils/content/chatFilter';
 import FooterNav from '../../components/layout/FooterNav';
@@ -563,9 +564,10 @@ export default function StoryDetail() {
                   onSubmit={handleCommentSubmit}
                 >
                   <div className="comment-input-container">
-                    <LazyImage 
-                      src={currentUser?.photoURL || 'https://via.placeholder.com/32/2d3748/00ff88?text=👤'} 
+                    <SafeImage 
+                      src={currentUser?.photoURL || ''} 
                       alt="Your avatar"
+                      placeholder="avatar"
                       className="comment-avatar"
                       width={32}
                       height={32}

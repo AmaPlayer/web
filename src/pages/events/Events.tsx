@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Calendar, Trophy, MapPin, Clock, Users, ExternalLink, Star, Medal, Target } from 'lucide-react';
+import NavigationBar from '../../components/layout/NavigationBar';
 import FooterNav from '../../components/layout/FooterNav';
-import ThemeToggle from '../../components/common/ui/ThemeToggle';
-import LanguageSelector from '../../components/common/forms/LanguageSelector';
 import eventsService from '../../services/api/eventsService';
 import { Event } from '../../types/models/event';
 import './Events.css';
@@ -23,7 +22,7 @@ interface NewsItem {
 }
 
 export default function Events() {
-  const { isGuest, logout } = useAuth();
+  const { currentUser, isGuest } = useAuth();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
   const [loading, setLoading] = useState<boolean>(true);
@@ -120,17 +119,8 @@ export default function Events() {
   };
 
   const handleTitleClick = (): void => {
-    if (window.location.pathname !== '/') {
-      window.location.href = '/';
-    }
-  };
-
-  const handleLogout = async (): Promise<void> => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    loadEvents();
   };
 
   const getEventsByTab = (): Event[] => {
@@ -174,11 +164,12 @@ export default function Events() {
   if (loading) {
     return (
       <div className="events">
-        <nav className="nav-bar">
-          <div className="nav-content">
-            <h1 className="app-title">Events</h1>
-          </div>
-        </nav>
+        <NavigationBar
+          currentUser={currentUser}
+          isGuest={isGuest()}
+          onTitleClick={handleTitleClick}
+          title="Events"
+        />
         <div className="main-content">
           <div className="loading-container">
             <div className="loading-spinner"></div>
@@ -192,17 +183,12 @@ export default function Events() {
 
   return (
     <div className="events">
-      <nav className="nav-bar">
-        <div className="nav-content">
-          <h1 className="app-title" onClick={handleTitleClick}>AmaPlayer</h1>
-          <div className="nav-links">
-            <LanguageSelector />
-            <ThemeToggle />
-            {isGuest() && <span className="guest-indicator">Guest Mode</span>}
-            <button onClick={handleLogout}>{isGuest() ? 'Sign In' : 'Logout'}</button>
-          </div>
-        </div>
-      </nav>
+      <NavigationBar
+        currentUser={currentUser}
+        isGuest={isGuest()}
+        onTitleClick={handleTitleClick}
+        title="Events"
+      />
 
       <div className="main-content events-content">
         {/* Page Header */}

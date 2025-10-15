@@ -73,8 +73,8 @@ const ProfileDetailModal = memo(({ userId, onClose }: ProfileDetailModalProps) =
       uid: userUid,
       displayName: `Athlete ${userUid.slice(-3)}`,
       email: `user${userUid.slice(-3)}@example.com`,
-      photoURL: `https://picsum.photos/200/200?random=${userUid}`,
-      coverPhotoURL: `https://picsum.photos/800/300?random=${userUid}cover`,
+      photoURL: `/assets/placeholders/default-avatar.svg`,
+      coverPhotoURL: `/assets/placeholders/default-post.svg`,
       bio: 'Professional athlete passionate about sports and fitness. Sharing my journey to inspire others.',
       location: ['Mumbai, India', 'Delhi, India', 'Bangalore, India', 'Chennai, India'][Math.floor(Math.random() * 4)],
       joinDate: new Date('2022-01-15'),
@@ -105,8 +105,8 @@ const ProfileDetailModal = memo(({ userId, onClose }: ProfileDetailModalProps) =
     return Array.from({ length: 12 }, (_, index) => ({
       id: `post-${userUid}-${index}`,
       type: (['image', 'video'][Math.floor(Math.random() * 2)] as 'image' | 'video'),
-      mediaUrl: `https://picsum.photos/400/400?random=${userUid}${index}`,
-      thumbnailUrl: `https://picsum.photos/400/400?random=${userUid}${index}thumb`,
+      mediaUrl: `/assets/placeholders/default-post.svg`,
+      thumbnailUrl: `/assets/placeholders/default-post.svg`,
       caption: [
         'Training session complete! 💪',
         'Another day, another victory! 🏆',
