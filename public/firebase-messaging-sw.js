@@ -6,13 +6,13 @@ importScripts('https://www.gstatic.com/firebasejs/11.10.0/firebase-messaging-com
 
 // Initialize Firebase in the service worker
 const firebaseConfig = {
-  apiKey: ,
-  authDomain: "my-react-firebase-app-69fcd.firebaseapp.com",
-  projectId: "my-react-firebase-app-69fcd",
-  storageBucket: "my-react-firebase-app-69fcd.firebasestorage.app",
-  messagingSenderId: "333629247601",
-  appId: "1:333629247601:web:c7d83b6270eb66083f8bd0",
-  measurementId: "G-DYEQEH86X7"
+  apiKey: "AIzaSyBAtDdjjEXyxJ0fnXZ8w8UFPsjHq-pL1Rg",
+  authDomain: "amaplay007.firebaseapp.com",
+  projectId: "amaplay007",
+  storageBucket: "amaplay007.firebasestorage.app",
+  messagingSenderId: "750642822137",
+  appId: "1:750642822137:web:0b0128bfa8845b850fdb28",
+  measurementId: "G-PW78YM0R5K"
 };
 
 firebase.initializeApp(firebaseConfig);

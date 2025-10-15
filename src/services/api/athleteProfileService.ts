@@ -32,7 +32,7 @@ class AthleteProfileService {
    */
   async createAthleteProfile(data: CreateAthleteProfileData): Promise<AthleteProfile> {
     const { userId, sports, position, subcategory, specializations } = data;
-    
+
     // Validate required data
     if (!sports || sports.length === 0 || !position || !subcategory) {
       throw new Error('Sports, position, and subcategory are required for athlete profile creation');
@@ -49,14 +49,55 @@ class AthleteProfileService {
 
     // Use retry mechanism for Firebase operation
     return await retryFirebaseOperation(async () => {
-      // Update user document with athlete profile data
+      // Extract denormalized fields for efficient querying
+      const sportIds = sports.map(sport => sport.id);
+      const sportDetails = sports.map(sport => ({
+        id: sport.id,
+        name: sport.name,
+        icon: sport.icon
+      }));
+
+      // Extract event types from specializations and subcategory
+      const eventTypes: string[] = [];
+      if (subcategory && subcategory.id) {
+        eventTypes.push(subcategory.id);
+      }
+      Object.values(specializations).forEach(value => {
+        if (value && !eventTypes.includes(value)) {
+          eventTypes.push(value);
+        }
+      });
+
+      const specializationValues = Object.values(specializations).filter(v => v);
+
+      // Update user document with both nested profile and denormalized fields
       const userRef = doc(db, COLLECTIONS.USERS, userId);
       await updateDoc(userRef, {
+        // Nested athlete profile (kept for compatibility)
         athleteProfile,
+
+        // Denormalized fields for efficient querying
+        role: 'athlete',
+        sports: sportIds,
+        sportDetails: sportDetails,
+        eventTypes: eventTypes,
+        position: position.id,
+        positionName: position.name,
+        subcategory: subcategory?.id || null,
+        subcategoryName: subcategory?.name || null,
+        specializations: specializationValues,
+
         updatedAt: serverTimestamp(),
       });
-      
-      console.log('✅ Athlete profile created for user:', userId);
+
+      console.log('✅ Athlete profile created with denormalized data for user:', userId);
+      console.log('📊 Indexed fields:', {
+        sports: sportIds,
+        eventTypes,
+        position: position.id,
+        subcategory: subcategory?.id
+      });
+
       return athleteProfile;
     }, 'Create athlete profile');
   }
@@ -108,14 +149,56 @@ class AthleteProfileService {
 
     // Use retry mechanism for the update operation
     return await retryFirebaseOperation(async () => {
-      // Update user document
-      const userRef = doc(db, COLLECTIONS.USERS, userId);
-      await updateDoc(userRef, {
+      // Prepare denormalized fields
+      const denormalizedUpdate: any = {
         athleteProfile: updatedProfile,
         updatedAt: serverTimestamp(),
-      });
-      
-      console.log('✅ Athlete profile updated for user:', userId);
+      };
+
+      // Update denormalized fields if sports were updated
+      if (updatedProfile.sports && updatedProfile.sports.length > 0) {
+        denormalizedUpdate.sports = updatedProfile.sports.map(sport => sport.id);
+        denormalizedUpdate.sportDetails = updatedProfile.sports.map(sport => ({
+          id: sport.id,
+          name: sport.name,
+          icon: sport.icon
+        }));
+      }
+
+      // Update position fields
+      if (updatedProfile.position) {
+        denormalizedUpdate.position = updatedProfile.position.id;
+        denormalizedUpdate.positionName = updatedProfile.position.name;
+      }
+
+      // Update subcategory fields
+      if (updatedProfile.subcategory) {
+        denormalizedUpdate.subcategory = updatedProfile.subcategory.id;
+        denormalizedUpdate.subcategoryName = updatedProfile.subcategory.name;
+      }
+
+      // Update event types and specializations
+      if (updatedProfile.specializations || updatedProfile.subcategory) {
+        const eventTypes: string[] = [];
+        if (updatedProfile.subcategory?.id) {
+          eventTypes.push(updatedProfile.subcategory.id);
+        }
+        if (updatedProfile.specializations) {
+          Object.values(updatedProfile.specializations).forEach(value => {
+            if (value && !eventTypes.includes(value)) {
+              eventTypes.push(value);
+            }
+          });
+        }
+        denormalizedUpdate.eventTypes = eventTypes;
+        denormalizedUpdate.specializations = Object.values(updatedProfile.specializations || {}).filter(v => v);
+      }
+
+      // Update user document
+      const userRef = doc(db, COLLECTIONS.USERS, userId);
+      await updateDoc(userRef, denormalizedUpdate);
+
+      console.log('✅ Athlete profile updated with denormalized data for user:', userId);
       return updatedProfile;
     }, 'Update athlete profile');
   }
@@ -181,21 +264,103 @@ class AthleteProfileService {
 
   /**
    * Get athlete profiles by sport (for analytics/matching)
+   * Now uses efficient indexed queries on denormalized fields
    */
-  async getAthletesBySport(sportId: string, limit: number = 50): Promise<AthleteProfile[]> {
+  async getAthletesBySport(sportId: string, limitCount: number = 50): Promise<AthleteProfile[]> {
     try {
-      // This would require a compound query on the athleteProfile.sport.id field
-      // For now, we'll implement a basic version that gets all users and filters
-      // In production, you'd want to create a separate collection or use Firestore's
-      // array-contains queries for better performance
-      
       console.log(`🔍 Searching for athletes with sport: ${sportId}`);
-      
-      // This is a simplified implementation - in production you'd want to optimize this
-      // by either denormalizing data or using Firestore's advanced querying capabilities
-      return [];
+
+      const { query, where, collection, getDocs, limit: firestoreLimit } = await import('firebase/firestore');
+
+      const q = query(
+        collection(db, COLLECTIONS.USERS),
+        where('role', '==', 'athlete'),
+        where('sports', 'array-contains', sportId),
+        firestoreLimit(limitCount)
+      );
+
+      const snapshot = await getDocs(q);
+      const profiles: AthleteProfile[] = [];
+
+      snapshot.forEach((doc) => {
+        const userData = doc.data();
+        if (userData.athleteProfile) {
+          profiles.push(userData.athleteProfile as AthleteProfile);
+        }
+      });
+
+      console.log(`✅ Found ${profiles.length} athletes for sport: ${sportId}`);
+      return profiles;
     } catch (error) {
       console.error('❌ Error getting athletes by sport:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Advanced athlete search with multiple filters
+   * Uses denormalized fields for efficient querying
+   */
+  async searchAthletes(filters: {
+    sportId?: string;
+    eventType?: string;
+    position?: string;
+    subcategory?: string;
+    limit?: number;
+  }): Promise<Array<{ userId: string; profile: AthleteProfile; user: any }>> {
+    try {
+      console.log('🔍 Searching athletes with filters:', filters);
+
+      const { query, where, collection, getDocs, limit: firestoreLimit } = await import('firebase/firestore');
+
+      // Build query constraints
+      const constraints: any[] = [where('role', '==', 'athlete')];
+
+      if (filters.sportId) {
+        constraints.push(where('sports', 'array-contains', filters.sportId));
+      }
+
+      if (filters.eventType) {
+        constraints.push(where('eventTypes', 'array-contains', filters.eventType));
+      }
+
+      if (filters.position) {
+        constraints.push(where('position', '==', filters.position));
+      }
+
+      if (filters.subcategory) {
+        constraints.push(where('subcategory', '==', filters.subcategory));
+      }
+
+      constraints.push(firestoreLimit(filters.limit || 50));
+
+      const q = query(collection(db, COLLECTIONS.USERS), ...constraints);
+      const snapshot = await getDocs(q);
+
+      const results: Array<{ userId: string; profile: AthleteProfile; user: any }> = [];
+
+      snapshot.forEach((doc) => {
+        const userData = doc.data();
+        if (userData.athleteProfile) {
+          results.push({
+            userId: doc.id,
+            profile: userData.athleteProfile as AthleteProfile,
+            user: userData
+          });
+        }
+      });
+
+      console.log(`✅ Found ${results.length} athletes matching filters`);
+      return results;
+    } catch (error: any) {
+      console.error('❌ Error searching athletes:', error);
+
+      // Check if it's an index error
+      if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+        console.error('🚨 Missing Firestore index! Please create the required indexes.');
+        console.error('📝 Run: firebase deploy --only firestore:indexes');
+      }
+
       throw error;
     }
   }

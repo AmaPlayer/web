@@ -9,4 +9,16 @@ module.exports = {
       return webpackConfig;
     },
   },
+  devServer: {
+    // Fix WebSocket connection issues
+    client: {
+      webSocketURL: 'auto://0.0.0.0:0/ws',
+    },
+    // Suppress WebSocket errors in console
+    onListening: function (devServer) {
+      if (!devServer) {
+        throw new Error('webpack-dev-server is not defined');
+      }
+    },
+  },
 };

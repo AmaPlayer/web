@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../lib/firebase';
-import { collection, query, where, getDocs, addDoc, serverTimestamp, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, serverTimestamp, onSnapshot, deleteDoc, doc, limit } from 'firebase/firestore';
 import { Search as SearchIcon, UserPlus, Check, X, Filter, MapPin, User, Award, Target, Calendar, Settings, Bell } from 'lucide-react';
 import FooterNav from '../../components/layout/FooterNav';
 import SettingsMenu from '../../components/common/settings/SettingsMenu';
@@ -54,6 +54,10 @@ interface SearchFilters {
   achievement: string;
   sex: string;
   age: string;
+  // New athlete-specific filters
+  eventType: string;
+  position: string;
+  subcategory: string;
 }
 
 export default function Search() {
@@ -76,7 +80,10 @@ export default function Search() {
     name: '',
     achievement: '',
     sex: '',
-    age: ''
+    age: '',
+    eventType: '',
+    position: '',
+    subcategory: ''
   });
   
   // Notification and Settings state
@@ -357,107 +364,210 @@ export default function Search() {
     if (isGuest() || !currentUser) {
       return;
     }
-    
+
     setLoading(true);
-    
+
     try {
-      const results: UserData[] = [];
+      let results: UserData[] = [];
       const searchTermLower = searchTerm.toLowerCase().trim();
-      
-      const allUsersSnapshot = await getDocs(collection(db, 'users'));
-      
-      allUsersSnapshot.forEach((doc) => {
-        const userData = { id: doc.id, ...doc.data() } as UserData;
-        
-        // Don't include current user in results
-        if (doc.id !== currentUser.uid) {
+
+      // Use efficient indexed queries if athlete-specific filters are applied
+      const hasAthleteFilters = filters.sport || filters.eventType || filters.position || filters.subcategory;
+      const isAthleteSearch = filters.role === 'athlete' || hasAthleteFilters;
+
+      if (isAthleteSearch && hasAthleteFilters) {
+        console.log('🚀 Using efficient indexed athlete search');
+
+        // Build Firestore query with indexed fields
+        const constraints: any[] = [];
+
+        // Always filter by role if searching athletes
+        constraints.push(where('role', '==', 'athlete'));
+
+        // Add sport filter (uses array-contains index)
+        if (filters.sport) {
+          constraints.push(where('sports', 'array-contains', filters.sport.toLowerCase()));
+        }
+
+        // Add event type filter (uses array-contains index)
+        if (filters.eventType) {
+          constraints.push(where('eventTypes', 'array-contains', filters.eventType.toLowerCase()));
+        }
+
+        // Add position filter (uses equality index)
+        if (filters.position) {
+          constraints.push(where('position', '==', filters.position.toLowerCase()));
+        }
+
+        // Add subcategory filter (uses equality index)
+        if (filters.subcategory) {
+          constraints.push(where('subcategory', '==', filters.subcategory.toLowerCase()));
+        }
+
+        // Add limit
+        constraints.push(limit(100));
+
+        const q = query(collection(db, 'users'), ...constraints);
+        const snapshot = await getDocs(q);
+
+        snapshot.forEach((doc) => {
+          const userData = { id: doc.id, ...doc.data() } as UserData;
+          if (doc.id !== currentUser.uid) {
+            results.push(userData);
+          }
+        });
+
+        console.log(`✅ Found ${results.length} athletes using indexed query`);
+
+        // Apply client-side filters for remaining criteria
+        results = results.filter(userData => {
           let matches = true;
-          
-          // Text search (if provided)
+
+          // Text search
           if (searchTermLower) {
             const displayName = (userData.displayName || '').toLowerCase().trim();
             const email = (userData.email || '').toLowerCase().trim();
             const name = (userData.name || '').toLowerCase().trim();
-            
-            const textMatch = displayName.includes(searchTermLower) || 
-                            email.includes(searchTermLower) || 
+
+            const textMatch = displayName.includes(searchTermLower) ||
+                            email.includes(searchTermLower) ||
                             name.includes(searchTermLower);
-            
+
             if (!textMatch) matches = false;
           }
-          
-          // Apply filters
+
+          // Location
           if (matches && filters.location && userData.location) {
             if (!userData.location.toLowerCase().includes(filters.location.toLowerCase())) {
               matches = false;
             }
           }
-          
-          if (matches && filters.role && userData.role) {
-            if (userData.role !== filters.role) {
-              matches = false;
-            }
-          }
-          
-          if (matches && filters.skill && userData.skills) {
-            const skillMatch = userData.skills.some(skill => 
-              skill.toLowerCase().includes(filters.skill.toLowerCase())
-            );
-            if (!skillMatch) matches = false;
-          }
-          
-          if (matches && filters.sport && userData.sport) {
-            if (!userData.sport.toLowerCase().includes(filters.sport.toLowerCase())) {
-              matches = false;
-            }
-          }
-          
-          if (matches && filters.name && userData.name) {
-            if (!userData.name.toLowerCase().includes(filters.name.toLowerCase())) {
-              matches = false;
-            }
-          }
-          
-          if (matches && filters.achievement && userData.achievements) {
-            const achievementMatch = userData.achievements.some(achievement => 
-              achievement.title.toLowerCase().includes(filters.achievement.toLowerCase())
-            );
-            if (!achievementMatch) matches = false;
-          }
-          
+
+          // Sex
           if (matches && filters.sex && userData.sex) {
             if (userData.sex !== filters.sex) {
               matches = false;
             }
           }
-          
-          // Age filtering
-          if (matches && userData.age) {
+
+          // Age
+          if (matches && filters.age && userData.age) {
             const userAge = parseInt(String(userData.age));
-            
-            // Exact age filter
-            if (filters.age) {
-              const exactAge = parseInt(filters.age);
-              if (userAge !== exactAge) {
+            const exactAge = parseInt(filters.age);
+            if (userAge !== exactAge) {
+              matches = false;
+            }
+          }
+
+          return matches;
+        });
+
+      } else {
+        // Fallback to full collection scan for non-athlete or simple searches
+        console.log('📊 Using full collection scan (no athlete filters)');
+
+        const allUsersSnapshot = await getDocs(collection(db, 'users'));
+
+        allUsersSnapshot.forEach((doc) => {
+          const userData = { id: doc.id, ...doc.data() } as UserData;
+
+          // Don't include current user in results
+          if (doc.id !== currentUser.uid) {
+            let matches = true;
+
+            // Text search (if provided)
+            if (searchTermLower) {
+              const displayName = (userData.displayName || '').toLowerCase().trim();
+              const email = (userData.email || '').toLowerCase().trim();
+              const name = (userData.name || '').toLowerCase().trim();
+
+              const textMatch = displayName.includes(searchTermLower) ||
+                              email.includes(searchTermLower) ||
+                              name.includes(searchTermLower);
+
+              if (!textMatch) matches = false;
+            }
+
+            // Apply filters
+            if (matches && filters.location && userData.location) {
+              if (!userData.location.toLowerCase().includes(filters.location.toLowerCase())) {
                 matches = false;
               }
             }
-            
-          } else if (filters.age) {
-            // If age filters are applied but user has no age data, exclude them
-            matches = false;
+
+            if (matches && filters.role && userData.role) {
+              if (userData.role !== filters.role) {
+                matches = false;
+              }
+            }
+
+            if (matches && filters.skill && userData.skills) {
+              const skillMatch = userData.skills.some(skill =>
+                skill.toLowerCase().includes(filters.skill.toLowerCase())
+              );
+              if (!skillMatch) matches = false;
+            }
+
+            if (matches && filters.sport && userData.sport) {
+              if (!userData.sport.toLowerCase().includes(filters.sport.toLowerCase())) {
+                matches = false;
+              }
+            }
+
+            if (matches && filters.name && userData.name) {
+              if (!userData.name.toLowerCase().includes(filters.name.toLowerCase())) {
+                matches = false;
+              }
+            }
+
+            if (matches && filters.achievement && userData.achievements) {
+              const achievementMatch = userData.achievements.some(achievement =>
+                achievement.title.toLowerCase().includes(filters.achievement.toLowerCase())
+              );
+              if (!achievementMatch) matches = false;
+            }
+
+            if (matches && filters.sex && userData.sex) {
+              if (userData.sex !== filters.sex) {
+                matches = false;
+              }
+            }
+
+            // Age filtering
+            if (matches && userData.age) {
+              const userAge = parseInt(String(userData.age));
+
+              // Exact age filter
+              if (filters.age) {
+                const exactAge = parseInt(filters.age);
+                if (userAge !== exactAge) {
+                  matches = false;
+                }
+              }
+
+            } else if (filters.age) {
+              // If age filters are applied but user has no age data, exclude them
+              matches = false;
+            }
+
+            if (matches) {
+              results.push(userData);
+            }
           }
-          
-          if (matches) {
-            results.push(userData);
-          }
-        }
-      });
-      
+        });
+      }
+
       setSearchResults(results);
     } catch (error: any) {
       console.error('Error searching users:', error);
-      alert('Error searching users: ' + error.message);
+
+      // Check for index errors
+      if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+        console.error('🚨 Missing Firestore index! Deploy indexes with: firebase deploy --only firestore:indexes');
+        alert('Database index required. Please contact administrator or deploy indexes.');
+      } else {
+        alert('Error searching users: ' + error.message);
+      }
     }
     setLoading(false);
   };
@@ -532,7 +642,10 @@ export default function Search() {
       name: '',
       achievement: '',
       sex: '',
-      age: ''
+      age: '',
+      eventType: '',
+      position: '',
+      subcategory: ''
     });
     setSearchTerm('');
     setSearchResults([]);
@@ -810,7 +923,38 @@ export default function Search() {
                   onChange={(e) => handleFilterChange('age', e.target.value)}
                 />
               </div>
-              
+
+              {/* New Athlete-Specific Filters */}
+              <div className="filter-group">
+                <label><Target size={16} />Event Type</label>
+                <input
+                  type="text"
+                  placeholder="e.g., 5000m, marathon"
+                  value={filters.eventType}
+                  onChange={(e) => handleFilterChange('eventType', e.target.value)}
+                />
+              </div>
+
+              <div className="filter-group">
+                <label><Target size={16} />Position</label>
+                <input
+                  type="text"
+                  placeholder="e.g., distance-runner, sprinter"
+                  value={filters.position}
+                  onChange={(e) => handleFilterChange('position', e.target.value)}
+                />
+              </div>
+
+              <div className="filter-group">
+                <label><Target size={16} />Subcategory</label>
+                <input
+                  type="text"
+                  placeholder="e.g., long-distance, middle-distance"
+                  value={filters.subcategory}
+                  onChange={(e) => handleFilterChange('subcategory', e.target.value)}
+                />
+              </div>
+
             </div>
           </div>
         )}

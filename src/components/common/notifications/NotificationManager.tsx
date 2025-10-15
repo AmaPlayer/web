@@ -155,7 +155,7 @@ const NotificationManager: React.FC = () => {
       (error) => {
         console.log('⚠️ Notification listener error (index needed):', error.code);
         if (error.code === 'failed-precondition') {
-          console.log('📝 Please create Firestore index at: https://console.firebase.google.com/project/my-react-firebase-app-69fcd/firestore/indexes');
+          console.log('📝 Please create Firestore index at: https://console.firebase.google.com/project/amaplay007/firestore/indexes');
         }
       }
     );

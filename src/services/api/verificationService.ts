@@ -374,9 +374,9 @@ export class VerificationService {
     if (typeof window !== 'undefined') {
       return `${window.location.origin}/verify/${verificationId}`;
     }
-    
+
     // Fallback for server-side rendering or development
-    const productionUrl = process.env.REACT_APP_PRODUCTION_URL || 'https://my-react-firebase-app-69fcd.web.app';
+    const productionUrl = process.env.REACT_APP_PRODUCTION_URL || 'https://amaplay007.web.app';
     return `${productionUrl}/verify/${verificationId}`;
   }
 

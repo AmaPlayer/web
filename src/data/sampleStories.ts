@@ -21,7 +21,7 @@ export const sampleStories: Story[] = [
     isHighlight: false,
     highlightId: null,
     sharingEnabled: true,
-    publicLink: 'https://my-react-firebase-app-69fcd.web.app/story/story1'
+    publicLink: 'https://amaplay007.web.app/story/story1'
   },
   {
     id: 'story2',
@@ -39,7 +39,7 @@ export const sampleStories: Story[] = [
     isHighlight: true,
     highlightId: 'highlight1',
     sharingEnabled: true,
-    publicLink: 'https://my-react-firebase-app-69fcd.web.app/story/story2'
+    publicLink: 'https://amaplay007.web.app/story/story2'
   },
   {
     id: 'story3',
@@ -57,7 +57,7 @@ export const sampleStories: Story[] = [
     isHighlight: false,
     highlightId: null,
     sharingEnabled: true,
-    publicLink: 'https://my-react-firebase-app-69fcd.web.app/story/story3'
+    publicLink: 'https://amaplay007.web.app/story/story3'
   },
   {
     id: 'story4',
@@ -75,7 +75,7 @@ export const sampleStories: Story[] = [
     isHighlight: true,
     highlightId: 'highlight2',
     sharingEnabled: true,
-    publicLink: 'https://my-react-firebase-app-69fcd.web.app/story/story4'
+    publicLink: 'https://amaplay007.web.app/story/story4'
   },
   {
     id: 'story5',
@@ -93,7 +93,7 @@ export const sampleStories: Story[] = [
     isHighlight: false,
     highlightId: null,
     sharingEnabled: true,
-    publicLink: 'https://my-react-firebase-app-69fcd.web.app/story/story5'
+    publicLink: 'https://amaplay007.web.app/story/story5'
   }
 ];
 

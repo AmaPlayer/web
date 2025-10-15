@@ -55,7 +55,7 @@ export const populateSampleStories = async () => {
           isHighlight: story.isHighlight || false,
           highlightId: story.highlightId || null,
           sharingEnabled: story.sharingEnabled !== false,
-          publicLink: `https://my-react-firebase-app-69fcd.web.app/story/${story.id}`
+          publicLink: `https://amaplay007.web.app/story/${story.id}`
         };
         
         const storyRef = doc(collection(db, 'stories'), story.id);

@@ -27,6 +27,18 @@ export interface User {
   lastSeen?: Timestamp | Date | string;
   privacy?: UserPrivacy;
   settings?: UserNotificationSettings;
+
+  // Denormalized athlete fields for efficient querying
+  role?: string; // 'athlete', 'coach', 'organisation'
+  sports?: string[]; // Array of sport IDs for querying: ['marathon', 'track', 'swimming']
+  sportDetails?: Array<{id: string; name: string; icon?: string}>; // Full sport objects
+  eventTypes?: string[]; // Event/distance types: ['5000m', '10000m', 'marathon']
+  position?: string; // Position ID for querying: 'distance-runner', 'sprinter'
+  positionName?: string; // Position display name: 'Distance Runner', 'Sprinter'
+  subcategory?: string; // Subcategory ID: 'long-distance', 'middle-distance'
+  subcategoryName?: string; // Subcategory display name: 'Long Distance', 'Middle Distance'
+  specializations?: string[]; // Array of specialization values for querying
+  athleteProfile?: any; // Full nested athlete profile (kept for compatibility)
 }
 
 /**
