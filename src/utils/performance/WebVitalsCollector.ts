@@ -442,28 +442,48 @@ class WebVitalsCollector {
    * Notify all callbacks of vitals changes with batching optimization
    */
   notifyCallbacks(metric, value) {
-    
-    // Create batched callback execution to reduce overhead
+    // Directly notify callbacks - batching optimization is handled by PerformanceOptimizations
+    // In production mode, batching is disabled so we just execute immediately
+    // In development mode, batching collects multiple calls
+
     if (!this.batchedNotify) {
-      this.batchedNotify = PerformanceOptimizations.createBatchedFunction((batches) => {
+      // Create a handler that works in both batched and non-batched modes
+      const notifyHandler = (batchesOrMetric, maybeValue) => {
         const latestUpdates = new Map();
-        
-        // Get latest update for each metric
-        batches.forEach(([metric, value]) => {
-          latestUpdates.set(metric, value);
-        });
-        
-        // Notify callbacks with latest values
+
+        // Check if we're in batched mode (receiving array of args) or direct mode
+        if (Array.isArray(batchesOrMetric) && Array.isArray(batchesOrMetric[0])) {
+          // Batched mode: batchesOrMetric is array of [metric, value] arrays
+          batchesOrMetric.forEach((batch) => {
+            const [batchMetric, batchValue] = batch;
+            if (batchMetric !== undefined && batchValue !== undefined) {
+              latestUpdates.set(batchMetric, batchValue);
+            }
+          });
+        } else {
+          // Direct mode (production): receiving metric and value directly
+          if (batchesOrMetric !== undefined && maybeValue !== undefined) {
+            latestUpdates.set(batchesOrMetric, maybeValue);
+          }
+        }
+
+        // Notify all callbacks with the latest values
         this.callbacks.forEach(callback => {
           performanceErrorBoundary.safeExecute(() => {
-            for (const [metric, value] of latestUpdates) {
-              callback(metric, value, this.getVitalsScore());
+            for (const [m, v] of latestUpdates) {
+              callback(m, v, this.getVitalsScore());
             }
-          }, null, 'webvitals-callback-batch');
+          }, null, 'webvitals-callback');
         });
-      }, { batchSize: 5, maxWaitTime: 50, key: 'webvitals-callbacks' });
+      };
+
+      // Wrap with batching optimization (returns original fn in production)
+      this.batchedNotify = PerformanceOptimizations.createBatchedFunction(
+        notifyHandler,
+        { batchSize: 5, maxWaitTime: 50, key: 'webvitals-callbacks' }
+      );
     }
-    
+
     this.batchedNotify(metric, value);
   }
 

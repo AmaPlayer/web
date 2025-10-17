@@ -5,6 +5,8 @@ importScripts('https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js
 importScripts('https://www.gstatic.com/firebasejs/11.10.0/firebase-messaging-compat.js');
 
 // Initialize Firebase in the service worker
+// Note: These keys are safe to expose in client-side code
+// Firebase security is managed through Firestore Security Rules
 const firebaseConfig = {
   apiKey: "AIzaSyBAtDdjjEXyxJ0fnXZ8w8UFPsjHq-pL1Rg",
   authDomain: "amaplay007.firebaseapp.com",

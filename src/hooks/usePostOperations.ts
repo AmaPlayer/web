@@ -325,16 +325,34 @@ export const usePostOperations = (): UsePostOperationsReturn => {
       const postRef = doc(db, 'posts', postId);
       const userLiked = currentLikes.includes(currentUser.uid);
 
+      // Calculate the new likes count
+      const currentLikesCount = postData?.likesCount || currentLikes.length || 0;
+      const newLikesCount = userLiked ? Math.max(0, currentLikesCount - 1) : currentLikesCount + 1;
+
       if (userLiked) {
         // Remove like
         await updateDoc(postRef, {
-          likes: arrayRemove(currentUser.uid)
+          likes: arrayRemove(currentUser.uid),
+          likesCount: newLikesCount
         });
+
+        // Update local store immediately for optimistic UI
+        updatePostInStore(postId, {
+          likes: currentLikes.filter(id => id !== currentUser.uid),
+          likesCount: newLikesCount
+        } as any);
       } else {
         // Add like
         await updateDoc(postRef, {
-          likes: arrayUnion(currentUser.uid)
+          likes: arrayUnion(currentUser.uid),
+          likesCount: newLikesCount
         });
+
+        // Update local store immediately for optimistic UI
+        updatePostInStore(postId, {
+          likes: [...currentLikes, currentUser.uid],
+          likesCount: newLikesCount
+        } as any);
 
         // Send notification to post owner (only when liking, not unliking)
         if (postData && postData.userId && postData.userId !== currentUser.uid) {
@@ -357,7 +375,7 @@ export const usePostOperations = (): UsePostOperationsReturn => {
       setStoreError(err.message);
       throw err;
     }
-  }, [setStoreError]);
+  }, [setStoreError, updatePostInStore]);
 
   /**
    * Update post share data

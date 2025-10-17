@@ -155,17 +155,25 @@ const PostComposer: React.FC<PostComposerProps> = ({
         mediaType = selectedMedia.type.startsWith('image/') ? 'image' : 'video';
       }
 
-      // Get user profile data from localStorage
+      // Get user profile data from localStorage with proper null handling
       const profileRole = localStorage.getItem('userRole') || 'athlete';
       // Map profile role to post role format
       const userRole = profileRole === 'parents' ? 'parent' : profileRole === 'coaches' ? 'coach' : profileRole;
-      const userSport = localStorage.getItem('userSport') || undefined;
-      const userPosition = localStorage.getItem('userPosition') || undefined;
-      const userPlayerType = localStorage.getItem('userPlayerType') || undefined;
-      const userOrganizationType = localStorage.getItem('userOrganizationType') || undefined;
-      const userSpecializations = localStorage.getItem('userSpecializations') 
-        ? JSON.parse(localStorage.getItem('userSpecializations')!) 
-        : undefined;
+
+      // Helper function to safely get localStorage value (avoids undefined/empty string)
+      const getSafeValue = (key: string): string | null => {
+        const value = localStorage.getItem(key);
+        return value && value.trim() !== '' ? value : null;
+      };
+
+      const userSport = getSafeValue('userSport');
+      const userPosition = getSafeValue('userPosition');
+      const userPlayerType = getSafeValue('userPlayerType');
+      const userOrganizationType = getSafeValue('userOrganizationType');
+      const userSpecializationsStr = getSafeValue('userSpecializations');
+      const userSpecializations = userSpecializationsStr
+        ? JSON.parse(userSpecializationsStr)
+        : null;
 
       // Create post document with all required fields
       const postData: any = {
@@ -173,11 +181,6 @@ const PostComposer: React.FC<PostComposerProps> = ({
         userDisplayName: currentUser.displayName || 'Anonymous User',
         userPhotoURL: currentUser.photoURL || null,
         userRole: userRole,
-        userSport: userSport,
-        userPosition: userPosition,
-        userPlayerType: userPlayerType,
-        userOrganizationType: userOrganizationType,
-        userSpecializations: userSpecializations,
         caption: text,
         mediaUrl: mediaUrl,
         mediaType: mediaType,
@@ -192,6 +195,13 @@ const PostComposer: React.FC<PostComposerProps> = ({
         isActive: true,
         visibility: 'public'
       };
+
+      // Only add optional fields if they have values
+      if (userSport) postData.userSport = userSport;
+      if (userPosition) postData.userPosition = userPosition;
+      if (userPlayerType) postData.userPlayerType = userPlayerType;
+      if (userOrganizationType) postData.userOrganizationType = userOrganizationType;
+      if (userSpecializations) postData.userSpecializations = userSpecializations;
 
       await addDoc(collection(db, 'posts'), postData);
 
