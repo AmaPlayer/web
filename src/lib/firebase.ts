@@ -4,6 +4,7 @@ import { Auth, getAuth, connectAuthEmulator } from 'firebase/auth';
 import { Firestore, getFirestore, connectFirestoreEmulator, enableIndexedDbPersistence } from 'firebase/firestore';
 import { FirebaseStorage, getStorage, connectStorageEmulator } from 'firebase/storage';
 import { Messaging, getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { Analytics, getAnalytics, isSupported as isAnalyticsSupported } from 'firebase/analytics';
 
 import { validateFirebaseConfig } from '../utils/validation/configValidation';
 import { FirebaseConfig } from '../types/api/firebase';
@@ -50,7 +51,29 @@ try {
   console.log('Firebase Cloud Messaging not supported in this browser');
 }
 
-export { messaging, getToken, onMessage };
+// Initialize Analytics conditionally with proper error handling
+let analytics: Analytics | null = null;
+if (typeof window !== 'undefined') {
+  // Check if Analytics is supported before initializing
+  isAnalyticsSupported()
+    .then((supported) => {
+      if (supported && firebaseConfig.measurementId) {
+        try {
+          analytics = getAnalytics(app);
+          console.log('✅ Firebase Analytics initialized');
+        } catch (error) {
+          console.warn('⚠️ Firebase Analytics initialization failed:', error);
+        }
+      } else {
+        console.log('ℹ️ Firebase Analytics not supported or measurementId missing');
+      }
+    })
+    .catch((error) => {
+      console.warn('⚠️ Failed to check Analytics support:', error);
+    });
+}
+
+export { messaging, getToken, onMessage, analytics };
 
 // Connect to emulators in development
 if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_USE_FIREBASE_EMULATOR) {
