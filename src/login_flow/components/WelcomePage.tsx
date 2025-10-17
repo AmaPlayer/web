@@ -34,8 +34,12 @@ const WelcomePage: React.FC = () => {
     };
   }, [lastScrollY]);
 
-  const handleLoginClick = (): void => {
+  const handleLetsPlayClick = (): void => {
     navigate('/athlete-onboarding/sport');
+  };
+
+  const handleLoginClick = (): void => {
+    navigate('/login');
   };
 
   // Handle role-specific navigation
@@ -71,9 +75,14 @@ const WelcomePage: React.FC = () => {
         <h1 className="main-title">AmaPlayer</h1>
         <p className="subtitle">{t('subtitle')}</p>
 
-        <button className="login-btn" onClick={handleLoginClick}>
-          {t('letsPlay')}
-        </button>
+        <div className="button-group">
+          <button className="login-btn" onClick={handleLetsPlayClick}>
+            {t('letsPlay')}
+          </button>
+          <button className="secondary-btn" onClick={handleLoginClick}>
+            Login
+          </button>
+        </div>
 
         {/* Join for Free Section */}
         <div className="join-free-section">
