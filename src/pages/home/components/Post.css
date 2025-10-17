@@ -128,7 +128,34 @@
 }
 
 .post-video {
-  max-height: 400px;
+  max-height: 500px;
+  object-fit: contain;
+}
+
+/* Video container should respect aspect ratio */
+.post-media .video-player-container {
+  max-height: 500px;
+  aspect-ratio: 16/9;
+}
+
+@media (max-width: 768px) {
+  .post-video {
+    max-height: 400px;
+  }
+
+  .post-media .video-player-container {
+    max-height: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .post-video {
+    max-height: 350px;
+  }
+
+  .post-media .video-player-container {
+    max-height: 350px;
+  }
 }
 
 /* Post Content */
@@ -375,22 +402,27 @@
     padding: 12px;
     margin-bottom: 12px;
   }
-  
+
   .post-actions {
     gap: 12px;
   }
-  
+
   .post-actions button {
     padding: 6px 8px;
     font-size: 13px;
   }
-  
+
   .comment-input-container {
     padding: 6px;
   }
-  
+
   .comment-avatar {
     width: 28px;
     height: 28px;
+  }
+
+  /* Ensure video height is responsive */
+  .post-media {
+    max-height: 400px;
   }
 }
