@@ -96,7 +96,7 @@ const SportSelectionPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate('/role-selection');
+    navigate('/');
   };
 
   return (

@@ -12,11 +12,14 @@ import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import EditProfileModal, { EditProfileData } from '../components/EditProfileModal';
 import { UserRole, PersonalDetails, ProfileEnhancedState, roleConfigurations, Achievement, Certificate } from '../types/ProfileTypes';
 import { TalentVideo } from '../types/TalentVideoTypes';
+import { useAuth } from '../../../contexts/AuthContext';
+import userService from '../../../services/api/userService';
 import '../styles/Profile.css';
 import '../styles/ProfileEnhanced.css';
 
 const ProfileEnhanced: React.FC = () => {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
 
   // Initialize state with default values
   const [profileState, setProfileState] = useState<ProfileEnhancedState>({
@@ -80,29 +83,87 @@ const ProfileEnhanced: React.FC = () => {
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
   const [editModalInitialTab, setEditModalInitialTab] = useState<'personal' | 'achievements' | 'certificates' | 'videos' | 'posts' | 'organization' | 'coaching' | 'parent'>('personal');
 
-  // Load saved role from localStorage on component mount
+  // Load user profile data from Firebase on component mount
   useEffect(() => {
-    const savedRole = localStorage.getItem('userRole') as UserRole;
-    if (savedRole && roleConfigurations[savedRole]) {
-      setProfileState(prev => ({
-        ...prev,
-        currentRole: savedRole
-      }));
-    }
-  }, []);
+    const loadUserProfile = async () => {
+      if (currentUser) {
+        try {
+          // Fetch user data from Firebase
+          const userData = await userService.getById(currentUser.uid);
+          
+          if (userData) {
+            // Map user role to profile role format
+            let profileRole: UserRole = 'athlete';
+            if (userData.role === 'parent') profileRole = 'parents';
+            else if (userData.role === 'coach') profileRole = 'coaches';
+            else if (userData.role) profileRole = userData.role as UserRole;
+            
+            // Update state with Firebase data
+            setProfileState(prev => ({
+              ...prev,
+              currentRole: profileRole
+            }));
+            
+            // Save to localStorage for immediate access
+            localStorage.setItem('userRole', profileRole);
+            if (userData.sports && userData.sports[0]) {
+              localStorage.setItem('userSport', userData.sports[0]);
+            }
+            if (userData.position) {
+              localStorage.setItem('userPosition', userData.position);
+            }
+            if (userData.specializations) {
+              localStorage.setItem('userSpecializations', JSON.stringify(userData.specializations));
+            }
+          }
+        } catch (error) {
+          console.error('Error loading user profile:', error);
+          // Fallback to localStorage if Firebase fetch fails
+          const savedRole = localStorage.getItem('userRole') as UserRole;
+          if (savedRole && roleConfigurations[savedRole]) {
+            setProfileState(prev => ({
+              ...prev,
+              currentRole: savedRole
+            }));
+          }
+        }
+      }
+    };
+    
+    loadUserProfile();
+  }, [currentUser]);
 
   const handleGoBack = () => {
     navigate(-1);
   };
 
-  const handleRoleChange = (newRole: UserRole) => {
+  const handleRoleChange = async (newRole: UserRole) => {
     setProfileState(prev => ({
       ...prev,
       currentRole: newRole
     }));
     
-    // Persist role selection to localStorage
+    // Persist role selection to localStorage for immediate UI update
     localStorage.setItem('userRole', newRole);
+    
+    // Save to Firebase
+    if (currentUser) {
+      try {
+        // Map profile role to user role format
+        const userRole = newRole === 'parents' ? 'parent' : newRole === 'coaches' ? 'coach' : newRole;
+        await userService.updateUserProfile(currentUser.uid, {
+          role: userRole as any
+        });
+        console.log('✅ Role saved to Firebase:', userRole);
+      } catch (error) {
+        console.error('❌ Error saving role to Firebase:', error);
+      }
+    }
+    
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent('userProfileUpdated', { 
+      detail: { role: newRole } 
+    }));
   };
 
   const handleEditProfile = (section: 'personal' | 'achievements' | 'certificates' | 'videos' | 'posts' | 'organization' | 'coaching' | 'parent' = 'personal') => {
@@ -110,7 +171,7 @@ const ProfileEnhanced: React.FC = () => {
     setIsEditProfileModalOpen(true);
   };
 
-  const handleSaveProfile = (data: EditProfileData) => {
+  const handleSaveProfile = async (data: EditProfileData) => {
     setProfileState(prev => ({
       ...prev,
       personalDetails: data.personalDetails,
@@ -120,6 +181,33 @@ const ProfileEnhanced: React.FC = () => {
       talentVideos: data.talentVideos,
       posts: data.posts
     }));
+    
+    // Save user profile data to localStorage for immediate UI update
+    localStorage.setItem('userSport', data.personalDetails.sport || '');
+    localStorage.setItem('userPosition', data.personalDetails.position || '');
+    localStorage.setItem('userPlayerType', data.personalDetails.playerType || '');
+    localStorage.setItem('userOrganizationType', data.personalDetails.organizationType || '');
+    if (data.personalDetails.specializations) {
+      localStorage.setItem('userSpecializations', JSON.stringify(data.personalDetails.specializations));
+    }
+    
+    // Save to Firebase
+    if (currentUser) {
+      try {
+        await userService.updateUserProfile(currentUser.uid, {
+          sports: data.personalDetails.sport ? [data.personalDetails.sport] : undefined,
+          position: data.personalDetails.position,
+          specializations: data.personalDetails.specializations
+        } as any);
+        console.log('✅ Profile data saved to Firebase');
+      } catch (error) {
+        console.error('❌ Error saving profile to Firebase:', error);
+      }
+    }
+    
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent('userProfileUpdated'));
+    
     setIsEditProfileModalOpen(false);
   };
 

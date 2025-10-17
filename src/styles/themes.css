@@ -63,6 +63,27 @@
   --transition-normal: 0.3s ease;
   --transition-slow: 0.5s ease;
   --transition-bounce: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Role Badge Variables - Dark Theme */
+  --role-athlete-bg: #1e3a8a;
+  --role-athlete-text: #bfdbfe;
+  --role-athlete-border: #3b82f6;
+  --role-athlete-hover-bg: #1e40af;
+  
+  --role-parent-bg: #7c2d12;
+  --role-parent-text: #fed7aa;
+  --role-parent-border: #f97316;
+  --role-parent-hover-bg: #9a3412;
+  
+  --role-organization-bg: #581c87;
+  --role-organization-text: #e9d5ff;
+  --role-organization-border: #a855f7;
+  --role-organization-hover-bg: #6b21a8;
+  
+  --role-coach-bg: #064e3b;
+  --role-coach-text: #d1fae5;
+  --role-coach-border: #10b981;
+  --role-coach-hover-bg: #065f46;
 }
 
 /* Light Theme */
@@ -98,6 +119,27 @@
   --message-input-bg: var(--bg-card);
   --message-input-border: var(--border-secondary);
   --message-input-focus: var(--accent-primary);
+  
+  /* Role Badge Variables - Light Theme */
+  --role-athlete-bg: #dbeafe;
+  --role-athlete-text: #1e40af;
+  --role-athlete-border: #3b82f6;
+  --role-athlete-hover-bg: #bfdbfe;
+  
+  --role-parent-bg: #fed7aa;
+  --role-parent-text: #9a3412;
+  --role-parent-border: #f97316;
+  --role-parent-hover-bg: #fdba74;
+  
+  --role-organization-bg: #e9d5ff;
+  --role-organization-text: #6b21a8;
+  --role-organization-border: #a855f7;
+  --role-organization-hover-bg: #d8b4fe;
+  
+  --role-coach-bg: #d1fae5;
+  --role-coach-text: #065f46;
+  --role-coach-border: #10b981;
+  --role-coach-hover-bg: #a7f3d0;
 }
 
 /* Dark Theme (Auth Pages - Black) */

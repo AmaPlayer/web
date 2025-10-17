@@ -72,21 +72,21 @@ export const useOnboardingNavigation = () => {
     const currentStep = getCurrentStep();
     if (!currentStep || !canGoBack()) {
       // If we're on the first step or can't determine current step,
-      // go back to role selection
-      navigate('/role-selection');
+      // go back to welcome page
+      navigate('/');
       return;
     }
 
     const previousStepNumber = currentStep.stepNumber - 1;
-    const previousStep = ONBOARDING_STEPS.find(step => 
+    const previousStep = ONBOARDING_STEPS.find(step =>
       step.stepNumber === previousStepNumber
     );
 
     if (previousStep) {
       navigate(previousStep.path);
     } else {
-      // Fallback to role selection if no previous step found
-      navigate('/role-selection');
+      // Fallback to welcome page if no previous step found
+      navigate('/');
     }
   }, [getCurrentStep, canGoBack, navigate]);
 

@@ -1,7 +1,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Home } from 'lucide-react';
+import { Home, Eye, EyeOff } from 'lucide-react';
 import ThemeToggle from '../../components/common/ui/ThemeToggle';
 import LanguageSelector from '../../components/common/forms/LanguageSelector';
 import LoadingSpinner from '../../components/common/ui/LoadingSpinner';
@@ -15,6 +15,7 @@ import './Auth.css';
 export default function Login() {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const [keepLoggedIn, setKeepLoggedIn] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [emailError, setEmailError] = useState<string>('');
@@ -196,12 +197,13 @@ export default function Login() {
     if (role) {
       navigate(`/about/${role}`);
     } else {
-      navigate('/role-selection');
+      navigate('/');
     }
   };
 
   const handleHomeClick = (): void => {
-    navigate('/');
+    // Force full page reload to ensure WelcomePage renders correctly
+    window.location.href = '/';
   };
 
   return (
@@ -251,17 +253,28 @@ export default function Login() {
             />
             {emailError && <div className="field-error">{emailError}</div>}
           </div>
-          <div className="form-group">
-            <input
-              type="password"
-              placeholder={t('password')}
-              value={password}
-              onChange={(e) => handlePasswordChange(e.target.value)}
-              className={passwordError ? 'input-error' : ''}
-              required
-              disabled={loading}
-              autoComplete="current-password"
-            />
+          <div className="form-group password-group">
+            <div className="password-input-wrapper">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder={t('password')}
+                value={password}
+                onChange={(e) => handlePasswordChange(e.target.value)}
+                className={passwordError ? 'input-error' : ''}
+                required
+                disabled={loading}
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                disabled={loading}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
             {passwordError && <div className="field-error">{passwordError}</div>}
           </div>
           <div className="form-group checkbox-group">

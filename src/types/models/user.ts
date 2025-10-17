@@ -1,6 +1,11 @@
 import { Timestamp } from 'firebase/firestore';
 
 /**
+ * User role types
+ */
+export type UserRole = 'athlete' | 'parent' | 'organization' | 'coach';
+
+/**
  * Core User interface representing a user in the system
  */
 export interface User {
@@ -29,7 +34,7 @@ export interface User {
   settings?: UserNotificationSettings;
 
   // Denormalized athlete fields for efficient querying
-  role?: string; // 'athlete', 'coach', 'organisation'
+  role?: UserRole; // User role: 'athlete', 'parent', 'organization', 'coach'
   sports?: string[]; // Array of sport IDs for querying: ['marathon', 'track', 'swimming']
   sportDetails?: Array<{id: string; name: string; icon?: string}>; // Full sport objects
   eventTypes?: string[]; // Event/distance types: ['5000m', '10000m', 'marathon']

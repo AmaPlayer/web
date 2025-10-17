@@ -11,15 +11,21 @@ const translations: Translations = {
     tagline: "CONNECT COMPETE AND CONQUER",
     subtitle: "LET'S PLAY TOGETHER AND RISE",
     letsPlay: "Let's Play",
+    vision: "Our Vision",
+    visionText: "To create a global platform that connects athletes, coaches, and sports enthusiasts, empowering them to showcase their talent and achieve their dreams.",
+    mission: "Our Mission",
+    missionText: "To provide innovative tools and opportunities for athletes to connect, grow, and succeed in their sporting journey while building a vibrant community.",
     
     // Common
     login: "Login",
     logout: "Logout",
+    signOut: "Sign Out",
     back: "Back",
     backToHome: "Back to Home",
     next: "Next",
     submit: "Submit",
     cancel: "Cancel",
+    signup: "Sign Up",
     joiningAs: "Joining as",
     email: "Email",
     password: "Password",
@@ -73,6 +79,8 @@ const translations: Translations = {
     // Common
     login: "लॉगिन",
     logout: "लॉगआउट",
+    signOut: "साइन आउट",
+    signup: "साइन अप",
     back: "पीछे",
     backToHome: "होम पर वापस जाएं",
     next: "अगला",
@@ -133,6 +141,8 @@ const translations: Translations = {
     // Common
     login: "লগইন",
     logout: "লগআউট",
+    signOut: "সাইন আউট",
+    signup: "সাইন আপ",
     back: "পিছনে",
     backToHome: "হোমে ফিরে যান",
     next: "পরবর্তী",
@@ -193,6 +203,8 @@ const translations: Translations = {
     // Common
     login: "உள்நுழைய",
     logout: "வெளியேறு",
+    signOut: "வெளியேறு",
+    signup: "பதிவு செய்க",
     back: "பின்னால்",
     backToHome: "முகப்புக்கு திரும்பு",
     next: "அடுத்து",
@@ -253,6 +265,8 @@ const translations: Translations = {
     // Common
     login: "లాగిన్",
     logout: "లాగ్‌అవుట్",
+    signOut: "సైన్ అవుట్",
+    signup: "సైన్ అప్",
     back: "వెనుకకు",
     backToHome: "హోమ్‌కు తిరిగి వెళ్ళు",
     next: "తర్వాత",

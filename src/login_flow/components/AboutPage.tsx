@@ -50,7 +50,7 @@ const AboutPage: React.FC = () => {
   };
 
   const handleBack = (): void => {
-    navigate('/role-selection');
+    navigate('/');
   };
 
   return (

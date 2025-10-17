@@ -34,8 +34,14 @@
   transition: background-color 0.2s;
 }
 
-.add-video-btn:hover {
+.add-video-btn:hover:not(:disabled) {
   background: #1a9b94;
+}
+
+.add-video-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 /* Empty State */
@@ -231,16 +237,49 @@
   padding: 12px;
 }
 
+.video-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
 .video-title {
   font-size: 14px;
   font-weight: 600;
   color: #333;
-  margin: 0 0 8px 0;
+  margin: 0;
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  flex: 1;
+}
+
+.video-verification-badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.video-verification-badge.verified {
+  background: #d4edda;
+  color: #155724;
+}
+
+.video-verification-badge.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.video-verification-badge.rejected {
+  background: #f8d7da;
+  color: #721c24;
 }
 
 .video-meta {
@@ -268,6 +307,41 @@
 
 .video-views {
   color: #666;
+}
+
+.video-verification-link {
+  color: #20B2AA;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 12px;
+  transition: color 0.2s;
+}
+
+.video-verification-link:hover {
+  color: #1a9b94;
+  text-decoration: underline;
+}
+
+.video-share-btn {
+  background: none;
+  border: none;
+  color: #20B2AA;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s;
+}
+
+.video-share-btn:hover {
+  color: #1a9b94;
+}
+
+.video-share-btn svg {
+  flex-shrink: 0;
 }
 
 .video-description {

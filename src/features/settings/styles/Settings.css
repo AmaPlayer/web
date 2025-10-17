@@ -137,6 +137,7 @@
 @media (max-width: 768px) {
   .settings-page {
     padding: 1rem;
+    padding-bottom: 100px; /* Account for footer navigation */
   }
 
   .settings-container {
@@ -146,21 +147,26 @@
 
   .settings-nav {
     position: static;
+    margin-bottom: 1rem;
   }
 
   .settings-tabs {
     flex-direction: row;
     overflow-x: auto;
     padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
   }
 
   .settings-tab {
     white-space: nowrap;
     min-width: fit-content;
+    padding: 0.75rem 1.25rem;
   }
 
   .settings-content {
     padding: 1.5rem;
+    min-height: auto;
   }
 
   .settings-title h1 {
@@ -169,20 +175,40 @@
 }
 
 @media (max-width: 480px) {
+  .settings-page {
+    padding: 0.75rem;
+    padding-bottom: 100px;
+  }
+
   .settings-tabs {
-    gap: 0.125rem;
+    gap: 0.25rem;
+    padding-bottom: 0.5rem;
   }
 
   .settings-tab {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.8rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    min-height: 44px; /* Touch-friendly size */
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
+  .settings-tab svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Show icons but hide text labels on very small screens */
   .settings-tab span {
     display: none;
   }
 
   .settings-content {
     padding: 1rem;
+  }
+
+  .settings-title h1 {
+    font-size: 1.25rem;
   }
 }

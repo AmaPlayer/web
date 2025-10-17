@@ -54,6 +54,20 @@ export const translations: Translations = {
     learnMore: 'Learn More',
     features: 'Features',
     featuresTitle: 'Everything You Need for Sports',
+
+    // Welcome Page
+    tagline: 'CONNECT COMPETE AND CONQUER',
+    subtitle: "LET'S PLAY TOGETHER AND RISE",
+    letsPlay: "LET'S PLAY",
+    joinForFree: 'Join for Free',
+    athlete: 'Athlete',
+    coach: 'Coach',
+    organization: 'Organization',
+    parent: 'Parent',
+    vision: 'Our Vision',
+    visionText: 'To create a global platform that connects athletes, coaches, and sports enthusiasts, empowering them to showcase their talent and achieve their dreams.',
+    mission: 'Our Mission',
+    missionText: 'To provide innovative tools and opportunities for athletes to connect, grow, and succeed in their sporting journey while building a vibrant community.',
     
     // Features
     shareAchievements: 'Share Achievements',
@@ -66,6 +80,7 @@ export const translations: Translations = {
     // Authentication
     login: 'Login',
     signup: 'Sign Up',
+    signOut: 'Sign Out',
     email: 'Email',
     password: 'Password',
     confirmPassword: 'Confirm Password',
@@ -144,6 +159,20 @@ export const translations: Translations = {
     learnMore: 'और जानें',
     features: 'सुविधाएं',
     featuresTitle: 'खेल के लिए आपको चाहिए सब कुछ',
+
+    // Welcome Page
+    tagline: 'जुड़ें प्रतिस्पर्धा करें और जीतें',
+    subtitle: 'आइए मिलकर खेलें और ऊपर उठें',
+    letsPlay: 'चलो खेलें',
+    joinForFree: 'मुफ्त में शामिल हों',
+    athlete: 'एथलीट',
+    coach: 'कोच',
+    organization: 'संगठन',
+    parent: 'अभिभावक',
+    vision: 'हमारी दृष्टि',
+    visionText: 'एक वैश्विक मंच बनाना जो एथलीटों, कोचों और खेल प्रेमियों को जोड़ता है, उन्हें अपनी प्रतिभा दिखाने और अपने सपनों को प्राप्त करने का अधिकार देता है।',
+    mission: 'हमारा मिशन',
+    missionText: 'एथलीटों को जुड़ने, बढ़ने और अपनी खेल यात्रा में सफल होने के लिए नवीन उपकरण और अवसर प्रदान करना, साथ ही एक जीवंत समुदाय का निर्माण करना।',
     
     // Features
     shareAchievements: 'उपलब्धियां साझा करें',
@@ -156,6 +185,7 @@ export const translations: Translations = {
     // Authentication
     login: 'लॉगिन',
     signup: 'साइन अप',
+    signOut: 'साइन आउट',
     email: 'ईमेल',
     password: 'पासवर्ड',
     confirmPassword: 'पासवर्ड की पुष्टि करें',

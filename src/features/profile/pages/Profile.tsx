@@ -8,6 +8,7 @@ import RoleSelector from '../components/RoleSelector';
 import RoleSpecificSections from '../components/RoleSpecificSections';
 import ProfilePictureManager from '../components/ProfilePictureManager';
 import CoverPhotoManager from '../components/CoverPhotoManager';
+import SportBanner from '../components/SportBanner';
 import { usePerformanceMonitoring, useMemoryMonitoring } from '../hooks/usePerformanceMonitoring';
 import {
   UserRole,
@@ -208,6 +209,11 @@ const Profile: React.FC = React.memo(() => {
             setProfilePicture(userData.profilePicture || userData.photoURL || null);
             setCoverPhoto(userData.coverPhoto || null);
 
+            // Load saved role from Firestore if it exists (for profile owner only)
+            if (isOwner && userData.role) {
+              setCurrentRole(userData.role as UserRole);
+            }
+
             // Load posts from separate posts collection
             await loadUserPosts(targetUserId);
 
@@ -291,11 +297,6 @@ const Profile: React.FC = React.memo(() => {
     navigate('/home');
   };
 
-  const handleRoleChange = useCallback((newRole: UserRole) => {
-    setCurrentRole(newRole);
-    // In real app, persist role selection
-  }, []);
-
   const [editModalInitialTab, setEditModalInitialTab] = useState<string>('personal');
 
   const handleEditProfile = useCallback(() => {
@@ -330,6 +331,36 @@ const Profile: React.FC = React.memo(() => {
       }, 1000);
     }
   }, []);
+
+  // Handle role change with Firestore persistence
+  const handleRoleChange = useCallback(async (newRole: UserRole) => {
+    setCurrentRole(newRole);
+
+    // Persist role selection to Firestore
+    if (firebaseUser?.uid) {
+      try {
+        const { doc, updateDoc } = await import('firebase/firestore');
+        const { db } = await import('../../../lib/firebase');
+
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        await updateDoc(userRef, {
+          role: newRole,
+          updatedAt: new Date()
+        });
+
+        // Dispatch custom event to notify other components about role change
+        window.dispatchEvent(new CustomEvent('userProfileUpdated', {
+          detail: { role: newRole }
+        }));
+
+        console.log('Role updated to:', newRole);
+        announceToScreenReader(`Role changed to ${roleConfigurations[newRole].displayName}`);
+      } catch (error) {
+        console.error('Error saving role:', error);
+        announceToScreenReader('Failed to save role change');
+      }
+    }
+  }, [firebaseUser, announceToScreenReader]);
 
   // Performance optimization: Memoize expensive computations
   const profileStats = useMemo(() => ({
@@ -421,16 +452,56 @@ const Profile: React.FC = React.memo(() => {
     }
   }), [announceToScreenReader, certificates, firebaseUser]);
 
+  // Function to reload talent videos from Firestore
+  const reloadTalentVideos = useCallback(async () => {
+    try {
+      if (!firebaseUser?.uid) return;
+
+      const { doc, getDoc } = await import('firebase/firestore');
+      const { db } = await import('../../../lib/firebase');
+
+      const userRef = doc(db, 'users', firebaseUser.uid);
+      const userDoc = await getDoc(userRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setTalentVideos(userData.talentVideos || []);
+      }
+    } catch (error) {
+      console.error('Error reloading talent videos:', error);
+    }
+  }, [firebaseUser]);
+
   const videoHandlers = useMemo(() => ({
     onAddVideo: () => {
-      // Handle add video - would open add modal
+      // Handle add video - reload videos after upload
+      // The TalentVideosSection handles the actual upload
       console.log('Add video clicked');
       announceToScreenReader('Opening add video form');
     },
-    onEditVideo: (video: TalentVideo) => {
-      // Handle edit video - would open edit modal
-      console.log('Edit video:', video.id);
-      announceToScreenReader(`Editing video: ${video.title}`);
+    onEditVideo: async (video: TalentVideo) => {
+      try {
+        // Update local state
+        const updatedVideos = talentVideos.map(v => v.id === video.id ? video : v);
+        setTalentVideos(updatedVideos);
+
+        // Save to Firebase
+        if (firebaseUser?.uid) {
+          const { doc, updateDoc } = await import('firebase/firestore');
+          const { db } = await import('../../../lib/firebase');
+
+          const userRef = doc(db, 'users', firebaseUser.uid);
+          await updateDoc(userRef, {
+            talentVideos: updatedVideos,
+            updatedAt: new Date()
+          });
+        }
+
+        announceToScreenReader(`Video ${video.title} updated`);
+      } catch (error) {
+        console.error('Error updating video:', error);
+        announceToScreenReader('Failed to update video');
+      }
     },
     onDeleteVideo: async (id: string) => {
       try {
@@ -450,6 +521,34 @@ const Profile: React.FC = React.memo(() => {
             talentVideos: updatedVideos,
             updatedAt: new Date()
           });
+
+          // Also try to delete video and thumbnail from storage
+          try {
+            const { ref, deleteObject } = await import('firebase/storage');
+            const { storage } = await import('../../../lib/firebase');
+
+            // Extract filename from video URL
+            if (video?.videoUrl) {
+              const videoPath = new URL(video.videoUrl).pathname;
+              const videoFileName = videoPath.split('/').pop();
+              if (videoFileName) {
+                const videoRef = ref(storage, `talent-videos/${firebaseUser.uid}/${decodeURIComponent(videoFileName)}`);
+                await deleteObject(videoRef).catch(() => {});
+              }
+            }
+
+            // Delete thumbnail
+            if (video?.thumbnailUrl) {
+              const thumbnailPath = new URL(video.thumbnailUrl).pathname;
+              const thumbnailFileName = thumbnailPath.split('/').pop();
+              if (thumbnailFileName) {
+                const thumbnailRef = ref(storage, `thumbnails/${firebaseUser.uid}/${decodeURIComponent(thumbnailFileName)}`);
+                await deleteObject(thumbnailRef).catch(() => {});
+              }
+            }
+          } catch (storageError) {
+            console.warn('Error deleting video files from storage:', storageError);
+          }
         }
 
         announceToScreenReader(`Video ${video?.title || ''} deleted`);
@@ -464,6 +563,30 @@ const Profile: React.FC = React.memo(() => {
       announceToScreenReader(`Playing video: ${video.title}`);
     }
   }), [announceToScreenReader, talentVideos, firebaseUser]);
+
+  // Auto-play video from share link
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoId = urlParams.get('video');
+
+    if (videoId && talentVideos.length > 0 && !isLoading) {
+      // Find the video with matching ID
+      const video = talentVideos.find(v => v.id === videoId);
+
+      if (video) {
+        // Scroll to talent videos section and open video player
+        setTimeout(() => {
+          const videoSection = document.getElementById('talent-videos-section');
+          if (videoSection) {
+            videoSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+
+          // Trigger video click to open player
+          videoHandlers.onVideoClick(video);
+        }, 500); // Small delay to ensure page is fully rendered
+      }
+    }
+  }, [talentVideos, isLoading, videoHandlers]);
 
   const postHandlers = useMemo(() => ({
     onPostClick: (post: Post) => {
@@ -975,6 +1098,16 @@ const Profile: React.FC = React.memo(() => {
                 </button>
               )}
             </div>
+
+            {/* Sport Banner - Shows sport/position info below name */}
+            <SportBanner
+              sport={personalDetails.sport}
+              position={personalDetails.position}
+              playerType={personalDetails.playerType}
+              role={currentRole}
+              organizationType={personalDetails.organizationType}
+              specializations={personalDetails.specializations}
+            />
 
             {/* Role Selector - only show for profile owner */}
             {isOwner && (

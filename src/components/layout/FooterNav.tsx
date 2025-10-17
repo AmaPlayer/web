@@ -1,6 +1,6 @@
 import  { memo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Search, Calendar, MessageCircle, User, LucideIcon } from 'lucide-react';
+import { Home, Play, Calendar, MessageCircle, User, LucideIcon } from 'lucide-react';
 import './FooterNav.css';
 
 interface NavItem {
@@ -20,7 +20,7 @@ const FooterNav = memo(function FooterNav() {
       try {
         // Preload the most commonly used routes
         const routesToPreload = [
-          () => import('../../pages/search/Search'),
+          () => import('../../pages/moments/MomentsPage'),
           () => import('../../pages/events/Events'),
           () => import('../../pages/messages/Messages'),
           () => import('../../features/profile/pages/Profile')
@@ -52,10 +52,10 @@ const FooterNav = memo(function FooterNav() {
       path: '/home'
     },
     {
-      id: 'search',
-      icon: Search,
-      label: 'Search',
-      path: '/search'
+      id: 'moments',
+      icon: Play,
+      label: 'Moments',
+      path: '/moments'
     },
     {
       id: 'events',
@@ -84,7 +84,7 @@ const FooterNav = memo(function FooterNav() {
   // Preload route on hover for instant navigation
   const handleNavHover = (path: string): void => {
     const routeMap: Record<string, () => Promise<unknown>> = {
-      '/search': () => import('../../pages/search/Search'),
+      '/moments': () => import('../../pages/moments/MomentsPage'),
       '/events': () => import('../../pages/events/Events'),
       '/messages': () => import('../../pages/messages/Messages'),
       '/profile': () => import('../../features/profile/pages/Profile')

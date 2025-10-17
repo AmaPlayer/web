@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Video, Send, Trash2, MoreVertical, Edit3, Share2, Check } from 'lucide-react';
 import OptimizedImage from '../../../components/common/media/OptimizedImage';
 import VideoPlayer from '../../../components/common/media/VideoPlayer';
@@ -7,8 +7,11 @@ import LazyLoadImage from '../../../components/common/media/LazyLoadImage';
 import SafeImage from '../../../components/common/SafeImage';
 import ErrorBoundary from '../../../components/common/safety/ErrorBoundary';
 import { SafeCommentsList } from '../../../components/common/safety/SafeComment';
+import RoleBadge from '../../../components/common/ui/RoleBadge';
+import SportBanner from '../../../features/profile/components/SportBanner';
 import { Post as PostType, Like } from '../../../types/models';
 import { User } from 'firebase/auth';
+import userService from '../../../services/api/userService';
 import './Post.css';
 
 interface CommentForms {
@@ -94,17 +97,90 @@ const Post: React.FC<PostProps> = ({
     }
   };
 
+  // Check if this is the current user's post
+  const isCurrentUserPost = currentUser && post.userId === currentUser.uid;
+  
+  // State to track user profile data from Firebase
+  const [userProfileData, setUserProfileData] = useState<any>(null);
+
+  // Fetch user profile data from Firebase for current user's posts
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchUserProfile = async () => {
+      if (isCurrentUserPost && currentUser) {
+        try {
+          const userData = await userService.getById(currentUser.uid);
+          if (isMounted && userData) {
+            setUserProfileData(userData);
+            // Also update localStorage for immediate access
+            if (userData.role) localStorage.setItem('userRole', userData.role);
+            if (userData.sports && userData.sports[0]) localStorage.setItem('userSport', userData.sports[0]);
+            if (userData.position) localStorage.setItem('userPosition', userData.position);
+            if (userData.specializations) localStorage.setItem('userSpecializations', JSON.stringify(userData.specializations));
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        }
+      }
+    };
+
+    fetchUserProfile();
+
+    // Listen for custom profile update event
+    const handleProfileUpdate = () => {
+      fetchUserProfile();
+    };
+
+    window.addEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
+    };
+  }, [isCurrentUserPost, currentUser]);
+
+  // Get current profile data - use Firebase data for current user, post data for others
+  const currentRole = isCurrentUserPost && userProfileData
+    ? (userProfileData.role || post.userRole || 'athlete')
+    : (post.userRole || 'athlete');
+  const currentSport = isCurrentUserPost && userProfileData
+    ? (userProfileData.sports?.[0] || post.userSport)
+    : post.userSport;
+  const currentPosition = isCurrentUserPost && userProfileData
+    ? (userProfileData.position || post.userPosition)
+    : post.userPosition;
+  const currentPlayerType = isCurrentUserPost && userProfileData
+    ? (userProfileData.playerType || post.userPlayerType)
+    : post.userPlayerType;
+  const currentOrganizationType = isCurrentUserPost && userProfileData
+    ? (userProfileData.organizationType || post.userOrganizationType)
+    : post.userOrganizationType;
+  const currentSpecializations = isCurrentUserPost && userProfileData
+    ? (userProfileData.specializations || post.userSpecializations)
+    : post.userSpecializations;
+
   return (
     <div className="post" data-testid={`post-${post.id}`}>
       <div className="post-header">
         <div className="post-user-info">
-          <h3
-            className="post-username-clickable"
-            onClick={handleUserClick}
-            style={{ cursor: 'pointer' }}
-          >
-            {post.userDisplayName}
-          </h3>
+          <div className="post-username-container">
+            <h3
+              className="post-username-clickable"
+              onClick={handleUserClick}
+              style={{ cursor: 'pointer' }}
+            >
+              {post.userDisplayName}
+            </h3>
+            <SportBanner 
+              role={currentRole as any} 
+              sport={currentSport}
+              position={currentPosition}
+              playerType={currentPlayerType}
+              organizationType={currentOrganizationType}
+              specializations={currentSpecializations}
+            />
+          </div>
           <span className="post-time">
             {post.timestamp ? (
               (post.timestamp as any)?.toDate ?

@@ -209,8 +209,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 2000; /* Increased to ensure visibility above all other elements */
   backdrop-filter: blur(5px);
+  padding: 20px;
 }
 
 .modal-content {
@@ -222,6 +223,8 @@ body {
   overflow-y: auto;
   box-shadow: var(--shadow-modal);
   animation: slideUp 0.3s ease-out;
+  position: relative;
+  z-index: 2001;
 }
 
 /* Responsive Utilities */
@@ -237,46 +240,54 @@ body {
   .desktop-only {
     display: none;
   }
-  
+
   .mobile-only {
     display: block;
   }
-  
+
   .main-content {
     padding: 70px 16px 90px;
     max-width: 100%;
     box-sizing: border-box;
   }
-  
+
   .container {
     padding: 0 16px;
     max-width: 100%;
     box-sizing: border-box;
   }
-  
+
+  .modal-overlay {
+    padding: 10px;
+  }
+
   .modal-content {
     width: 95%;
-    margin: 10px;
+    margin: 0;
     max-width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+    border-radius: 16px;
   }
-  
+
   /* Prevent horizontal overflow */
   body {
     overflow-x: hidden;
+    width: 100%;
+    position: relative;
   }
-  
+
   /* Ensure all content stays within viewport */
   * {
     max-width: 100%;
     box-sizing: border-box;
   }
-  
+
   /* Fix navigation for mobile */
   .nav-content {
     padding: 0 10px;
     max-width: 100%;
   }
-  
+
   .nav-content h1 {
     font-size: 16px;
     max-width: calc(100vw - 120px);
@@ -284,30 +295,57 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  /* Better button sizing on mobile */
+  .btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    min-height: 44px; /* Touch-friendly size */
+  }
+
+  /* Improve form inputs on mobile */
+  .form-input,
+  .form-textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+    padding: 12px;
+  }
 }
 
 @media (max-width: 480px) {
   .main-content {
     padding: 60px 12px 80px;
   }
-  
+
   .container {
     padding: 0 12px;
   }
-  
+
   .nav-content {
     padding: 0 8px;
   }
-  
+
   .nav-content h1 {
     font-size: 14px;
     max-width: calc(100vw - 100px);
   }
-  
+
+  .modal-overlay {
+    padding: 5px;
+  }
+
   .modal-content {
-    width: 98%;
-    margin: 5px;
+    width: 100%;
+    margin: 0;
     max-width: calc(100vw - 10px);
+    max-height: calc(100vh - 10px);
+    border-radius: 12px;
+  }
+
+  /* Smaller buttons on very small screens */
+  .btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    min-height: 40px;
   }
 }
 

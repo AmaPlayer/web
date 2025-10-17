@@ -7,7 +7,7 @@
   border: 1px solid var(--border-primary);
   border-radius: 8px;
   box-shadow: var(--shadow-primary);
-  z-index: 1000;
+  z-index: 2100; /* Ensure above navigation (z-index: 1000) */
   animation: slideDownFadeIn 0.3s ease-out;
   overflow: hidden;
   display: flex;
@@ -69,6 +69,8 @@
     max-width: none;
     border-radius: 12px;
     max-height: calc(100vh - 80px);
+    z-index: 2100; /* Ensure above navigation */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
   .settings-menu-header {

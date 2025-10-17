@@ -599,5 +599,84 @@ service cloud.firestore {
     function onlyVerificationDataChanged() {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['verificationCount', 'verificationIPs', 'verifiedBy', 'status', 'verifiedAt']);
     }
+
+    // Moments collection rules - for video moments/reels feature
+    match /moments/{momentId} {
+      // Anyone can read approved, active moments (including guests)
+      allow read: if true;
+
+      // Only authenticated non-guest users can create moments
+      allow create: if request.auth != null
+        && !isGuestUser()
+        && request.auth.uid == request.resource.data.userId
+        && validateMomentData();
+
+      // Users can update their own moments or engagement data can be updated
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.userId ||
+        onlyMomentEngagementChanged()
+      );
+
+      // Users can delete their own moments
+      allow delete: if request.auth != null
+        && !isGuestUser()
+        && request.auth.uid == resource.data.userId;
+    }
+
+    // Moment comments collection (separate from moments)
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if request.auth != null && !isGuestUser() && validateMomentCommentData();
+      allow update, delete: if request.auth != null
+        && !isGuestUser()
+        && request.auth.uid == resource.data.userId;
+    }
+
+    // Moment interactions collection (for analytics)
+    match /interactions/{interactionId} {
+      // Anyone can read interactions
+      allow read: if true;
+
+      // Anyone can create interactions (for tracking views, likes, etc.)
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId;
+    }
+
+    function validateMomentData() {
+      return request.resource.data.keys().hasAll(['userId', 'userDisplayName', 'videoUrl', 'caption', 'duration', 'createdAt', 'isActive', 'moderationStatus'])
+        && request.resource.data.userId is string
+        && request.resource.data.userDisplayName is string
+        && request.resource.data.videoUrl is string
+        && request.resource.data.caption is string
+        && request.resource.data.caption.size() <= 500
+        && request.resource.data.duration is number
+        && request.resource.data.isActive is bool
+        && request.resource.data.moderationStatus in ['pending', 'approved', 'rejected']
+        && request.resource.data.userId == request.auth.uid;
+    }
+
+    function validateMomentCommentData() {
+      return request.resource.data.keys().hasAll(['momentId', 'userId', 'userDisplayName', 'text', 'timestamp'])
+        && request.resource.data.momentId is string
+        && request.resource.data.userId is string
+        && request.resource.data.userDisplayName is string
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 500
+        && request.resource.data.userId == request.auth.uid;
+    }
+
+    function onlyMomentEngagementChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.likes']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.likesCount']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.comments']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.commentsCount']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.shares']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.sharesCount']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.views']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.watchTime']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.completionRate']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['updatedAt']);
+    }
   }
 }

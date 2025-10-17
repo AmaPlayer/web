@@ -507,13 +507,83 @@ heckbox styles for Keep me logged in */
     align-items: stretch;
     gap: 8px;
   }
-  
+
   .retry-btn {
     width: 100%;
     padding: 10px;
   }
-  
+
   .field-error {
     font-size: 11px;
+  }
+}
+
+/* Password toggle button styles */
+.password-group {
+  position: relative;
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  padding-right: 50px !important;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 10px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  border-radius: 0 8px 8px 0;
+  height: 100%;
+}
+
+.password-toggle-btn:hover:not(:disabled) {
+  color: var(--accent-primary);
+  background: rgba(0, 255, 136, 0.05);
+}
+
+.password-toggle-btn:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.password-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.password-toggle-btn:focus {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .password-toggle-btn:hover:not(:disabled) {
+    background: rgba(0, 255, 136, 0.1);
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .password-toggle-btn {
+    padding: 8px 12px;
+  }
+
+  .password-input-wrapper input {
+    padding-right: 45px !important;
   }
 }

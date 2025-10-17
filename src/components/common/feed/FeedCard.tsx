@@ -5,6 +5,7 @@ import { useInViewport } from '../../../utils/performance/infiniteScroll';
 import { useToast } from '../../../hooks/useToast';
 import LoadingSpinner from '../feedback/LoadingSpinner';
 import LikeButton from '../../../features/social/components/LikeButton';
+import RoleBadge from '../ui/RoleBadge';
 // @ts-ignore - JS component not yet migrated
 import LazyImage from '../ui/LazyImage';
 // @ts-ignore - JS component not yet migrated
@@ -18,6 +19,7 @@ interface FeedItem {
   userId: string;
   userPhotoURL: string;
   userDisplayName: string;
+  userRole?: 'athlete' | 'parent' | 'organization' | 'coach';
   createdAt: string | Date;
   caption?: string;
   type: 'image' | 'video' | 'talent' | 'profile';
@@ -170,7 +172,10 @@ const FeedCard: React.FC<FeedCardProps> = memo(({
             } as any)}
           />
           <div className="user-details">
-            <h4 className="user-name">{item.userDisplayName}</h4>
+            <div className="user-name-container">
+              <h4 className="user-name">{item.userDisplayName}</h4>
+              <RoleBadge role={item.userRole} size="small" />
+            </div>
             <span className="post-time">{formatTime(item.createdAt)}</span>
           </div>
         </div>

@@ -1,20 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import {
   collection,
-  query,
-  orderBy,
   doc,
   updateDoc,
   arrayUnion,
   arrayRemove,
   addDoc,
   deleteDoc,
-  serverTimestamp,
-  limit,
-  startAfter,
-  getDocs,
-  DocumentSnapshot,
-  DocumentData
+  serverTimestamp
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
@@ -78,7 +71,6 @@ export const usePostOperations = (): UsePostOperationsReturn => {
     error: storeError,
     setPosts,
     addPosts,
-    addPost,
     updatePost: updatePostInStore,
     removePost,
     setHasMore,
@@ -202,6 +194,7 @@ export const usePostOperations = (): UsePostOperationsReturn => {
         userId: currentUser.uid,
         userDisplayName: currentUser.displayName || 'Anonymous User',
         userPhotoURL: currentUser.photoURL || '',
+        userRole: currentUser.role || null,
         caption: text,
         timestamp: serverTimestamp(),
         likes: [],

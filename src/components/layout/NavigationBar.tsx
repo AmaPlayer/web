@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Settings, ArrowLeft, Bell } from 'lucide-react';
+import { Settings, ArrowLeft, Bell, Search } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import SettingsMenu from '../common/settings/SettingsMenu';
 import NotificationDropdown from '../common/notifications/NotificationDropdown';
 import { User } from 'firebase/auth';
@@ -24,6 +25,8 @@ interface NavigationBarProps {
  */
 const NavigationBar = ({ currentUser, isGuest, onTitleClick, title = "AmaPlayer", showBackButton = false, onBackClick }: NavigationBarProps) => {
   const { isGuest: authIsGuest } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
   const [notificationsOpen, setNotificationsOpen] = useState<boolean>(false);
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -45,6 +48,12 @@ const NavigationBar = ({ currentUser, isGuest, onTitleClick, title = "AmaPlayer"
 
   const handleNotificationsClose = () => {
     setNotificationsOpen(false);
+  };
+
+  const handleSearchClick = () => {
+    setSettingsOpen(false);
+    setNotificationsOpen(false);
+    navigate('/search');
   };
 
   // Fetch unread notification count
@@ -125,6 +134,18 @@ const NavigationBar = ({ currentUser, isGuest, onTitleClick, title = "AmaPlayer"
           )}
           
           <div className="nav-actions">
+            {/* Search */}
+            <button
+              className={`search-btn ${location.pathname === '/search' ? 'active' : ''}`}
+              onClick={handleSearchClick}
+              aria-label="Search users"
+              title="Search"
+              type="button"
+            >
+              <Search size={24} aria-hidden="true" />
+              <span className="sr-only">Search</span>
+            </button>
+
             {/* Notifications */}
             {!authIsGuest() && (
               <div className="notifications-container">

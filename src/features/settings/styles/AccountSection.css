@@ -256,24 +256,85 @@
   }
 }
 
+/* Logout Section */
+.logout-section {
+  margin-top: 32px;
+  padding-top: 24px;
+}
+
+.logout-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin-bottom: 20px;
+}
+
+.logout-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.logout-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  width: 100%;
+  max-width: 200px;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.logout-button:hover:not(:disabled) {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.logout-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.logout-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .account-section {
     padding: 16px;
   }
-  
+
   .account-header {
     flex-direction: column;
     gap: 12px;
     align-items: flex-start;
   }
-  
+
   .account-actions {
     flex-direction: column;
   }
-  
+
   .save-button,
   .cancel-button {
     justify-content: center;
+  }
+
+  .logout-section {
+    margin-top: 24px;
+    padding-top: 20px;
+  }
+
+  .logout-button {
+    max-width: 100%;
   }
 }

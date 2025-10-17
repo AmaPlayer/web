@@ -1,4 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
+import { UserRole } from './user';
 
 /**
  * Media type for posts
@@ -18,6 +19,12 @@ export interface Post {
   userId: string;
   userDisplayName: string;
   userPhotoURL: string | null;
+  userRole?: UserRole;
+  userSport?: string;
+  userPosition?: string;
+  userPlayerType?: string;
+  userOrganizationType?: string;
+  userSpecializations?: string[];
   caption: string;
   mediaUrl?: string | null;
   mediaType?: MediaType;

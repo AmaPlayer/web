@@ -155,11 +155,29 @@ const PostComposer: React.FC<PostComposerProps> = ({
         mediaType = selectedMedia.type.startsWith('image/') ? 'image' : 'video';
       }
 
+      // Get user profile data from localStorage
+      const profileRole = localStorage.getItem('userRole') || 'athlete';
+      // Map profile role to post role format
+      const userRole = profileRole === 'parents' ? 'parent' : profileRole === 'coaches' ? 'coach' : profileRole;
+      const userSport = localStorage.getItem('userSport') || undefined;
+      const userPosition = localStorage.getItem('userPosition') || undefined;
+      const userPlayerType = localStorage.getItem('userPlayerType') || undefined;
+      const userOrganizationType = localStorage.getItem('userOrganizationType') || undefined;
+      const userSpecializations = localStorage.getItem('userSpecializations') 
+        ? JSON.parse(localStorage.getItem('userSpecializations')!) 
+        : undefined;
+
       // Create post document with all required fields
       const postData: any = {
         userId: currentUser.uid,
         userDisplayName: currentUser.displayName || 'Anonymous User',
         userPhotoURL: currentUser.photoURL || null,
+        userRole: userRole,
+        userSport: userSport,
+        userPosition: userPosition,
+        userPlayerType: userPlayerType,
+        userOrganizationType: userOrganizationType,
+        userSpecializations: userSpecializations,
         caption: text,
         mediaUrl: mediaUrl,
         mediaType: mediaType,

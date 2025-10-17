@@ -258,11 +258,12 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 2000;
+  z-index: 2000; /* Above navigation and footer */
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--spacing-md);
+  background: rgba(0, 0, 0, 0.7);
 }
 
 .modal-content-responsive {
@@ -273,6 +274,20 @@
   width: 100%;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 2001;
+}
+
+@media (max-width: 575.98px) {
+  .modal-responsive {
+    padding: 10px;
+  }
+
+  .modal-content-responsive {
+    max-width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+    border-radius: 16px;
+  }
 }
 
 @media (min-width: 576px) {
@@ -302,15 +317,57 @@
     animation-duration: 0.2s !important;
     transition-duration: 0.2s !important;
   }
-  
+
   /* Disable backdrop-filter on mobile for better performance */
   .backdrop-blur {
     backdrop-filter: none !important;
   }
-  
+
   /* Optimize box-shadows for mobile */
   .shadow-mobile-optimized {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Touch-friendly interactions */
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  a {
+    min-height: 44px; /* Apple's recommended touch target size */
+    min-width: 44px;
+    touch-action: manipulation; /* Disable double-tap zoom */
+  }
+
+  /* Prevent text selection on touch */
+  button,
+  [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Better text input on mobile */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  textarea {
+    font-size: 16px !important; /* Prevent zoom on iOS */
+  }
+
+  /* Hide scrollbars on mobile for cleaner UI */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 2px;
   }
 }
 

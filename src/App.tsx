@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -21,7 +21,6 @@ import './performance.css';
 
 // Lazy load components for better performance
 const WelcomePage = React.lazy(() => import('./login_flow/components/WelcomePage'));
-const RoleSelectionPage = React.lazy(() => import('./login_flow/components/RoleSelectionPage'));
 const AboutPage = React.lazy(() => import('./login_flow/components/AboutPage'));
 const Login = React.lazy(() => import('./features/auth/Login'));
 const Signup = React.lazy(() => import('./features/auth/Signup'));
@@ -35,7 +34,9 @@ const PostDetail = React.lazy(() => import('./pages/postdetail/PostDetail'));
 const StoryDetail = React.lazy(() => import('./features/stories/StoryDetail'));
 const StorySharePage = React.lazy(() => import('./features/stories/StorySharePage'));
 const VerificationPage = React.lazy(() => import('./pages/verification/VerificationPage'));
+const VideoVerificationPage = React.lazy(() => import('./features/profile/pages/VideoVerification'));
 const Settings = React.lazy(() => import('./features/settings/pages/Settings'));
+const MomentsPage = React.lazy(() => import('./pages/moments/MomentsPage'));
 
 // Athlete Onboarding Components
 const SportSelectionPage = React.lazy(() => import('./features/athlete-onboarding/components/SportSelectionPage'));
@@ -68,6 +69,8 @@ const LoadingSpinner: React.FC = () => (
 );
 
 function AppContent(): React.JSX.Element {
+  const location = useLocation();
+
   useEffect(() => {
     // Conservative cache management - prevent infinite reload
     const manageCache = (): void => {
@@ -123,8 +126,7 @@ function AppContent(): React.JSX.Element {
           <ErrorBoundary name="App-Routes" userFriendlyMessage="There was an issue loading this page. Please try again.">
             <Routes>
               {/* Login Flow Routes */}
-              <Route path="/" element={<WelcomePage />} />
-              <Route path="/role-selection" element={<RoleSelectionPage />} />
+              <Route path="/" element={<WelcomePage key={location.key} />} />
               <Route path="/about/:role" element={<AboutPage />} />
               <Route path="/login/:role" element={<Login />} />
               <Route path="/login" element={<Login />} />
@@ -145,6 +147,11 @@ function AppContent(): React.JSX.Element {
               <Route path="/search" element={
                 <PrivateRoute>
                   <Search />
+                </PrivateRoute>
+              } />
+              <Route path="/moments" element={
+                <PrivateRoute>
+                  <MomentsPage />
                 </PrivateRoute>
               } />
               <Route path="/add-post" element={
@@ -189,6 +196,7 @@ function AppContent(): React.JSX.Element {
               } />
               <Route path="/story-share/:storyId" element={<StorySharePage />} />
               <Route path="/verify/:verificationId" element={<VerificationPage />} />
+              <Route path="/verify/:userId/:videoId" element={<VideoVerificationPage />} />
             </Routes>
           </ErrorBoundary>
         </Suspense>

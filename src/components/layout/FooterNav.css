@@ -5,7 +5,7 @@
   right: 0;
   background: var(--bg-navbar);
   border-top: 1px solid var(--border-primary);
-  z-index: 1000;
+  z-index: 1000; /* Below modals (2000+) but above content */
   padding: 10px 0;
   box-shadow: var(--shadow-secondary);
 }
@@ -37,6 +37,12 @@
   transition: all 0.2s ease;
   min-width: 60px;
   color: var(--text-secondary);
+  /* Touch optimizations */
+  -webkit-tap-highlight-color: rgba(0, 255, 136, 0.2);
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Ensure proper cursor on all devices */
@@ -99,9 +105,15 @@
   }
   
   .footer-nav-item {
-    min-width: 45px;
+    min-width: 48px; /* Increased for better touch targets */
+    min-height: 48px;
     padding: 6px 4px;
     border-radius: 8px;
+  }
+  
+  .footer-nav-item:active {
+    transform: scale(0.95);
+    background: rgba(0, 255, 136, 0.25);
   }
   
   .footer-nav-icon {
@@ -322,5 +334,59 @@
   
   .main-content {
     padding-bottom: 100px;
+  }
+}
+
+/* Touch device optimizations */
+@media (pointer: coarse) {
+  .footer-nav-item {
+    /* Ensure proper touch targets on all touch devices */
+    min-width: 48px;
+    min-height: 48px;
+    /* Enhanced touch feedback */
+    -webkit-tap-highlight-color: rgba(0, 255, 136, 0.2);
+    touch-action: manipulation;
+  }
+  
+  .footer-nav-item:active {
+    transform: scale(0.95);
+    background: rgba(0, 255, 136, 0.25);
+  }
+  
+  /* Disable hover effects on touch devices */
+  .footer-nav-item:hover {
+    transform: none;
+    background: none;
+    box-shadow: none;
+  }
+  
+  .footer-nav-item.active:hover {
+    background: rgba(0, 255, 136, 0.2);
+  }
+}
+
+/* Landscape orientation optimizations for mobile */
+@media (orientation: landscape) and (max-height: 600px) {
+  .footer-nav {
+    padding: 4px 0;
+    height: 55px;
+  }
+  
+  .footer-nav-item {
+    min-width: 40px;
+    padding: 4px 2px;
+  }
+  
+  .footer-nav-icon {
+    font-size: 16px;
+    margin-bottom: 1px;
+  }
+  
+  .footer-nav-label {
+    font-size: 7px;
+  }
+  
+  .main-content {
+    padding-bottom: 65px;
   }
 }

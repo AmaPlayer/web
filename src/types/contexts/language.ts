@@ -59,6 +59,19 @@ export type TranslationKey =
   | 'learnMore'
   | 'features'
   | 'featuresTitle'
+  // Welcome Page
+  | 'vision'
+  | 'visionText'
+  | 'mission'
+  | 'missionText'
+  | 'tagline'
+  | 'subtitle'
+  | 'letsPlay'
+  | 'joinForFree'
+  | 'athlete'
+  | 'coach'
+  | 'organization'
+  | 'parent'
   // Features
   | 'shareAchievements'
   | 'shareAchievementsDesc'
@@ -69,6 +82,7 @@ export type TranslationKey =
   // Authentication
   | 'login'
   | 'signup'
+  | 'signOut'
   | 'email'
   | 'password'
   | 'confirmPassword'

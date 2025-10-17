@@ -70,6 +70,13 @@
   margin-right: 12px;
 }
 
+.user-name-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
 .user-details h4 {
   margin: 0;
   font-size: 16px;

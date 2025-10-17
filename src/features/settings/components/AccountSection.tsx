@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Camera, Save, X } from 'lucide-react';
+import { User, Mail, Camera, Save, X, LogOut } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import FormField from '../../../components/common/forms/FormField';
 import LoadingSpinner from '../../../components/common/ui/LoadingSpinner';
 import ToastContainer from '../../../components/common/ui/ToastContainer';
+import ConfirmationDialog from '../../../components/common/ui/ConfirmationDialog';
 import { useSettingsForm } from '../../../hooks/useSettingsForm';
 import { useToast } from '../../../hooks/useToast';
+import { useConfirmation } from '../../../hooks/useConfirmation';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { validateDisplayName, validateEmailField } from '../../../utils/validation/formValidation';
 import '../styles/AccountSection.css';
 
@@ -15,9 +19,13 @@ interface AccountFormData {
 }
 
 const AccountSection: React.FC = () => {
-  const { currentUser, updateUserProfile } = useAuth();
+  const { currentUser, updateUserProfile, logout } = useAuth();
   const { toasts, showSuccess, showError } = useToast();
+  const { confirmationState, showConfirmation, hideConfirmation } = useConfirmation();
+  const { t } = useLanguage();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const form = useSettingsForm<AccountFormData>({
     initialValues: {
@@ -72,6 +80,37 @@ const AccountSection: React.FC = () => {
     setIsEditing(true);
   };
 
+  const handleLogout = async () => {
+    const confirmed = await showConfirmation({
+      title: 'Sign Out',
+      message: 'Are you sure you want to sign out?',
+      confirmText: 'Sign Out',
+      cancelText: 'Cancel',
+      variant: 'warning'
+    });
+
+    if (!confirmed) {
+      hideConfirmation();
+      return;
+    }
+
+    try {
+      setIsLoggingOut(true);
+      await logout();
+      showSuccess('Signed Out', 'You have been successfully signed out.');
+      hideConfirmation();
+      // Force full page reload to welcome page to clear all state
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
+    } catch (error) {
+      console.error('Logout error:', error);
+      showError('Sign Out Failed', 'Failed to sign out. Please try again.');
+      hideConfirmation();
+      setIsLoggingOut(false);
+    }
+  };
+
   if (!currentUser) {
     return (
       <div className="account-section">
@@ -85,6 +124,17 @@ const AccountSection: React.FC = () => {
   return (
     <>
       <ToastContainer toasts={toasts} position="top-right" />
+      <ConfirmationDialog
+        isOpen={confirmationState.isOpen}
+        title={confirmationState.title}
+        message={confirmationState.message}
+        confirmText={confirmationState.confirmText}
+        cancelText={confirmationState.cancelText}
+        variant={confirmationState.variant}
+        onConfirm={confirmationState.onConfirm}
+        onCancel={confirmationState.onCancel}
+        isLoading={confirmationState.isLoading}
+      />
       <div className="account-section">
         <div className="account-header">
           <h3>Account Information</h3>
@@ -216,6 +266,30 @@ const AccountSection: React.FC = () => {
             </button>
           </div>
         )}
+
+        {/* Sign Out Section */}
+        <div className="logout-section">
+          <div className="logout-divider"></div>
+          <h4>Account Actions</h4>
+          <button
+            className="logout-button"
+            onClick={handleLogout}
+            disabled={isLoggingOut || form.isSaving}
+            type="button"
+          >
+            {isLoggingOut ? (
+              <>
+                <LoadingSpinner size="small" color="white" className="in-button" />
+                Signing out...
+              </>
+            ) : (
+              <>
+                <LogOut size={16} />
+                {t('signOut')}
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
     </>

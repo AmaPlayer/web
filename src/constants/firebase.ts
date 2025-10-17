@@ -14,7 +14,9 @@ export const COLLECTIONS = {
   FOLLOWS: 'follows',
   REPORTS: 'reports',
   ADMIN_LOGS: 'adminLogs',
-  EVENTS: 'events'
+  EVENTS: 'events',
+  MOMENTS: 'moments',
+  MOMENT_INTERACTIONS: 'momentInteractions'
 } as const;
 
 export type CollectionName = typeof COLLECTIONS[keyof typeof COLLECTIONS];
@@ -26,7 +28,9 @@ export const STORAGE_PATHS = {
   PROFILE_IMAGES: 'profile-images',
   VIDEOS: 'videos',
   THUMBNAILS: 'thumbnails',
-  TEMP_UPLOADS: 'temp-uploads'
+  TEMP_UPLOADS: 'temp-uploads',
+  MOMENTS: 'moments',
+  MOMENT_THUMBNAILS: 'moment-thumbnails'
 } as const;
 
 export type StoragePath = typeof STORAGE_PATHS[keyof typeof STORAGE_PATHS];
