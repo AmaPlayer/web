@@ -37,12 +37,15 @@ vice class for managing moments (video content) operations
  */
 export class MomentsService {
   private static readonly COLLECTION_NAME = 'moments';
+  private static readonly TALENT_VIDEOS_COLLECTION = 'talentVideos';
   private static readonly COMMENTS_COLLECTION = 'comments';
   private static readonly INTERACTIONS_COLLECTION = 'interactions';
   private static readonly STORAGE_PATH = 'moments';
 
   /**
    * Fetch paginated moments with optional filtering
+   * By default, fetches moments from all users (multi-user feed)
+   * Pass userId in options to filter to a specific user (e.g., for profile pages)
    */
   static async getMoments(options: MomentsQueryOptions = {}): Promise<PaginatedMomentsResult> {
     try {
@@ -56,29 +59,44 @@ export class MomentsService {
         currentUserId
       } = options;
 
+      // Build query constraints array
+      const whereConstraints = [
+        where('isActive', '==', true)
+      ];
+
+      // Only add moderationStatus filter if specified
+      if (moderationStatus) {
+        whereConstraints.push(where('moderationStatus', '==', moderationStatus));
+      }
+
+      // Only filter by userId when explicitly provided (e.g., for profile pages)
+      if (userId) {
+        whereConstraints.push(where('userId', '==', userId));
+      }
+
+      // Build query with all constraints
       let q = query(
         collection(db, this.COLLECTION_NAME),
-        where('isActive', '==', true),
-        where('moderationStatus', '==', moderationStatus),
-        orderBy(orderField, orderDirection),
-        firestoreLimit(limit)
+        ...whereConstraints,
+        orderBy(orderField, orderDirection)
       );
 
-      // Filter by specific user if provided
-      if (userId) {
+      // Add pagination if provided
+      if (startAfterDoc) {
         q = query(
           collection(db, this.COLLECTION_NAME),
-          where('userId', '==', userId),
-          where('isActive', '==', true),
-          where('moderationStatus', '==', moderationStatus),
+          ...whereConstraints,
+          orderBy(orderField, orderDirection),
+          startAfter(startAfterDoc),
+          firestoreLimit(limit)
+        );
+      } else {
+        q = query(
+          collection(db, this.COLLECTION_NAME),
+          ...whereConstraints,
           orderBy(orderField, orderDirection),
           firestoreLimit(limit)
         );
-      }
-
-      // Add pagination
-      if (startAfterDoc) {
-        q = query(q, startAfter(startAfterDoc));
       }
 
       const snapshot = await getDocs(q);
@@ -374,7 +392,19 @@ export class MomentsService {
       return comments;
     } catch (error) {
       console.error('Error fetching comments:', error);
-      throw new Error('Failed to fetch comments');
+
+      // Check if it's an index error
+      if (error instanceof Error && error.message.includes('index')) {
+        console.warn('Firestore index is still building. Comments will be available soon.');
+        return []; // Return empty array instead of throwing
+      }
+
+      // For other errors, return empty array gracefully
+      // This prevents UI crashes while debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Returning empty comments array due to error:', error);
+      }
+      return [];
     }
   }
 
@@ -478,7 +508,7 @@ export class MomentsService {
       // Note: Firestore doesn't support full-text search natively
       // This is a basic implementation that searches by exact matches
       // In production, you'd use Algolia or similar service
-      
+
       const q = query(
         collection(db, this.COLLECTION_NAME),
         where('isActive', '==', true),
@@ -512,6 +542,128 @@ export class MomentsService {
     } catch (error) {
       console.error('Error searching moments:', error);
       throw new Error('Failed to search moments');
+    }
+  }
+
+  /**
+   * Get verified talent videos
+   */
+  static async getVerifiedTalentVideos(limit = 10): Promise<MomentVideo[]> {
+    try {
+      const q = query(
+        collection(db, this.TALENT_VIDEOS_COLLECTION),
+        where('isVerified', '==', true),
+        orderBy('uploadedAt', 'desc'),
+        firestoreLimit(limit)
+      );
+
+      const snapshot = await getDocs(q);
+      const talentVideos: MomentVideo[] = [];
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        // Convert talent video to moment format
+        const talentVideo: MomentVideo = {
+          id: doc.id,
+          userId: data.userId,
+          userDisplayName: data.userDisplayName,
+          userPhotoURL: data.userPhotoURL || null,
+          videoUrl: data.videoUrl,
+          thumbnailUrl: data.thumbnailUrl || data.videoUrl,
+          caption: data.description || '',
+          duration: data.duration || 0,
+          createdAt: data.uploadedAt || Timestamp.now(),
+          updatedAt: data.uploadedAt || Timestamp.now(),
+          isActive: true,
+          moderationStatus: 'approved',
+          engagement: {
+            likes: data.likes || [],
+            likesCount: data.likesCount || 0,
+            comments: [],
+            commentsCount: 0,
+            shares: [],
+            sharesCount: 0,
+            views: data.views || 0,
+            watchTime: 0,
+            completionRate: 0
+          },
+          metadata: {
+            width: 0,
+            height: 0,
+            fileSize: 0,
+            format: 'video/mp4',
+            aspectRatio: '9:16',
+            uploadedAt: data.uploadedAt?.toDate().toISOString() || new Date().toISOString(),
+            processingStatus: 'completed',
+            qualityVersions: []
+          },
+          isTalentVideo: true, // Flag to identify talent videos
+          isLiked: false
+        };
+
+        talentVideos.push(talentVideo);
+      });
+
+      return talentVideos;
+    } catch (error) {
+      console.error('Error fetching verified talent videos:', error);
+      // Don't throw error, just return empty array
+      return [];
+    }
+  }
+
+  /**
+   * Get combined feed of moments and verified talent videos
+   * This creates a mixed feed of user moments and talent showcase videos
+   */
+  static async getCombinedFeed(options: MomentsQueryOptions = {}): Promise<PaginatedMomentsResult> {
+    try {
+      const {
+        limit = 20,
+        currentUserId,
+        includeEngagementMetrics = true
+      } = options;
+
+      // Calculate how many of each type to fetch
+      // 70% moments, 30% talent videos
+      const momentsLimit = Math.ceil(limit * 0.7);
+      const talentLimit = Math.floor(limit * 0.3);
+
+      // Fetch both types in parallel
+      const [momentsResult, talentVideos] = await Promise.all([
+        this.getMoments({
+          limit: momentsLimit,
+          currentUserId,
+          includeEngagementMetrics,
+          moderationStatus: options.moderationStatus
+        }),
+        this.getVerifiedTalentVideos(talentLimit)
+      ]);
+
+      // Merge and shuffle the results for a mixed feed
+      const combinedVideos = [...momentsResult.moments, ...talentVideos];
+
+      // Shuffle algorithm (Fisher-Yates)
+      for (let i = combinedVideos.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [combinedVideos[i], combinedVideos[j]] = [combinedVideos[j], combinedVideos[i]];
+      }
+
+      // Update engagement metrics for all videos
+      if (currentUserId && includeEngagementMetrics) {
+        combinedVideos.forEach(video => {
+          video.isLiked = video.engagement?.likes?.some((like: any) => like.userId === currentUserId) || false;
+        });
+      }
+
+      return {
+        moments: combinedVideos,
+        lastDocument: momentsResult.lastDocument,
+        hasMore: momentsResult.hasMore
+      };
+    } catch (error) {
+      console.error('Error fetching combined feed:', error);
+      throw new Error('Failed to fetch video feed');
     }
   }
 }

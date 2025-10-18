@@ -13,6 +13,7 @@ import { useVideoAutoPlay } from '../../hooks/useVideoAutoPlay';
 import { useVideoPerformance } from '../../hooks/useVideoPerformance';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import VideoOptimizationUtils from '../../utils/videoOptimization';
+import { diversifyFeed, DEFAULT_DIVERSITY_CONFIG } from '../../utils/feedDiversity';
 import './MomentsPage.css';
 
 /**
@@ -63,7 +64,7 @@ const MomentsPage: React.FC = () => {
     enablePreloading: performanceSettings.enablePreloading,
     enableAdaptiveQuality: true,
     preloadDistance: performanceSettings.preloadDistance,
-    memoryThreshold: performanceSettings.memoryThreshold
+    memoryThreshold: 200 // More reasonable threshold: 200MB instead of device-based
   });
 
   // Update performance settings based on network changes
@@ -80,13 +81,13 @@ const MomentsPage: React.FC = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       const memoryUsage = getMemoryUsage();
-      if (memoryUsage > performanceSettings.memoryThreshold) {
+      if (memoryUsage > 200) { // 200MB threshold
         cleanupMemory().catch(console.warn);
       }
-    }, 15000); // Check every 15 seconds
+    }, 20000); // Check every 20 seconds
 
     return () => clearInterval(interval);
-  }, [getMemoryUsage, cleanupMemory, performanceSettings.memoryThreshold]);
+  }, [getMemoryUsage, cleanupMemory]);
 
   // Fetch moments data
   const fetchMoments = useCallback(async () => {
@@ -100,13 +101,32 @@ const MomentsPage: React.FC = () => {
         fetchLimit = Math.min(fetchLimit, 3); // Reduce for poor connections
       }
       
-      const result = await MomentsService.getMoments({
+      // Use combined feed to show both moments and verified talent videos
+      const result = await MomentsService.getCombinedFeed({
         limit: fetchLimit,
         currentUserId: currentUser?.uid,
-        includeEngagementMetrics: true
+        includeEngagementMetrics: true,
+        // For development: show all moments (pending and approved)
+        // In production, only approved moments should be shown
+        moderationStatus: process.env.NODE_ENV === 'development' ? undefined : 'approved'
       });
       
-      setMoments(result.moments);
+      // Apply feed diversity if enabled
+      const enableFeedDiversity = process.env.REACT_APP_ENABLE_FEED_DIVERSITY !== 'false';
+      let processedMoments = result.moments;
+      
+      if (enableFeedDiversity && processedMoments.length > 0) {
+        // Get custom config from environment or use defaults
+        const maxConsecutive = parseInt(process.env.REACT_APP_FEED_MAX_CONSECUTIVE || '2', 10);
+        const maxPercentage = parseFloat(process.env.REACT_APP_FEED_MAX_PERCENTAGE || '0.3');
+        
+        processedMoments = diversifyFeed(processedMoments, {
+          maxConsecutiveFromSameUser: maxConsecutive,
+          maxPercentageFromSingleUser: maxPercentage
+        });
+      }
+      
+      setMoments(processedMoments);
       setRetryCount(0); // Reset retry count on success
     } catch (err) {
       console.error('Failed to fetch moments:', err);
@@ -317,8 +337,8 @@ const MomentsPage: React.FC = () => {
           {!loading && !error && moments.length === 0 && (
             <div className="moments-empty">
               <div className="empty-content">
-                <h2>No Moments Yet</h2>
-                <p>Be the first to share a moment!</p>
+                <h2>No Moments to Discover</h2>
+                <p>The community hasn't shared any moments yet. Be the first to create and share content!</p>
               </div>
             </div>
           )}

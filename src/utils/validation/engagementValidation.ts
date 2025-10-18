@@ -254,14 +254,17 @@ export function sanitizeEngagementData(post: any): Post {
     }
   };
 
-  // Log warnings in development
-  if (validation.warnings.length > 0 && process.env.NODE_ENV === 'development') {
-    console.warn(`Post ${post.id} engagement data warnings:`, validation.warnings);
-  }
-
-  // Log errors in development
+  // Only log critical errors (not warnings) in development
+  // Suppress warnings as they're automatically corrected
   if (validation.errors.length > 0 && process.env.NODE_ENV === 'development') {
-    console.error(`Post ${post.id} engagement data errors:`, validation.errors);
+    // Only log if there are actual errors that can't be auto-corrected
+    const criticalErrors = validation.errors.filter(error =>
+      !error.includes('count mismatch') && !error.includes('Corrected')
+    );
+
+    if (criticalErrors.length > 0) {
+      console.error(`Post ${post.id} engagement data errors:`, criticalErrors);
+    }
   }
 
   return sanitizedPost as Post;
