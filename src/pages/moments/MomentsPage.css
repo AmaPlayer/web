@@ -120,7 +120,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #000;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   overflow: hidden;
   /* Optimize for performance */
   will-change: transform;
@@ -129,6 +129,7 @@
   min-height: 100vh;
   min-height: 100dvh;
   flex-shrink: 0;
+  transition: background 0.3s ease;
 }
 
 /* Video item positioning indicators */
@@ -512,13 +513,26 @@
 /* Safe area handling for devices with notches */
 @supports (padding: max(0px)) {
   .video-feed-container {
-    padding-left: max(0px, env(safe-area-inset-left));
-    padding-right: max(0px, env(safe-area-inset-right));
+    /* Don't add padding - let video fill edge to edge */
+    padding-left: 0;
+    padding-right: 0;
   }
   
   .video-item {
-    padding-left: max(0px, env(safe-area-inset-left));
-    padding-right: max(0px, env(safe-area-inset-right));
+    /* Don't add padding - let video fill edge to edge */
+    padding-left: 0;
+    padding-right: 0;
+  }
+  
+  /* Add safe area padding only to UI elements */
+  .video-metadata {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .engagement-actions {
+    right: max(1rem, env(safe-area-inset-right));
   }
 }
 

@@ -155,15 +155,28 @@ export const useVideoPerformance = (
 
   // Estimate video memory usage
   const estimateVideoMemoryUsage = useCallback((video: HTMLVideoElement): number => {
-    if (!video.videoWidth || !video.videoHeight) return 0;
-    
-    // Rough estimation: width * height * 4 bytes per pixel * duration in seconds / 1MB
+    if (!video.videoWidth || !video.videoHeight || !video.duration) return 0;
+
+    // More realistic estimation for browser video memory usage
+    // Modern browsers typically buffer 5-15 seconds of video, not the entire file
+    const bufferDuration = Math.min(video.duration, 10); // Realistic ~10 second buffer
     const pixelCount = video.videoWidth * video.videoHeight;
-    const bytesPerFrame = pixelCount * 4; // RGBA
-    const estimatedFrames = video.duration * 30; // Assume 30fps
-    const totalBytes = bytesPerFrame * estimatedFrames;
-    
-    return totalBytes / (1024 * 1024); // Convert to MB
+
+    // Calculate based on resolution
+    let estimatedMB = 0;
+
+    if (pixelCount > 2000000) {
+      // 1080p or higher: ~15-25MB buffered
+      estimatedMB = 15 + (bufferDuration / 10) * 10;
+    } else if (pixelCount > 900000) {
+      // 720p: ~8-15MB buffered
+      estimatedMB = 8 + (bufferDuration / 10) * 7;
+    } else {
+      // 480p or lower: ~5-10MB buffered
+      estimatedMB = 5 + (bufferDuration / 10) * 5;
+    }
+
+    return estimatedMB;
   }, []);
 
   // Update total memory usage
@@ -246,19 +259,27 @@ export const useVideoPerformance = (
     try {
       videoData.loadStartTime = Date.now();
       
-      // Set preload attribute
+      // Only preload metadata initially for better performance
       element.preload = 'metadata';
       
       // Load video metadata
       if (element.readyState < 1) {
         await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            element.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            element.removeEventListener('error', handleError);
+            reject(new Error('Metadata load timeout'));
+          }, 5000); // 5 second timeout
+          
           const handleLoadedMetadata = () => {
+            clearTimeout(timeout);
             element.removeEventListener('loadedmetadata', handleLoadedMetadata);
             element.removeEventListener('error', handleError);
             resolve();
           };
           
           const handleError = () => {
+            clearTimeout(timeout);
             element.removeEventListener('loadedmetadata', handleLoadedMetadata);
             element.removeEventListener('error', handleError);
             reject(new Error('Failed to load video metadata'));
@@ -269,8 +290,11 @@ export const useVideoPerformance = (
         });
       }
 
-      // Preload some video data for smooth start
-      element.preload = 'auto';
+      // For visible videos or good connections, preload some data
+      // Otherwise, just keep metadata loaded
+      if (videoData.isVisible || networkType === 'wifi' || networkType === '4g') {
+        element.preload = 'auto';
+      }
       
       videoData.isPreloaded = true;
       videoData.loadEndTime = Date.now();
@@ -278,11 +302,15 @@ export const useVideoPerformance = (
       
       updateMemoryUsage();
       
-      console.log(`Preloaded video: ${id} (${videoData.memoryUsage.toFixed(1)}MB)`);
+      // Only log in development
+      if (process.env.NODE_ENV === 'development') {
+        const loadTime = videoData.loadEndTime - videoData.loadStartTime;
+        console.log(`Preloaded video: ${id} (~${videoData.memoryUsage.toFixed(1)}MB, ${loadTime}ms)`);
+      }
     } catch (error) {
       console.warn(`Failed to preload video ${id}:`, error);
     }
-  }, [enablePreloading, estimateVideoMemoryUsage, updateMemoryUsage]);
+  }, [enablePreloading, estimateVideoMemoryUsage, updateMemoryUsage, networkType]);
 
   // Optimize video quality based on network conditions
   const optimizeQuality = useCallback(async (id: string): Promise<void> => {
@@ -331,7 +359,10 @@ export const useVideoPerformance = (
         await element.play().catch(console.warn);
       }
       
-      console.log(`Optimized video quality: ${id} -> ${optimalQuality}`);
+      // Only log in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Optimized video quality: ${id} -> ${optimalQuality}`);
+      }
     } catch (error) {
       console.warn(`Failed to optimize video quality for ${id}:`, error);
     }
@@ -339,8 +370,6 @@ export const useVideoPerformance = (
 
   // Clean up memory by removing unused videos
   const cleanupMemory = useCallback(async (): Promise<void> => {
-    if (memoryUsage < memoryThreshold) return;
-
     const now = Date.now();
     const videosToCleanup: string[] = [];
 
@@ -361,7 +390,9 @@ export const useVideoPerformance = (
       return dataA.lastAccessTime - dataB.lastAccessTime;
     });
 
-    // Clean up videos until we're under the threshold
+    let cleanedCount = 0;
+    
+    // Clean up videos until we're under the threshold or cleaned enough
     for (const id of videosToCleanup) {
       const videoData = videosRef.current.get(id);
       if (!videoData) continue;
@@ -372,17 +403,28 @@ export const useVideoPerformance = (
       element.pause();
       element.currentTime = 0;
       element.preload = 'none';
+      element.src = ''; // Clear source to free memory
+      element.load(); // Reset the element
       
       // Clear preloaded data
       videoData.isPreloaded = false;
       videoData.memoryUsage = 0;
       
-      updateMemoryUsage();
+      cleanedCount++;
       
-      console.log(`Cleaned up video memory: ${id}`);
+      // Only log in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Cleaned up video memory: ${id}`);
+      }
       
-      // Stop if we're under the threshold
-      if (memoryUsage < memoryThreshold * 0.8) break;
+      // Stop after cleaning a reasonable number or if under threshold
+      if (cleanedCount >= 3 || memoryUsage < memoryThreshold * 0.8) break;
+    }
+    
+    updateMemoryUsage();
+    
+    if (cleanedCount > 0 && process.env.NODE_ENV === 'development') {
+      console.log(`Cleaned up ${cleanedCount} videos, current memory: ${memoryUsage.toFixed(1)}MB`);
     }
   }, [memoryUsage, memoryThreshold, updateMemoryUsage]);
 
@@ -392,7 +434,11 @@ export const useVideoPerformance = (
     id: string, 
     qualityVersions?: VideoQualityVersion[]
   ) => {
-    if (videosRef.current.has(id)) return;
+    // Prevent duplicate registrations
+    if (videosRef.current.has(id)) {
+      // Silently return if already registered to prevent console flooding
+      return;
+    }
 
     const videoData: VideoPerformanceData = {
       element: video,
@@ -417,13 +463,19 @@ export const useVideoPerformance = (
       optimizeQuality(id).catch(console.warn);
     }
 
-    console.log(`Registered video for performance optimization: ${id}`);
+    // Only log in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Registered video for performance optimization: ${id}`);
+    }
   }, [getOptimalQuality, detectNetworkType, enableLazyLoading, enableAdaptiveQuality, lazyLoadThumbnail, optimizeQuality]);
 
   // Unregister video
   const unregisterVideo = useCallback((id: string) => {
     const videoData = videosRef.current.get(id);
-    if (!videoData) return;
+    if (!videoData) {
+      // Silently return if not found to prevent console flooding
+      return;
+    }
 
     // Clean up any object URLs created for thumbnails
     if (videoData.element.poster && videoData.element.poster.startsWith('blob:')) {
@@ -434,7 +486,10 @@ export const useVideoPerformance = (
     preloadQueueRef.current.delete(id);
     updateMemoryUsage();
 
-    console.log(`Unregistered video from performance optimization: ${id}`);
+    // Only log in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Unregistered video from performance optimization: ${id}`);
+    }
   }, [updateMemoryUsage]);
 
   // Set video visibility for preloading decisions

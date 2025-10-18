@@ -104,7 +104,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     enablePreloading: enablePerformanceOptimizations,
     enableAdaptiveQuality: enablePerformanceOptimizations,
     preloadDistance,
-    memoryThreshold: VideoOptimizationUtils.isLowEndDevice() ? 50 : 100,
+    memoryThreshold: VideoOptimizationUtils.isLowEndDevice() ? 100 : 200, // More realistic thresholds
     qualityPreferences: {
       wifi: 'high',
       cellular: 'medium',
@@ -209,15 +209,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         unregisterPerformanceVideo(moment.id);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     moment.id, 
     autoPlayEnabled, 
-    enablePerformanceOptimizations,
-    onVideoRegister, 
-    onVideoUnregister,
-    registerPerformanceVideo,
-    unregisterPerformanceVideo,
-    moment.metadata?.qualityVersions
+    enablePerformanceOptimizations
+    // Note: Removed registerPerformanceVideo, unregisterPerformanceVideo, onVideoRegister, onVideoUnregister
+    // from dependencies as they are stable callbacks and including them causes infinite re-registration
   ]);
 
   // Handle video visibility for performance optimizations
@@ -227,25 +225,38 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [isActive, moment.id, enablePerformanceOptimizations, setVideoVisible]);
 
-  // Handle video play/pause based on isActive prop (fallback for non-auto-play mode)
+  // Handle video play/pause based on isActive prop
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || autoPlayEnabled) return; // Skip if auto-play is handling this
+    if (!video) return;
 
-    if (isActive && !playerState.hasError) {
-      // Preload video if performance optimizations are enabled
-      if (enablePerformanceOptimizations) {
-        preloadVideo(moment.id).catch(console.warn);
-      }
-      
-      video.play().catch((error) => {
-        console.error('Auto-play failed:', error);
+    const handleAutoPlay = async () => {
+      if (isActive && !playerState.hasError) {
+        // Preload video if performance optimizations are enabled
+        if (enablePerformanceOptimizations) {
+          try {
+            await preloadVideo(moment.id);
+          } catch (error) {
+            console.warn('Preload failed:', error);
+          }
+        }
+
+        // Auto-play video when active
+        try {
+          await video.play();
+          setPlayerState(prev => ({ ...prev, isPlaying: true }));
+        } catch (error) {
+          console.error('Auto-play failed:', error);
+          setPlayerState(prev => ({ ...prev, isPlaying: false }));
+        }
+      } else {
+        video.pause();
         setPlayerState(prev => ({ ...prev, isPlaying: false }));
-      });
-    } else {
-      video.pause();
-    }
-  }, [isActive, playerState.hasError, autoPlayEnabled, enablePerformanceOptimizations, moment.id, preloadVideo]);
+      }
+    };
+
+    handleAutoPlay();
+  }, [isActive, playerState.hasError, enablePerformanceOptimizations, moment.id, preloadVideo]);
 
   // Handle video metadata loaded
   const handleLoadedMetadata = useCallback(() => {
@@ -691,6 +702,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             </span>
           </div>
         )}
+
+        {/* Talent Video Badge */}
+        {moment.isTalentVideo && (
+          <div className="talent-video-badge">
+            <span className="talent-badge">
+              ✓ Verified Talent
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Video Metadata */}
@@ -728,18 +748,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {/* Engagement Actions */}
       <div className="engagement-actions">
         <button
-          className={`engagement-btn ${moment.isLiked ? 'liked' : ''}`}
+          className={`engagement-btn ${moment.isLiked ? 'is-liked liked' : ''}`}
           onClick={(e) => {
             e.stopPropagation();
-            handleLike();
+            if (currentUserId) {
+              handleLike();
+            }
           }}
           disabled={isLiking || !currentUserId}
           aria-label={`${moment.isLiked ? 'Unlike' : 'Like'} video by ${moment.userDisplayName}. ${moment.engagement.likesCount} likes`}
           aria-pressed={moment.isLiked}
-          title={`${moment.isLiked ? 'Unlike' : 'Like'} (L)`}
+          title={currentUserId ? `${moment.isLiked ? 'Unlike' : 'Like'} (L)` : 'Sign in to like'}
           tabIndex={0}
         >
-          <Heart size={24} fill={moment.isLiked ? 'currentColor' : 'none'} />
+          <Heart size={28} fill={moment.isLiked ? 'currentColor' : 'none'} strokeWidth={2.5} />
           <span className="engagement-count" aria-hidden="true">
             {moment.engagement.likesCount > 0 ? moment.engagement.likesCount.toLocaleString() : ''}
           </span>
@@ -749,13 +771,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           className="engagement-btn"
           onClick={(e) => {
             e.stopPropagation();
-            handleCommentClick();
+            if (currentUserId) {
+              handleCommentClick();
+            }
           }}
+          disabled={!currentUserId}
           aria-label={`View comments for video by ${moment.userDisplayName}. ${moment.engagement.commentsCount} comments`}
-          title="View comments (C)"
+          title={currentUserId ? "View comments (C)" : "Sign in to comment"}
           tabIndex={0}
         >
-          <MessageCircle size={24} />
+          <MessageCircle size={28} strokeWidth={2.5} />
           <span className="engagement-count" aria-hidden="true">
             {moment.engagement.commentsCount > 0 ? moment.engagement.commentsCount.toLocaleString() : ''}
           </span>
@@ -771,7 +796,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           title="Share video (S)"
           tabIndex={0}
         >
-          <Share size={24} />
+          <Share size={28} strokeWidth={2.5} />
           <span className="engagement-count" aria-hidden="true">
             {moment.engagement.sharesCount > 0 ? moment.engagement.sharesCount.toLocaleString() : ''}
           </span>

@@ -603,7 +603,9 @@ service cloud.firestore {
     // Moments collection rules - for video moments/reels feature
     match /moments/{momentId} {
       // Anyone can read approved, active moments (including guests)
-      allow read: if true;
+      // Owners can read their own moments regardless of status
+      allow read: if (resource.data.isActive == true && resource.data.moderationStatus == 'approved') ||
+                     (request.auth != null && request.auth.uid == resource.data.userId);
 
       // Only authenticated non-guest users can create moments
       allow create: if request.auth != null
@@ -666,17 +668,11 @@ service cloud.firestore {
     }
 
     function onlyMomentEngagementChanged() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement']) ||
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.likes']) ||
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.likesCount']) ||
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.comments']) ||
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.commentsCount']) ||
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.shares']) ||
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.sharesCount']) ||
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.views']) ||
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.watchTime']) ||
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['engagement.completionRate']) ||
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['updatedAt']);
+      let affectedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      // Allow if only engagement-related fields and/or updatedAt are changed
+      return affectedKeys.hasOnly(['engagement', 'updatedAt']) ||
+             affectedKeys.hasOnly(['engagement']) ||
+             affectedKeys.hasOnly(['updatedAt']);
     }
   }
 }

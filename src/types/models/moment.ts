@@ -31,6 +31,8 @@ export interface MomentVideo {
   // User interaction states (computed fields)
   isLiked?: boolean;
   hasShared?: boolean;
+  // Flag to identify if this is a verified talent video
+  isTalentVideo?: boolean;
 }
 
 /**
