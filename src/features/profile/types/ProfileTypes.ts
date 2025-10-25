@@ -14,6 +14,7 @@ export interface PersonalDetails {
   city?: string;
   district?: string;
   state?: string;
+  country?: string;
 
   // Athlete-specific
   playerType?: 'Amateur' | 'Professional' | 'Student Athlete';

@@ -1197,6 +1197,18 @@ const Profile: React.FC = React.memo(() => {
                 <span className="field-value" aria-labelledby="city-label">{personalDetails.city || 'Not specified'}</span>
               </div>
             )}
+            {personalDetails.state && (
+              <div className="field-row">
+                <span className="field-label" id="state-label">STATE</span>
+                <span className="field-value" aria-labelledby="state-label">{personalDetails.state}</span>
+              </div>
+            )}
+            {personalDetails.country && (
+              <div className="field-row">
+                <span className="field-label" id="country-label">COUNTRY</span>
+                <span className="field-value" aria-labelledby="country-label">{personalDetails.country}</span>
+              </div>
+            )}
             {currentRoleConfig.editableFields.includes('playerType') && (
               <div className="field-row">
                 <span className="field-label" id="player-type-label">PLAYER TYPE</span>

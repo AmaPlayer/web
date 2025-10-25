@@ -140,7 +140,7 @@ export default function PersonalDetailsForm() {
         country: formData.country,
         state: formData.state,
         city: formData.city,
-        phone: formData.phone || undefined,
+        mobile: formData.phone || undefined,
         location: `${formData.city}, ${formData.state}, ${formData.country}`
       });
 
