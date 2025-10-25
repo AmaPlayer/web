@@ -170,6 +170,7 @@ const Profile: React.FC = React.memo(() => {
               city: userData.city,
               district: userData.district,
               state: userData.state,
+              country: userData.country,
               playerType: userData.playerType,
               sport: userData.sport,
               position: userData.position,
