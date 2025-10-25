@@ -76,18 +76,18 @@ export default function Login() {
     return isValid;
   };
 
-  const handleSuccessfulLogin = async (): Promise<void> => {
+  const handleSuccessfulLogin = async (user: any): Promise<void> => {
     showSuccess('Login Successful', 'Welcome back! Redirecting to your dashboard...');
 
     // Check for pending personal details
     const pendingDetails = localStorage.getItem('pendingPersonalDetails');
-    if (pendingDetails && currentUser) {
+    if (pendingDetails && user) {
       try {
         const details = JSON.parse(pendingDetails);
-        const { default: userService } = await import('../../../services/api/userService');
+        const userService = (await import('../../../services/api/userService')).default;
 
         // Save personal details to Firestore
-        await userService.updateUserProfile(currentUser.uid, {
+        await userService.updateUserProfile(user.uid, {
           displayName: details.fullName,
           bio: details.bio || undefined,
           dateOfBirth: details.dateOfBirth,
@@ -128,8 +128,8 @@ export default function Login() {
       setLoading(true);
       setCanRetry(false);
 
-      await login(email, password, keepLoggedIn);
-      handleSuccessfulLogin();
+      const userCredential = await login(email, password, keepLoggedIn);
+      handleSuccessfulLogin(userCredential.user);
     } catch (error) {
       // Use the enhanced error handling
       const errorInfo = authErrorHandler.formatErrorForDisplay(error);
@@ -166,8 +166,8 @@ export default function Login() {
       setLoading(true);
       setCanRetry(false);
       
-      await guestLogin();
-      handleSuccessfulLogin();
+      const userCredential = await guestLogin();
+      handleSuccessfulLogin(userCredential.user);
     } catch (error) {
       const errorInfo = authErrorHandler.formatErrorForDisplay(error);
       const errorMessage = errorInfo.message + (errorInfo.action ? ` ${errorInfo.action}` : '');
@@ -188,8 +188,10 @@ export default function Login() {
       setLoading(true);
       setCanRetry(false);
       
-      await googleLogin();
-      handleSuccessfulLogin();
+      const result = await googleLogin();
+      if (result && result.user) {
+        handleSuccessfulLogin(result.user);
+      }
     } catch (error) {
       const errorInfo = authErrorHandler.formatErrorForDisplay(error);
       const errorMessage = errorInfo.message + (errorInfo.action ? ` ${errorInfo.action}` : '');
@@ -210,8 +212,8 @@ export default function Login() {
       setLoading(true);
       setCanRetry(false);
       
-      await appleLogin();
-      handleSuccessfulLogin();
+      const userCredential = await appleLogin();
+      handleSuccessfulLogin(userCredential.user);
     } catch (error) {
       const errorInfo = authErrorHandler.formatErrorForDisplay(error);
       const errorMessage = errorInfo.message + (errorInfo.action ? ` ${errorInfo.action}` : '');

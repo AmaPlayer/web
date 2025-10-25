@@ -45,29 +45,38 @@ export default function Signup() {
 
       await signup(email, password, displayName);
 
+      // Wait for auth state to update and get the current user
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       // Check for pending personal details and save them
       const pendingDetails = localStorage.getItem('pendingPersonalDetails');
-      if (pendingDetails && currentUser) {
+      if (pendingDetails) {
         try {
-          const details = JSON.parse(pendingDetails);
-          const { default: userService } = await import('../../../services/api/userService');
+          // Import auth to get current user
+          const { auth } = await import('../../../lib/firebase');
+          const user = auth.currentUser;
 
-          await userService.updateUserProfile(currentUser.uid, {
-            displayName: details.fullName,
-            bio: details.bio || undefined,
-            dateOfBirth: details.dateOfBirth,
-            gender: details.gender,
-            height: details.height || undefined,
-            weight: details.weight || undefined,
-            country: details.country,
-            state: details.state,
-            city: details.city,
-            mobile: details.phone || undefined,
-            location: `${details.city}, ${details.state}, ${details.country}`
-          });
+          if (user) {
+            const details = JSON.parse(pendingDetails);
+            const userService = (await import('../../../services/api/userService')).default;
 
-          localStorage.removeItem('pendingPersonalDetails');
-          console.log('✅ Personal details saved after signup');
+            await userService.updateUserProfile(user.uid, {
+              displayName: details.fullName,
+              bio: details.bio || undefined,
+              dateOfBirth: details.dateOfBirth,
+              gender: details.gender,
+              height: details.height || undefined,
+              weight: details.weight || undefined,
+              country: details.country,
+              state: details.state,
+              city: details.city,
+              mobile: details.phone || undefined,
+              location: `${details.city}, ${details.state}, ${details.country}`
+            });
+
+            localStorage.removeItem('pendingPersonalDetails');
+            console.log('✅ Personal details saved after signup');
+          }
         } catch (err) {
           console.error('Error saving pending personal details:', err);
         }
