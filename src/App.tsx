@@ -45,6 +45,7 @@ const MultiSportPositionFlow = React.lazy(() => import('./features/athlete-onboa
 const SubcategorySelectionPage = React.lazy(() => import('./features/athlete-onboarding/components/SubcategorySelectionPage'));
 const SpecializationPage = React.lazy(() => import('./features/athlete-onboarding/components/SpecializationPage'));
 const AthleteAboutPage = React.lazy(() => import('./features/athlete-onboarding/components/AthleteAboutPage'));
+const PersonalDetailsForm = React.lazy(() => import('./features/athlete-onboarding/components/PersonalDetailsForm'));
 
 // Optimized loading component for Suspense fallback
 const LoadingSpinner: React.FC = () => (
@@ -138,6 +139,7 @@ function AppContent(): React.JSX.Element {
               <Route path="/athlete-onboarding/multi-position" element={<MultiSportPositionFlow />} />
               <Route path="/athlete-onboarding/subcategory" element={<SubcategorySelectionPage />} />
               <Route path="/athlete-onboarding/specialization" element={<SpecializationPage />} />
+              <Route path="/athlete-onboarding/personal-details" element={<PersonalDetailsForm />} />
               <Route path="/about/athlete" element={<AthleteAboutPage />} />
               <Route path="/home" element={
                 <PrivateRoute>
