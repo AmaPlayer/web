@@ -41,7 +41,7 @@ const AthleteAboutPage: React.FC = () => {
   }, [getAthleteProfile, navigate]);
 
   const handleContinue = (): void => {
-    navigate('/login');
+    navigate('/athlete-onboarding/personal-details');
   };
 
   const handleEditProfile = (): void => {

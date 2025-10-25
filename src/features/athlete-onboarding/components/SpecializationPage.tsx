@@ -96,7 +96,7 @@ const SpecializationPage: React.FC = () => {
       }
       
       saveProfile(currentUser.uid).then(() => {
-        navigate('/login');
+        navigate('/athlete-onboarding/personal-details');
       }).catch((error) => {
         console.error('Failed to save profile:', error);
         setError('Failed to save profile. Please try again.');
@@ -195,8 +195,8 @@ const SpecializationPage: React.FC = () => {
       // Save the athlete profile
       await saveProfile(currentUser.uid);
       
-      // Navigate directly to login after completing onboarding
-      navigate('/login');
+      // Navigate to personal details form after completing sport onboarding
+      navigate('/athlete-onboarding/personal-details');
     } catch (error) {
       // Error is already handled in the store, but add validation context
       console.error('Failed to complete onboarding:', error);
@@ -239,8 +239,8 @@ const SpecializationPage: React.FC = () => {
       // Save the athlete profile
       await saveProfile(currentUser.uid);
       
-      // Navigate directly to login after completing onboarding
-      navigate('/login');
+      // Navigate to personal details form after completing sport onboarding
+      navigate('/athlete-onboarding/personal-details');
     } catch (error) {
       // Error is already handled in the store
       console.error('Failed to complete onboarding:', error);
