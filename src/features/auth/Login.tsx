@@ -76,8 +76,39 @@ export default function Login() {
     return isValid;
   };
 
-  const handleSuccessfulLogin = (): void => {
+  const handleSuccessfulLogin = async (): Promise<void> => {
     showSuccess('Login Successful', 'Welcome back! Redirecting to your dashboard...');
+
+    // Check for pending personal details
+    const pendingDetails = localStorage.getItem('pendingPersonalDetails');
+    if (pendingDetails && currentUser) {
+      try {
+        const details = JSON.parse(pendingDetails);
+        const { default: userService } = await import('../../../services/api/userService');
+
+        // Save personal details to Firestore
+        await userService.updateUserProfile(currentUser.uid, {
+          displayName: details.fullName,
+          bio: details.bio || undefined,
+          dateOfBirth: details.dateOfBirth,
+          gender: details.gender,
+          height: details.height || undefined,
+          weight: details.weight || undefined,
+          country: details.country,
+          state: details.state,
+          city: details.city,
+          mobile: details.phone || undefined,
+          location: `${details.city}, ${details.state}, ${details.country}`
+        });
+
+        // Clear the pending data
+        localStorage.removeItem('pendingPersonalDetails');
+        console.log('✅ Personal details saved after login');
+      } catch (error) {
+        console.error('Error saving pending personal details:', error);
+      }
+    }
+
     // Navigate to home after successful login
     setTimeout(() => navigate('/home'), 1000);
   };

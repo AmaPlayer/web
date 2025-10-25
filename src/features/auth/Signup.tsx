@@ -40,14 +40,43 @@ export default function Signup() {
     try {
       setError('');
       setLoading(true);
-      
+
       console.log('Signup form data:', { email, displayName, passwordLength: password.length });
-      
+
       await signup(email, password, displayName);
+
+      // Check for pending personal details and save them
+      const pendingDetails = localStorage.getItem('pendingPersonalDetails');
+      if (pendingDetails && currentUser) {
+        try {
+          const details = JSON.parse(pendingDetails);
+          const { default: userService } = await import('../../../services/api/userService');
+
+          await userService.updateUserProfile(currentUser.uid, {
+            displayName: details.fullName,
+            bio: details.bio || undefined,
+            dateOfBirth: details.dateOfBirth,
+            gender: details.gender,
+            height: details.height || undefined,
+            weight: details.weight || undefined,
+            country: details.country,
+            state: details.state,
+            city: details.city,
+            mobile: details.phone || undefined,
+            location: `${details.city}, ${details.state}, ${details.country}`
+          });
+
+          localStorage.removeItem('pendingPersonalDetails');
+          console.log('✅ Personal details saved after signup');
+        } catch (err) {
+          console.error('Error saving pending personal details:', err);
+        }
+      }
+
       navigate('/home');
     } catch (error: any) {
       console.error('Signup form error:', error);
-      
+
       // Display the specific error message from the auth context
       const errorMessage = error.message || 'Failed to create an account';
       setError(errorMessage);

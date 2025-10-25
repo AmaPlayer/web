@@ -24,17 +24,28 @@ export default function PersonalDetailsForm() {
   const [loading, setLoading] = useState(false);
   const [cities, setCities] = useState<string[]>([]);
 
-  const [formData, setFormData] = useState<PersonalDetails>({
-    fullName: currentUser?.displayName || '',
-    dateOfBirth: '',
-    gender: '',
-    height: '',
-    weight: '',
-    country: 'India',
-    state: '',
-    city: '',
-    phone: '',
-    bio: ''
+  // Load saved data from localStorage or use defaults
+  const [formData, setFormData] = useState<PersonalDetails>(() => {
+    const saved = localStorage.getItem('pendingPersonalDetails');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Error parsing saved personal details:', e);
+      }
+    }
+    return {
+      fullName: currentUser?.displayName || '',
+      dateOfBirth: '',
+      gender: '',
+      height: '',
+      weight: '',
+      country: 'India',
+      state: '',
+      city: '',
+      phone: '',
+      bio: ''
+    };
   });
 
   const [errors, setErrors] = useState<Partial<PersonalDetails>>({});
@@ -120,34 +131,36 @@ export default function PersonalDetailsForm() {
     setLoading(true);
 
     try {
-      if (!currentUser) {
-        throw new Error('No authenticated user');
+      // If user is already authenticated, save directly to Firebase
+      if (currentUser) {
+        // Update Firebase Auth display name
+        await updateUserProfile({
+          displayName: formData.fullName
+        });
+
+        // Save personal details to Firestore
+        await userService.updateUserProfile(currentUser.uid, {
+          displayName: formData.fullName,
+          bio: formData.bio || undefined,
+          dateOfBirth: formData.dateOfBirth,
+          gender: formData.gender,
+          height: formData.height || undefined,
+          weight: formData.weight || undefined,
+          country: formData.country,
+          state: formData.state,
+          city: formData.city,
+          mobile: formData.phone || undefined,
+          location: `${formData.city}, ${formData.state}, ${formData.country}`
+        });
+
+        console.log('✅ Personal details saved successfully');
+        navigate('/home');
+      } else {
+        // No user authenticated - save to localStorage and navigate to login
+        localStorage.setItem('pendingPersonalDetails', JSON.stringify(formData));
+        console.log('✅ Personal details saved to localStorage, redirecting to login');
+        navigate('/login');
       }
-
-      // Update Firebase Auth display name
-      await updateUserProfile({
-        displayName: formData.fullName
-      });
-
-      // Save personal details to Firestore
-      await userService.updateUserProfile(currentUser.uid, {
-        displayName: formData.fullName,
-        bio: formData.bio || undefined,
-        dateOfBirth: formData.dateOfBirth,
-        gender: formData.gender,
-        height: formData.height || undefined,
-        weight: formData.weight || undefined,
-        country: formData.country,
-        state: formData.state,
-        city: formData.city,
-        mobile: formData.phone || undefined,
-        location: `${formData.city}, ${formData.state}, ${formData.country}`
-      });
-
-      console.log('✅ Personal details saved successfully');
-
-      // Navigate to home or dashboard
-      navigate('/home');
     } catch (error) {
       console.error('Error saving personal details:', error);
       alert('Failed to save personal details. Please try again.');
@@ -157,7 +170,9 @@ export default function PersonalDetailsForm() {
   };
 
   const handleSkip = () => {
-    navigate('/home');
+    // Clear any saved data and navigate to login
+    localStorage.removeItem('pendingPersonalDetails');
+    navigate('/login');
   };
 
   return (
