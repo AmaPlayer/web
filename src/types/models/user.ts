@@ -54,6 +54,7 @@ export interface User {
   state?: string;
   city?: string;
   phone?: string;
+  mobile?: string;
 }
 
 /**
