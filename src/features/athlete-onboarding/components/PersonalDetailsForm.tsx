@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { indianStates, getCitiesByState } from '../data/indianLocations';
+import userService from '../../../services/api/userService';
 import './PersonalDetailsForm.css';
 
 interface PersonalDetails {
@@ -119,11 +120,31 @@ export default function PersonalDetailsForm() {
     setLoading(true);
 
     try {
-      // Update user profile with personal details
+      if (!currentUser) {
+        throw new Error('No authenticated user');
+      }
+
+      // Update Firebase Auth display name
       await updateUserProfile({
-        displayName: formData.fullName,
-        personalDetails: formData
+        displayName: formData.fullName
       });
+
+      // Save personal details to Firestore
+      await userService.updateUserProfile(currentUser.uid, {
+        displayName: formData.fullName,
+        bio: formData.bio || undefined,
+        dateOfBirth: formData.dateOfBirth,
+        gender: formData.gender,
+        height: formData.height || undefined,
+        weight: formData.weight || undefined,
+        country: formData.country,
+        state: formData.state,
+        city: formData.city,
+        phone: formData.phone || undefined,
+        location: `${formData.city}, ${formData.state}, ${formData.country}`
+      });
+
+      console.log('✅ Personal details saved successfully');
 
       // Navigate to home or dashboard
       navigate('/home');

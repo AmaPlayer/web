@@ -44,6 +44,16 @@ export interface User {
   subcategoryName?: string; // Subcategory display name: 'Long Distance', 'Middle Distance'
   specializations?: string[]; // Array of specialization values for querying
   athleteProfile?: any; // Full nested athlete profile (kept for compatibility)
+
+  // Personal details
+  dateOfBirth?: string;
+  gender?: string;
+  height?: string; // in cm
+  weight?: string; // in kg
+  country?: string;
+  state?: string;
+  city?: string;
+  phone?: string;
 }
 
 /**
