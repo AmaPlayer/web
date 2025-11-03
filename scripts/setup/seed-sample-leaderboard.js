@@ -4,7 +4,7 @@
  * This script creates sample user ranking data for the leaderboard.
  * Creates realistic user profiles with stats and rankings.
  *
- * Usage: node scripts/seed-sample-leaderboard.js [--count=20]
+ * Usage: node scripts/setup/seed-sample-leaderboard.js [--count=20]
  *
  * Options:
  *   --count      Number of sample users to create (default: 20)

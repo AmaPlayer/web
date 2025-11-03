@@ -14,7 +14,10 @@ import { achievementEngine } from '@features/events/services/achievementEngine';
 import { challengeSystem } from '@features/events/services/challengeSystem';
 import { useAuth } from '@contexts/AuthContext';
 import { useAppPreferences } from '@contexts/UnifiedPreferencesContext';
+import NavigationBar from '@components/layout/NavigationBar';
+import FooterNav from '@components/layout/FooterNav';
 import '@features/events/styles/index.css';
+import '@components/layout/FooterNav-fallback.css';
 import '@features/events/styles/accessibility.css';
 
 // Lazy load CreateEventForm for better bundle size
@@ -204,6 +207,14 @@ export const EventPage: React.FC<EventPageProps> = ({
   // Otherwise show event list with engagement features
   return (
     <div className={`event-page ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
+      {/* Navigation Bar with Settings */}
+      <NavigationBar
+        currentUser={currentUser}
+        isGuest={!isAuthenticated}
+        onTitleClick={() => {}}
+        title={t('events') || 'Events'}
+      />
+
       {/* Skip link for keyboard navigation */}
       <a href="#main-content" className="skip-link">
         {t('skipToMainContent') || 'Skip to main content'}
@@ -327,6 +338,9 @@ export const EventPage: React.FC<EventPageProps> = ({
           />
         </Suspense>
       )}
+
+      {/* Footer Navigation */}
+      <FooterNav />
     </div>
   );
 };

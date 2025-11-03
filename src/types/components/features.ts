@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { User, Story, Post, Event, Message, Group, Friend } from '../models';
+import { User, Story, Post, Message, Group, Friend } from '../models';
 import { BaseComponentProps } from './common';
 
 // Auth feature component props
@@ -192,9 +192,17 @@ export interface CreateGroupProps extends BaseComponentProps {
   error?: string | null;
 }
 
+// Basic Event interface for general use
+interface BasicEvent {
+  id: string;
+  title: string;
+  date: Date;
+  location: string;
+}
+
 // Events feature component props
 export interface EventsListProps extends BaseComponentProps {
-  events: Event[];
+  events: BasicEvent[];
   loading?: boolean;
   error?: string | null;
   onEventClick?: (eventId: string) => void;
@@ -206,7 +214,7 @@ export interface EventDetailProps extends BaseComponentProps {
 }
 
 export interface EventHeaderProps extends BaseComponentProps {
-  event: Event;
+  event: BasicEvent;
   isAttending: boolean;
   isOrganizer: boolean;
   onAttend?: () => void;
@@ -223,7 +231,7 @@ export interface EventAttendeesProps extends BaseComponentProps {
 }
 
 export interface CreateEventProps extends BaseComponentProps {
-  onCreate: (eventData: Partial<Event>) => Promise<void>;
+  onCreate: (eventData: Partial<BasicEvent>) => Promise<void>;
   onCancel: () => void;
   loading?: boolean;
   error?: string | null;
@@ -283,7 +291,7 @@ export interface SearchResultsProps extends BaseComponentProps {
     users: User[];
     posts: Post[];
     groups: Group[];
-    events: Event[];
+    events: BasicEvent[];
   };
   loading?: boolean;
   error?: string | null;

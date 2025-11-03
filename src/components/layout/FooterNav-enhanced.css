@@ -1,0 +1,78 @@
+
+/* Enhanced FooterNav with debugging and higher z-index */
+.footer-nav {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  background: var(--bg-navbar, #ffffff) !important;
+  border-top: 1px solid var(--border-primary, #e5e7eb) !important;
+  z-index: 9999 !important; /* Much higher z-index */
+  padding: 10px 0 !important;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1) !important;
+  min-height: 70px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Debug border to make it visible */
+.footer-nav-debug {
+  border: 3px solid red !important;
+  background: yellow !important;
+}
+
+.footer-nav-container {
+  display: flex !important;
+  justify-content: space-around !important;
+  align-items: center !important;
+  max-width: 600px !important;
+  margin: 0 auto !important;
+  padding: 0 10px !important;
+  width: 100% !important;
+}
+
+.footer-nav-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  background: none !important;
+  border: none !important;
+  padding: 12px !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+  min-width: 60px !important;
+  color: var(--text-secondary, #6b7280) !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+}
+
+.footer-nav-item:hover {
+  background: rgba(0, 255, 136, 0.1) !important;
+  color: var(--accent-primary, #00ff88) !important;
+  transform: translateY(-3px) !important;
+}
+
+.footer-nav-item.active {
+  background: rgba(0, 255, 136, 0.2) !important;
+  color: var(--accent-primary, #00ff88) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.3) !important;
+}
+
+.footer-nav-icon {
+  font-size: 24px !important;
+  margin-bottom: 4px !important;
+  transition: transform 0.3s ease !important;
+}
+
+.footer-nav-label {
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  color: inherit !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Ensure EventPage has bottom padding */
+.event-page {
+  padding-bottom: 100px !important;
+}

@@ -5,7 +5,6 @@ export * from './user';
 export * from './post';
 export * from './story';
 export * from './message';
-export * from './event';
 export * from './friend';
 export * from './group';
 export * from './notification';

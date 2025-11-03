@@ -14,7 +14,7 @@ import {
   DocumentSnapshot,
   Unsubscribe
 } from 'firebase/firestore';
-import { db } from '@lib/firebase';
+import { eventsDb } from '@features/events/lib/firebase';
 import { achievementEngine, AthleteStats, Achievement } from './achievementEngine';
 import {
   LeaderboardType,
@@ -95,7 +95,7 @@ class LeaderboardService {
    */
   private async getStoredLeaderboard(key: string): Promise<Leaderboard | null> {
     try {
-      const docRef = doc(db, this.LEADERBOARDS_COLLECTION, key);
+      const docRef = doc(eventsDb, this.LEADERBOARDS_COLLECTION, key);
       const docSnap = await getDoc(docRef);
       
       if (!docSnap.exists()) {
@@ -125,7 +125,7 @@ class LeaderboardService {
    */
   private async saveLeaderboard(key: string, leaderboard: Leaderboard): Promise<void> {
     try {
-      const docRef = doc(db, this.LEADERBOARDS_COLLECTION, key);
+      const docRef = doc(eventsDb, this.LEADERBOARDS_COLLECTION, key);
 
       // Filter out undefined values to prevent Firestore errors
       const dataToSave: any = {
@@ -156,7 +156,7 @@ class LeaderboardService {
    */
   private async getUserRankingData(): Promise<Map<string, UserRankingData>> {
     try {
-      const snapshot = await getDocs(collection(db, this.USER_RANKINGS_COLLECTION));
+      const snapshot = await getDocs(collection(eventsDb, this.USER_RANKINGS_COLLECTION));
       
       const rankingMap = new Map<string, UserRankingData>();
       snapshot.docs.forEach(doc => {
@@ -176,7 +176,7 @@ class LeaderboardService {
    */
   private async saveUserRankingData(userId: string, data: UserRankingData): Promise<void> {
     try {
-      const docRef = doc(db, this.USER_RANKINGS_COLLECTION, userId);
+      const docRef = doc(eventsDb, this.USER_RANKINGS_COLLECTION, userId);
       await setDoc(docRef, data);
     } catch (error) {
       console.error('Failed to save user ranking data:', error);
@@ -189,7 +189,7 @@ class LeaderboardService {
    */
   private async getRankingHistory(leaderboardKey: string): Promise<Map<string, number>> {
     try {
-      const docRef = doc(db, this.RANKING_HISTORY_COLLECTION, leaderboardKey);
+      const docRef = doc(eventsDb, this.RANKING_HISTORY_COLLECTION, leaderboardKey);
       const docSnap = await getDoc(docRef);
       
       if (!docSnap.exists()) {
@@ -219,7 +219,7 @@ class LeaderboardService {
         obj[userId] = rank;
       });
       
-      const docRef = doc(db, this.RANKING_HISTORY_COLLECTION, leaderboardKey);
+      const docRef = doc(eventsDb, this.RANKING_HISTORY_COLLECTION, leaderboardKey);
       await setDoc(docRef, { rankings: obj });
     } catch (error) {
       console.error('Failed to save ranking history:', error);
@@ -566,7 +566,7 @@ class LeaderboardService {
     this.subscribers.get(leaderboardKey)!.add(callback);
 
     // Set up Firestore real-time listener
-    const docRef = doc(db, this.LEADERBOARDS_COLLECTION, leaderboardKey);
+    const docRef = doc(eventsDb, this.LEADERBOARDS_COLLECTION, leaderboardKey);
     const firestoreUnsubscribe = onSnapshot(
       docRef,
       (doc) => {

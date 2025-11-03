@@ -15,7 +15,7 @@ import {
   Unsubscribe,
   increment
 } from 'firebase/firestore';
-import { db } from '@lib/firebase';
+import { eventsDb } from '@features/events/lib/firebase';
 import { RankChange, Badge } from '../types/engagement.types';
 
 // API Error class for typed error responses
@@ -306,7 +306,7 @@ class ChallengeSystem {
           createdAt: serverTimestamp()
         };
 
-        const docRef = await addDoc(collection(db, this.CHALLENGES_COLLECTION), challengeData);
+        const docRef = await addDoc(collection(eventsDb, this.CHALLENGES_COLLECTION), challengeData);
         const newChallenge = await this.getChallengeById(docRef.id);
         challenges.push(newChallenge);
       }
@@ -368,10 +368,10 @@ class ChallengeSystem {
         voterIds: []
       };
 
-      await addDoc(collection(db, this.SUBMISSIONS_COLLECTION), submissionData);
+      await addDoc(collection(eventsDb, this.SUBMISSIONS_COLLECTION), submissionData);
 
       // Update challenge
-      const challengeRef = doc(db, this.CHALLENGES_COLLECTION, challengeId);
+      const challengeRef = doc(eventsDb, this.CHALLENGES_COLLECTION, challengeId);
       await updateDoc(challengeRef, {
         participants: [...challenge.participants, userId],
         status: ChallengeStatus.ACTIVE
@@ -478,7 +478,7 @@ class ChallengeSystem {
       }));
 
       // Update challenge status
-      const challengeRef = doc(db, this.CHALLENGES_COLLECTION, challengeId);
+      const challengeRef = doc(eventsDb, this.CHALLENGES_COLLECTION, challengeId);
       await updateDoc(challengeRef, {
         status: ChallengeStatus.COMPLETED
       });
@@ -489,7 +489,7 @@ class ChallengeSystem {
         const leaderboardEntry = leaderboard.find(entry => entry.userId === submission.userId);
         
         if (leaderboardEntry && submission.id) {
-          const submissionRef = doc(db, this.SUBMISSIONS_COLLECTION, submission.id);
+          const submissionRef = doc(eventsDb, this.SUBMISSIONS_COLLECTION, submission.id);
           await updateDoc(submissionRef, {
             rank: leaderboardEntry.rank,
             score: leaderboardEntry.score
@@ -513,7 +513,7 @@ class ChallengeSystem {
   async getEventChallenges(eventId: string): Promise<Challenge[]> {
     try {
       const q = query(
-        collection(db, this.CHALLENGES_COLLECTION),
+        collection(eventsDb, this.CHALLENGES_COLLECTION),
         where('eventId', '==', eventId),
         orderBy('startDate', 'asc')
       );
@@ -531,7 +531,7 @@ class ChallengeSystem {
    */
   async getChallengeById(challengeId: string): Promise<Challenge> {
     try {
-      const docRef = doc(db, this.CHALLENGES_COLLECTION, challengeId);
+      const docRef = doc(eventsDb, this.CHALLENGES_COLLECTION, challengeId);
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
@@ -554,7 +554,7 @@ class ChallengeSystem {
   async getChallengeSubmissions(challengeId: string): Promise<ChallengeSubmission[]> {
     try {
       const q = query(
-        collection(db, this.SUBMISSIONS_COLLECTION),
+        collection(eventsDb, this.SUBMISSIONS_COLLECTION),
         where('challengeId', '==', challengeId),
         orderBy('submittedAt', 'desc')
       );
@@ -572,7 +572,7 @@ class ChallengeSystem {
    */
   async voteOnSubmission(submissionId: string, userId: string): Promise<void> {
     try {
-      const docRef = doc(db, this.SUBMISSIONS_COLLECTION, submissionId);
+      const docRef = doc(eventsDb, this.SUBMISSIONS_COLLECTION, submissionId);
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
@@ -618,7 +618,7 @@ class ChallengeSystem {
       }
 
       // Add user to participants
-      const challengeRef = doc(db, this.CHALLENGES_COLLECTION, challengeId);
+      const challengeRef = doc(eventsDb, this.CHALLENGES_COLLECTION, challengeId);
       await updateDoc(challengeRef, {
         participants: [...challenge.participants, userId],
         status: ChallengeStatus.ACTIVE
@@ -639,7 +639,7 @@ class ChallengeSystem {
   async getFeaturedChallenges(limit: number = 5): Promise<Challenge[]> {
     try {
       const q = query(
-        collection(db, this.CHALLENGES_COLLECTION),
+        collection(eventsDb, this.CHALLENGES_COLLECTION),
         where('status', 'in', [ChallengeStatus.ACTIVE, ChallengeStatus.UPCOMING]),
         orderBy('startDate', 'asc')
       );
@@ -669,7 +669,7 @@ class ChallengeSystem {
     callback: (challenges: Challenge[]) => void
   ): Unsubscribe {
     const q = query(
-      collection(db, this.CHALLENGES_COLLECTION),
+      collection(eventsDb, this.CHALLENGES_COLLECTION),
       where('eventId', '==', eventId),
       orderBy('startDate', 'asc')
     );
@@ -696,7 +696,7 @@ class ChallengeSystem {
     callback: (submissions: ChallengeSubmission[]) => void
   ): Unsubscribe {
     const q = query(
-      collection(db, this.SUBMISSIONS_COLLECTION),
+      collection(eventsDb, this.SUBMISSIONS_COLLECTION),
       where('challengeId', '==', challengeId),
       orderBy('submittedAt', 'desc')
     );

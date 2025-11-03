@@ -1,6 +1,14 @@
 import { ReactNode } from 'react';
-import { User, Post, Event, Message, Story } from '../models';
+import { User, Post, Message, Story } from '../models';
 import { BaseComponentProps } from './common';
+
+// Basic Event interface for general use
+interface BasicEvent {
+  id: string;
+  title: string;
+  date: Date;
+  location: string;
+}
 
 // Home page component props
 export interface HomeProps extends BaseComponentProps {
@@ -72,7 +80,7 @@ export interface SearchPageProps extends BaseComponentProps {
     users: User[];
     posts: Post[];
     groups: any[];
-    events: Event[];
+    events: BasicEvent[];
   };
   loading?: boolean;
   error?: string | null;
@@ -103,7 +111,7 @@ export interface EventsProps extends BaseComponentProps {
 }
 
 export interface EventsPageProps extends BaseComponentProps {
-  events: Event[];
+  events: BasicEvent[];
   loading?: boolean;
   error?: string | null;
   filter: 'upcoming' | 'past' | 'attending';

@@ -76,6 +76,8 @@
     "@types/ws": "^8.18.1",
     "compression-webpack-plugin": "^11.1.0",
     "css-minimizer-webpack-plugin": "^7.0.2",
+    "firebase-admin": "^13.5.0",
+    "firebase-tools": "^14.23.0",
     "typescript": "^5.9.3",
     "webpack-bundle-analyzer": "^4.10.2"
   }

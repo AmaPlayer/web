@@ -4,7 +4,7 @@
  * This script creates sample events in Firestore for testing and demonstration.
  * Run this to populate your events collection with realistic data.
  *
- * Usage: node scripts/seed-sample-events.js [--count=10]
+ * Usage: node scripts/setup/seed-sample-events.js [--count=10]
  *
  * Options:
  *   --count      Number of sample events to create (default: 10)
@@ -395,7 +395,7 @@ async function seedEvents() {
     console.log('📝 Next Steps:\n');
     console.log('1. View events in Firebase Console');
     console.log('2. Access events in your application');
-    console.log('3. Create leaderboard data: node scripts/seed-sample-leaderboard.js\n');
+    console.log('3. Create leaderboard data: node scripts/setup/seed-sample-leaderboard.js\n');
     console.log('='.repeat(60));
 
   } catch (error) {

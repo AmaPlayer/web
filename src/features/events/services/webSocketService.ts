@@ -33,7 +33,7 @@ class WebSocketService {
     private messageQueue: WebSocketMessage[] = [];
 
     private config: WebSocketConfig = {
-        url: 'ws://localhost:8080/ws', // Default WebSocket URL
+        url: process.env.REACT_APP_WEBSOCKET_URL || 'ws://localhost:8080/ws', // Default WebSocket URL
         reconnectAttempts: 5,
         reconnectDelay: 3000,
         heartbeatInterval: 30000,
@@ -44,6 +44,12 @@ class WebSocketService {
      * Initialize WebSocket connection
      */
     async connect(userId: string, config?: Partial<WebSocketConfig>): Promise<void> {
+        // Skip WebSocket connection in development if no server is running
+        if (process.env.NODE_ENV === 'development' && !process.env.REACT_APP_WEBSOCKET_URL) {
+            console.log('WebSocket disabled in development (no REACT_APP_WEBSOCKET_URL)');
+            return Promise.resolve();
+        }
+
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             console.log('WebSocket already connected');
             return;

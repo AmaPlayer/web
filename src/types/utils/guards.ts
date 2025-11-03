@@ -4,9 +4,16 @@ import { Post } from '../models/post';
 import { Comment } from '../models/post';
 import { Story } from '../models/story';
 import { Message } from '../models/message';
-import { Event } from '../models/event';
 import { Group } from '../models/group';
 import { ApiError } from '../api/responses';
+
+// Basic Event interface for general use
+interface BasicEvent {
+  id: string;
+  title: string;
+  date: Date;
+  location: string;
+}
 
 /**
  * Type guard to check if a value is a User
@@ -93,7 +100,7 @@ export function isMessage(value: unknown): value is Message {
 /**
  * Type guard to check if a value is an Event
  */
-export function isEvent(value: unknown): value is Event {
+export function isEvent(value: unknown): value is BasicEvent {
   return (
     typeof value === 'object' &&
     value !== null &&

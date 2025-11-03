@@ -2,7 +2,7 @@
 
 .nav-bar {
   background: var(--bg-primary, white);
-  border-bottom: 1px solid var(--border-color, #eee);
+  border-bottom: none;
   padding: 0 16px;
   position: sticky;
   top: 0;
@@ -45,7 +45,7 @@
   background: var(--warning-bg, #fff3cd);
   padding: 4px 8px;
   border-radius: 12px;
-  border: 1px solid var(--warning-border, #ffeaa7);
+  border: none;
 }
 
 .settings-container {
@@ -59,14 +59,14 @@
   justify-content: center;
   width: 44px;
   height: 44px;
-  background: var(--bg-card, rgba(255, 255, 255, 0.1));
-  border: 2px solid var(--border-secondary, rgba(255, 255, 255, 0.1));
+  background: transparent;
+  border: none;
   border-radius: 50%;
   cursor: pointer;
   color: var(--text-secondary, #666);
   transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-primary, 0 2px 8px rgba(0, 0, 0, 0.1));
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 /* Force icon sizes to remain consistent */
@@ -80,11 +80,10 @@
 
 .settings-btn:hover,
 .logout-btn:hover {
-  background: var(--bg-hover, rgba(255, 255, 255, 0.15));
+  background: rgba(0, 123, 255, 0.1);
   color: var(--text-primary, #333);
-  border-color: var(--accent-primary, #007bff);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+  box-shadow: none;
 }
 
 .settings-btn:active,
@@ -93,9 +92,8 @@
 }
 
 .settings-btn[aria-expanded="true"] {
-  background: var(--accent-primary, #007bff);
-  color: white;
-  border-color: var(--accent-primary, #007bff);
+  background: rgba(0, 123, 255, 0.2);
+  color: var(--accent-primary, #007bff);
   transform: translateY(-1px);
 }
 

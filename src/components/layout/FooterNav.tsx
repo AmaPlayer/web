@@ -23,7 +23,7 @@ const FooterNav = memo(function FooterNav() {
         // Preload the most commonly used routes
         const routesToPreload = [
           () => import('../../pages/moments/MomentsPage'),
-          () => import('../../pages/events/Events'),
+          () => import('../../features/events/pages/EventPage'),
           () => import('../../pages/messages/Messages'),
           () => import('../../features/profile/pages/Profile')
         ];
@@ -87,7 +87,7 @@ const FooterNav = memo(function FooterNav() {
   const handleNavHover = (path: string): void => {
     const routeMap: Record<string, () => Promise<unknown>> = {
       '/moments': () => import('../../pages/moments/MomentsPage'),
-      '/events': () => import('../../pages/events/Events'),
+      '/events': () => import('../../features/events/pages/EventPage'),
       '/messages': () => import('../../pages/messages/Messages'),
       '/profile': () => import('../../features/profile/pages/Profile')
     };

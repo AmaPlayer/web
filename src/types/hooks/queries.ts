@@ -4,8 +4,16 @@ import {
   UseQueryResult,
   UseInfiniteQueryResult
 } from '@tanstack/react-query';
-import { Post, User, Comment, Story, Event, Message } from '../models';
+import { Post, User, Comment, Story, Message } from '../models';
 import { ApiError, PaginatedResponse } from '../api/responses';
+
+// Basic Event interface for general use
+interface BasicEvent {
+  id: string;
+  title: string;
+  date: Date;
+  location: string;
+}
 
 // Base query options types
 export type BaseQueryOptions<TData, TError = ApiError> = Omit<
@@ -36,8 +44,8 @@ export type StoriesQueryOptions = BaseQueryOptions<Story[]>;
 export type StoryQueryOptions = BaseQueryOptions<Story>;
 
 // Event query options
-export type EventsQueryOptions = BaseQueryOptions<Event[]>;
-export type EventQueryOptions = BaseQueryOptions<Event>;
+export type EventsQueryOptions = BaseQueryOptions<BasicEvent[]>;
+export type EventQueryOptions = BaseQueryOptions<BasicEvent>;
 
 // Message query options
 export type MessagesQueryOptions = BaseQueryOptions<Message[]>;
@@ -51,7 +59,7 @@ export type UserQueryResult = UseQueryResult<User, ApiError>;
 export type UsersQueryResult = UseQueryResult<User[], ApiError>;
 export type CommentsQueryResult = UseQueryResult<Comment[], ApiError>;
 export type StoriesQueryResult = UseQueryResult<Story[], ApiError>;
-export type EventsQueryResult = UseQueryResult<Event[], ApiError>;
+export type EventsQueryResult = UseQueryResult<BasicEvent[], ApiError>;
 export type MessagesQueryResult = UseQueryResult<Message[], ApiError>;
 
 // Prefetch function types

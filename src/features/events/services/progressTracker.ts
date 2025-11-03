@@ -599,75 +599,7 @@ class ProgressTracker {
     this.initializeStorage();
   }
 
-  /**
-   * Utility method to seed sample progress data (for testing)
-   */
-  async seedSampleProgressData(userId: string = 'test-user'): Promise<void> {
-    // Create sample progress entries
-    const now = Timestamp.now();
-    const sampleProgress: ProgressEntry[] = [];
 
-    // Generate 30 days of sample data
-    for (let i = 29; i >= 0; i--) {
-      const date = Timestamp.fromMillis(now.toMillis() - (i * 24 * 60 * 60 * 1000));
-      
-      sampleProgress.push({
-        date,
-        metric: ProgressMetric.ENGAGEMENT_SCORE,
-        value: 50 + (i * 5) + Math.floor(Math.random() * 20),
-        change: Math.floor(Math.random() * 10) - 5,
-        context: 'Daily activity'
-      });
-
-      sampleProgress.push({
-        date,
-        metric: ProgressMetric.PARTICIPATION_RATE,
-        value: Math.floor(i / 3) + Math.floor(Math.random() * 2),
-        change: Math.floor(Math.random() * 2),
-        context: 'Event participation'
-      });
-    }
-
-    this.saveUserProgress(userId, sampleProgress);
-
-    // Create sample streaks
-    const sampleStreaks: StreakInfo[] = [
-      {
-        type: StreakType.DAILY_LOGIN,
-        current: 7,
-        longest: 15,
-        lastUpdated: Timestamp.now(),
-        isActive: true
-      },
-      {
-        type: StreakType.EVENT_PARTICIPATION,
-        current: 3,
-        longest: 8,
-        lastUpdated: Timestamp.now(),
-        isActive: true
-      },
-      {
-        type: StreakType.CHALLENGE_COMPLETION,
-        current: 2,
-        longest: 5,
-        lastUpdated: Timestamp.now(),
-        isActive: true
-      },
-      {
-        type: StreakType.SOCIAL_INTERACTION,
-        current: 5,
-        longest: 12,
-        lastUpdated: Timestamp.now(),
-        isActive: true
-      }
-    ];
-
-    this.saveUserStreaks(userId, sampleStreaks);
-
-    // Award some sample milestones
-    const sampleMilestones = ['first_event', 'engagement_rookie', 'achievement_collector'];
-    this.saveUserMilestones(userId, sampleMilestones);
-  }
 }
 
 // Export singleton instance

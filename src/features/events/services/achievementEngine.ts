@@ -14,7 +14,7 @@ import {
   Unsubscribe,
   increment
 } from 'firebase/firestore';
-import { db } from '@lib/firebase';
+import { eventsDb } from '@features/events/lib/firebase';
 
 // API Error class for typed error responses
 export class APIError extends Error {
@@ -312,7 +312,7 @@ class AchievementEngine {
    */
   private async getUserStats(userId: string): Promise<AthleteStats> {
     try {
-      const docRef = doc(db, this.USER_STATS_COLLECTION, userId, 'eventStats', 'stats');
+      const docRef = doc(eventsDb, this.USER_STATS_COLLECTION, userId, 'eventStats', 'stats');
       const docSnap = await getDoc(docRef);
       
       if (!docSnap.exists()) {
@@ -331,7 +331,7 @@ class AchievementEngine {
    */
   private async saveUserStats(userId: string, stats: AthleteStats): Promise<void> {
     try {
-      const docRef = doc(db, this.USER_STATS_COLLECTION, userId, 'eventStats', 'stats');
+      const docRef = doc(eventsDb, this.USER_STATS_COLLECTION, userId, 'eventStats', 'stats');
       await setDoc(docRef, stats, { merge: true });
     } catch (error) {
       console.error('Failed to save user stats:', error);
@@ -345,7 +345,7 @@ class AchievementEngine {
   private async getUserAchievements(userId: string): Promise<Achievement[]> {
     try {
       const q = query(
-        collection(db, this.ACHIEVEMENTS_COLLECTION),
+        collection(eventsDb, this.ACHIEVEMENTS_COLLECTION),
         where('userId', '==', userId)
       );
 
@@ -369,7 +369,7 @@ class AchievementEngine {
       };
 
       await setDoc(
-        doc(db, this.ACHIEVEMENTS_COLLECTION, `${userId}_${achievement.id}`),
+        doc(eventsDb, this.ACHIEVEMENTS_COLLECTION, `${userId}_${achievement.id}`),
         achievementData
       );
     } catch (error) {
@@ -629,7 +629,7 @@ class AchievementEngine {
     callback: (achievements: Achievement[]) => void
   ): Unsubscribe {
     const q = query(
-      collection(db, this.ACHIEVEMENTS_COLLECTION),
+      collection(eventsDb, this.ACHIEVEMENTS_COLLECTION),
       where('userId', '==', userId)
     );
 
@@ -654,7 +654,7 @@ class AchievementEngine {
     userId: string,
     callback: (stats: AthleteStats) => void
   ): Unsubscribe {
-    const docRef = doc(db, this.USER_STATS_COLLECTION, userId, 'eventStats', 'stats');
+    const docRef = doc(eventsDb, this.USER_STATS_COLLECTION, userId, 'eventStats', 'stats');
 
     const unsubscribe = onSnapshot(
       docRef,

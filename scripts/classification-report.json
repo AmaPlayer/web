@@ -1,0 +1,958 @@
+{
+  "generatedAt": "2025-11-03T11:39:45.643Z",
+  "summary": {
+    "totalScripts": 43,
+    "toRemove": 16,
+    "toKeep": 27,
+    "needsReview": 15
+  },
+  "scripts": [
+    {
+      "filename": "apply-events-schema.js",
+      "relativePath": "apply-events-schema.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\apply-events-schema.js",
+      "size": 13417,
+      "modified": "2025-11-03T09:24:00.997Z",
+      "classification": {
+        "category": "Scripts Requiring Review",
+        "reason": "Requires manual review to determine purpose and necessity",
+        "shouldKeep": true,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 500
+      }
+    },
+    {
+      "filename": "apply-production-rules.js",
+      "relativePath": "apply-production-rules.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\apply-production-rules.js",
+      "size": 8923,
+      "modified": "2025-11-03T07:44:58.066Z",
+      "classification": {
+        "category": "Essential Deployment Scripts",
+        "reason": "Security rules deployment script",
+        "shouldKeep": true,
+        "newLocation": "deployment/"
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": true,
+        "hasTestCode": false,
+        "linesOfCode": 245
+      }
+    },
+    {
+      "filename": "clean-rules-only.js",
+      "relativePath": "clean-rules-only.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\clean-rules-only.js",
+      "size": 3406,
+      "modified": "2025-11-03T08:04:53.101Z",
+      "classification": {
+        "category": "Scripts Requiring Review",
+        "reason": "Requires manual review to determine purpose and necessity",
+        "shouldKeep": true,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": false,
+        "linesOfCode": 133
+      }
+    },
+    {
+      "filename": "create-events-db-instructions.js",
+      "relativePath": "create-events-db-instructions.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\create-events-db-instructions.js",
+      "size": 1207,
+      "modified": "2025-11-03T08:33:44.230Z",
+      "classification": {
+        "category": "Scripts Requiring Review",
+        "reason": "Requires manual review to determine purpose and necessity",
+        "shouldKeep": true,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": true,
+        "hasTestCode": false,
+        "linesOfCode": 46
+      }
+    },
+    {
+      "filename": "debug-footer-nav.js",
+      "relativePath": "debug-footer-nav.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\debug-footer-nav.js",
+      "size": 7066,
+      "modified": "2025-11-03T10:14:48.335Z",
+      "classification": {
+        "category": "Obsolete Debug/Fix Scripts",
+        "reason": "Debug script - temporary troubleshooting tool",
+        "shouldKeep": false,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 200
+      }
+    },
+    {
+      "filename": "deploy-firestore-rules.sh",
+      "relativePath": "deploy-firestore-rules.sh",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\deploy-firestore-rules.sh",
+      "size": 1656,
+      "modified": "2025-11-03T04:35:05.687Z",
+      "classification": {
+        "category": "Essential Deployment Scripts",
+        "reason": "Deployment script for production",
+        "shouldKeep": true,
+        "newLocation": "deployment/"
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": true,
+        "hasTestCode": false,
+        "linesOfCode": 57
+      }
+    },
+    {
+      "filename": "deploy-admin.sh",
+      "relativePath": "deployment\\deploy-admin.sh",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\deployment\\deploy-admin.sh",
+      "size": 1596,
+      "modified": "2025-11-03T04:35:05.688Z",
+      "classification": {
+        "category": "Scripts Requiring Review",
+        "reason": "Requires manual review to determine purpose and necessity",
+        "shouldKeep": true,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": true,
+        "hasTestCode": true,
+        "linesOfCode": 54
+      }
+    },
+    {
+      "filename": "disable-events-temporarily.js",
+      "relativePath": "disable-events-temporarily.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\disable-events-temporarily.js",
+      "size": 799,
+      "modified": "2025-11-03T08:34:10.963Z",
+      "classification": {
+        "category": "Scripts Requiring Review",
+        "reason": "Requires manual review to determine purpose and necessity",
+        "shouldKeep": true,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": false,
+        "linesOfCode": 27
+      }
+    },
+    {
+      "filename": "events-database-schema.js",
+      "relativePath": "events-database-schema.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\events-database-schema.js",
+      "size": 8671,
+      "modified": "2025-11-03T09:19:08.387Z",
+      "classification": {
+        "category": "Scripts Requiring Review",
+        "reason": "Requires manual review to determine purpose and necessity",
+        "shouldKeep": true,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": true,
+        "hasTestCode": true,
+        "linesOfCode": 269
+      }
+    },
+    {
+      "filename": "events-final-integration.js",
+      "relativePath": "events-final-integration.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\events-final-integration.js",
+      "size": 3796,
+      "modified": "2025-11-03T09:46:04.107Z",
+      "classification": {
+        "category": "Scripts Requiring Review",
+        "reason": "Requires manual review to determine purpose and necessity",
+        "shouldKeep": true,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": true,
+        "hasTestCode": false,
+        "linesOfCode": 116
+      }
+    },
+    {
+      "filename": "events-integration-summary.js",
+      "relativePath": "events-integration-summary.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\events-integration-summary.js",
+      "size": 4400,
+      "modified": "2025-11-03T09:39:08.172Z",
+      "classification": {
+        "category": "Scripts Requiring Review",
+        "reason": "Requires manual review to determine purpose and necessity",
+        "shouldKeep": true,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": true,
+        "hasTestCode": true,
+        "linesOfCode": 149
+      }
+    },
+    {
+      "filename": "fix-amaplay-main-db.js",
+      "relativePath": "fix-amaplay-main-db.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\fix-amaplay-main-db.js",
+      "size": 5424,
+      "modified": "2025-11-03T08:18:33.603Z",
+      "classification": {
+        "category": "Obsolete Debug/Fix Scripts",
+        "reason": "One-time fix script - no longer needed",
+        "shouldKeep": false,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 168
+      }
+    },
+    {
+      "filename": "fix-auth-issue.js",
+      "relativePath": "fix-auth-issue.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\fix-auth-issue.js",
+      "size": 4657,
+      "modified": "2025-11-03T08:01:33.951Z",
+      "classification": {
+        "category": "Obsolete Debug/Fix Scripts",
+        "reason": "One-time fix script - no longer needed",
+        "shouldKeep": false,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 148
+      }
+    },
+    {
+      "filename": "fix-database-references.js",
+      "relativePath": "fix-database-references.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\fix-database-references.js",
+      "size": 2781,
+      "modified": "2025-11-03T10:06:05.103Z",
+      "classification": {
+        "category": "Obsolete Debug/Fix Scripts",
+        "reason": "One-time fix script - no longer needed",
+        "shouldKeep": false,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 83
+      }
+    },
+    {
+      "filename": "fix-event-creation-issues.js",
+      "relativePath": "fix-event-creation-issues.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\fix-event-creation-issues.js",
+      "size": 15073,
+      "modified": "2025-11-03T09:31:17.067Z",
+      "classification": {
+        "category": "Obsolete Debug/Fix Scripts",
+        "reason": "One-time fix script - no longer needed",
+        "shouldKeep": false,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 452
+      }
+    },
+    {
+      "filename": "fix-events-complete.js",
+      "relativePath": "fix-events-complete.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\fix-events-complete.js",
+      "size": 8855,
+      "modified": "2025-11-03T09:28:38.830Z",
+      "classification": {
+        "category": "Obsolete Debug/Fix Scripts",
+        "reason": "One-time fix script - no longer needed",
+        "shouldKeep": false,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 280
+      }
+    },
+    {
+      "filename": "fix-events-database-name.js",
+      "relativePath": "fix-events-database-name.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\fix-events-database-name.js",
+      "size": 3739,
+      "modified": "2025-11-03T08:38:51.222Z",
+      "classification": {
+        "category": "Obsolete Debug/Fix Scripts",
+        "reason": "One-time fix script - no longer needed",
+        "shouldKeep": false,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": false,
+        "linesOfCode": 143
+      }
+    },
+    {
+      "filename": "fix-events-navigation-complete.js",
+      "relativePath": "fix-events-navigation-complete.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\fix-events-navigation-complete.js",
+      "size": 8250,
+      "modified": "2025-11-03T10:32:02.687Z",
+      "classification": {
+        "category": "Obsolete Debug/Fix Scripts",
+        "reason": "One-time fix script - no longer needed",
+        "shouldKeep": false,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 181
+      }
+    },
+    {
+      "filename": "fix-events-navigation.js",
+      "relativePath": "fix-events-navigation.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\fix-events-navigation.js",
+      "size": 3406,
+      "modified": "2025-11-03T10:12:22.433Z",
+      "classification": {
+        "category": "Obsolete Debug/Fix Scripts",
+        "reason": "One-time fix script - no longer needed",
+        "shouldKeep": false,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": false,
+        "linesOfCode": 107
+      }
+    },
+    {
+      "filename": "fix-footer-nav-visibility.js",
+      "relativePath": "fix-footer-nav-visibility.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\fix-footer-nav-visibility.js",
+      "size": 10945,
+      "modified": "2025-11-03T10:16:21.399Z",
+      "classification": {
+        "category": "Obsolete Debug/Fix Scripts",
+        "reason": "One-time fix script - no longer needed",
+        "shouldKeep": false,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 328
+      }
+    },
+    {
+      "filename": "fix-main-db-permissions.js",
+      "relativePath": "fix-main-db-permissions.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\fix-main-db-permissions.js",
+      "size": 4405,
+      "modified": "2025-11-03T08:11:06.254Z",
+      "classification": {
+        "category": "Obsolete Debug/Fix Scripts",
+        "reason": "One-time fix script - no longer needed",
+        "shouldKeep": false,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 137
+      }
+    },
+    {
+      "filename": "fix-permission-error.js",
+      "relativePath": "fix-permission-error.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\fix-permission-error.js",
+      "size": 3647,
+      "modified": "2025-11-03T07:50:02.782Z",
+      "classification": {
+        "category": "Obsolete Debug/Fix Scripts",
+        "reason": "One-time fix script - no longer needed",
+        "shouldKeep": false,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": true,
+        "hasTestCode": false,
+        "linesOfCode": 127
+      }
+    },
+    {
+      "filename": "fix-upload-service-imports.js",
+      "relativePath": "fix-upload-service-imports.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\fix-upload-service-imports.js",
+      "size": 2325,
+      "modified": "2025-11-03T10:09:15.433Z",
+      "classification": {
+        "category": "Obsolete Debug/Fix Scripts",
+        "reason": "One-time fix script - no longer needed",
+        "shouldKeep": false,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 74
+      }
+    },
+    {
+      "filename": "fix-websocket-and-image-errors.js",
+      "relativePath": "fix-websocket-and-image-errors.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\fix-websocket-and-image-errors.js",
+      "size": 2739,
+      "modified": "2025-11-03T09:53:46.583Z",
+      "classification": {
+        "category": "Obsolete Debug/Fix Scripts",
+        "reason": "One-time fix script - no longer needed",
+        "shouldKeep": false,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": true,
+        "hasTestCode": false,
+        "linesOfCode": 90
+      }
+    },
+    {
+      "filename": "migrate-events-schema.js",
+      "relativePath": "migrate-events-schema.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\migrate-events-schema.js",
+      "size": 18832,
+      "modified": "2025-11-03T04:35:05.688Z",
+      "classification": {
+        "category": "Essential Migration Scripts",
+        "reason": "Database migration script",
+        "shouldKeep": true,
+        "newLocation": "migrations/"
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": true,
+        "hasTestCode": true,
+        "linesOfCode": 593
+      }
+    },
+    {
+      "filename": "update-talent-videos.js",
+      "relativePath": "migrations\\update-talent-videos.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\migrations\\update-talent-videos.js",
+      "size": 3262,
+      "modified": "2025-11-03T04:35:05.688Z",
+      "classification": {
+        "category": "Scripts Requiring Review",
+        "reason": "Requires manual review to determine purpose and necessity",
+        "shouldKeep": true,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": false,
+        "linesOfCode": 92
+      }
+    },
+    {
+      "filename": "script-classification-report.js",
+      "relativePath": "script-classification-report.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\script-classification-report.js",
+      "size": 9245,
+      "modified": "2025-11-03T11:39:11.486Z",
+      "classification": {
+        "category": "Scripts Requiring Review",
+        "reason": "Requires manual review to determine purpose and necessity",
+        "shouldKeep": true,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": true,
+        "hasProductionCode": true,
+        "hasTestCode": true,
+        "linesOfCode": 248
+      }
+    },
+    {
+      "filename": "seed-all-sample-data.js",
+      "relativePath": "seed-all-sample-data.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\seed-all-sample-data.js",
+      "size": 3553,
+      "modified": "2025-11-03T04:35:05.689Z",
+      "classification": {
+        "category": "Essential Setup Scripts",
+        "reason": "Data seeding script for development/testing",
+        "shouldKeep": true,
+        "newLocation": "setup/"
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": false,
+        "linesOfCode": 98
+      }
+    },
+    {
+      "filename": "seed-sample-events.js",
+      "relativePath": "seed-sample-events.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\seed-sample-events.js",
+      "size": 13309,
+      "modified": "2025-11-03T04:35:05.689Z",
+      "classification": {
+        "category": "Essential Setup Scripts",
+        "reason": "Data seeding script for development/testing",
+        "shouldKeep": true,
+        "newLocation": "setup/"
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 414
+      }
+    },
+    {
+      "filename": "seed-sample-leaderboard.js",
+      "relativePath": "seed-sample-leaderboard.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\seed-sample-leaderboard.js",
+      "size": 10199,
+      "modified": "2025-11-03T04:35:05.689Z",
+      "classification": {
+        "category": "Essential Setup Scripts",
+        "reason": "Data seeding script for development/testing",
+        "shouldKeep": true,
+        "newLocation": "setup/"
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": false,
+        "linesOfCode": 313
+      }
+    },
+    {
+      "filename": "setup-complete-events-db.js",
+      "relativePath": "setup-complete-events-db.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\setup-complete-events-db.js",
+      "size": 9388,
+      "modified": "2025-11-03T04:55:20.091Z",
+      "classification": {
+        "category": "Essential Setup Scripts",
+        "reason": "Setup script for database/environment configuration",
+        "shouldKeep": true,
+        "newLocation": "setup/"
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": true,
+        "hasTestCode": false,
+        "linesOfCode": 310
+      }
+    },
+    {
+      "filename": "setup-events-db.js",
+      "relativePath": "setup-events-db.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\setup-events-db.js",
+      "size": 2486,
+      "modified": "2025-11-03T04:35:05.690Z",
+      "classification": {
+        "category": "Essential Setup Scripts",
+        "reason": "Setup script for database/environment configuration",
+        "shouldKeep": true,
+        "newLocation": "setup/"
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 77
+      }
+    },
+    {
+      "filename": "setup-events-firestore.js",
+      "relativePath": "setup-events-firestore.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\setup-events-firestore.js",
+      "size": 9046,
+      "modified": "2025-11-03T04:35:05.690Z",
+      "classification": {
+        "category": "Essential Setup Scripts",
+        "reason": "Setup script for database/environment configuration",
+        "shouldKeep": true,
+        "newLocation": "setup/"
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": true,
+        "hasTestCode": true,
+        "linesOfCode": 284
+      }
+    },
+    {
+      "filename": "setup-events-security-rules.js",
+      "relativePath": "setup-events-security-rules.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\setup-events-security-rules.js",
+      "size": 8494,
+      "modified": "2025-11-03T05:56:41.726Z",
+      "classification": {
+        "category": "Essential Setup Scripts",
+        "reason": "Setup script for database/environment configuration",
+        "shouldKeep": true,
+        "newLocation": "setup/"
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 239
+      }
+    },
+    {
+      "filename": "setup-events-storage-bucket.js",
+      "relativePath": "setup-events-storage-bucket.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\setup-events-storage-bucket.js",
+      "size": 8412,
+      "modified": "2025-11-03T05:09:34.363Z",
+      "classification": {
+        "category": "Essential Setup Scripts",
+        "reason": "Setup script for database/environment configuration",
+        "shouldKeep": true,
+        "newLocation": "setup/"
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": true,
+        "hasTestCode": false,
+        "linesOfCode": 253
+      }
+    },
+    {
+      "filename": "setup-test-mode-rules.js",
+      "relativePath": "setup-test-mode-rules.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\setup-test-mode-rules.js",
+      "size": 1802,
+      "modified": "2025-11-03T05:56:54.608Z",
+      "classification": {
+        "category": "Essential Setup Scripts",
+        "reason": "Setup script for database/environment configuration",
+        "shouldKeep": true,
+        "newLocation": "setup/"
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": true,
+        "hasTestCode": true,
+        "linesOfCode": 65
+      }
+    },
+    {
+      "filename": "test-event-counters.js",
+      "relativePath": "test-event-counters.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\test-event-counters.js",
+      "size": 2466,
+      "modified": "2025-11-03T09:56:44.504Z",
+      "classification": {
+        "category": "Scripts Requiring Review",
+        "reason": "Test script - review for CI/CD usefulness",
+        "shouldKeep": true,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 99
+      }
+    },
+    {
+      "filename": "test-events-db-cli.js",
+      "relativePath": "test-events-db-cli.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\test-events-db-cli.js",
+      "size": 4278,
+      "modified": "2025-11-03T08:42:25.063Z",
+      "classification": {
+        "category": "Scripts Requiring Review",
+        "reason": "Test script - review for CI/CD usefulness",
+        "shouldKeep": true,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 117
+      }
+    },
+    {
+      "filename": "test-events-db-connection.js",
+      "relativePath": "test-events-db-connection.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\test-events-db-connection.js",
+      "size": 2111,
+      "modified": "2025-11-03T08:27:02.675Z",
+      "classification": {
+        "category": "Scripts Requiring Review",
+        "reason": "Test script - review for CI/CD usefulness",
+        "shouldKeep": true,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 72
+      }
+    },
+    {
+      "filename": "test-events-rules.js",
+      "relativePath": "test-events-rules.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\test-events-rules.js",
+      "size": 2510,
+      "modified": "2025-11-03T09:12:47.793Z",
+      "classification": {
+        "category": "Scripts Requiring Review",
+        "reason": "Test script - review for CI/CD usefulness",
+        "shouldKeep": true,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 75
+      }
+    },
+    {
+      "filename": "test-events-storage.js",
+      "relativePath": "test-events-storage.js",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\test-events-storage.js",
+      "size": 6985,
+      "modified": "2025-11-03T05:13:04.795Z",
+      "classification": {
+        "category": "Scripts Requiring Review",
+        "reason": "Test script - review for CI/CD usefulness",
+        "shouldKeep": true,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 216
+      }
+    },
+    {
+      "filename": "test-events-web.html",
+      "relativePath": "test-events-web.html",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\test-events-web.html",
+      "size": 3690,
+      "modified": "2025-11-03T09:10:27.854Z",
+      "classification": {
+        "category": "Obsolete Test Files",
+        "reason": "HTML test file - not a script",
+        "shouldKeep": false,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": false,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 83
+      }
+    },
+    {
+      "filename": "test-footer-nav-visibility.html",
+      "relativePath": "test-footer-nav-visibility.html",
+      "fullPath": "C:\\Users\\user\\Desktop\\weblatest\\web\\scripts\\test-footer-nav-visibility.html",
+      "size": 8073,
+      "modified": "2025-11-03T10:31:22.316Z",
+      "classification": {
+        "category": "Obsolete Test Files",
+        "reason": "HTML test file - not a script",
+        "shouldKeep": false,
+        "newLocation": null
+      },
+      "contentAnalysis": {
+        "hasTemporaryMarkers": true,
+        "hasOneTimeSetup": false,
+        "hasProductionCode": false,
+        "hasTestCode": true,
+        "linesOfCode": 261
+      }
+    }
+  ],
+  "recommendations": {
+    "remove": [
+      "debug-footer-nav.js",
+      "fix-amaplay-main-db.js",
+      "fix-auth-issue.js",
+      "fix-database-references.js",
+      "fix-event-creation-issues.js",
+      "fix-events-complete.js",
+      "fix-events-database-name.js",
+      "fix-events-navigation-complete.js",
+      "fix-events-navigation.js",
+      "fix-footer-nav-visibility.js",
+      "fix-main-db-permissions.js",
+      "fix-permission-error.js",
+      "fix-upload-service-imports.js",
+      "fix-websocket-and-image-errors.js",
+      "test-events-web.html",
+      "test-footer-nav-visibility.html"
+    ],
+    "organize": [
+      {
+        "from": "seed-all-sample-data.js",
+        "to": "setup/"
+      },
+      {
+        "from": "seed-sample-events.js",
+        "to": "setup/"
+      },
+      {
+        "from": "seed-sample-leaderboard.js",
+        "to": "setup/"
+      },
+      {
+        "from": "setup-complete-events-db.js",
+        "to": "setup/"
+      },
+      {
+        "from": "setup-events-db.js",
+        "to": "setup/"
+      },
+      {
+        "from": "setup-events-firestore.js",
+        "to": "setup/"
+      },
+      {
+        "from": "setup-events-security-rules.js",
+        "to": "setup/"
+      },
+      {
+        "from": "setup-events-storage-bucket.js",
+        "to": "setup/"
+      },
+      {
+        "from": "setup-test-mode-rules.js",
+        "to": "setup/"
+      },
+      {
+        "from": "migrate-events-schema.js",
+        "to": "migrations/"
+      },
+      {
+        "from": "apply-production-rules.js",
+        "to": "deployment/"
+      },
+      {
+        "from": "deploy-firestore-rules.sh",
+        "to": "deployment/"
+      }
+    ],
+    "review": [
+      "apply-events-schema.js",
+      "clean-rules-only.js",
+      "create-events-db-instructions.js",
+      "deployment\\deploy-admin.sh",
+      "disable-events-temporarily.js",
+      "events-database-schema.js",
+      "events-final-integration.js",
+      "events-integration-summary.js",
+      "migrations\\update-talent-videos.js",
+      "script-classification-report.js",
+      "test-event-counters.js",
+      "test-events-db-cli.js",
+      "test-events-db-connection.js",
+      "test-events-rules.js",
+      "test-events-storage.js"
+    ]
+  }
+}

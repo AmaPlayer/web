@@ -5,7 +5,7 @@ import {
   UploadTask,
   UploadTaskSnapshot
 } from 'firebase/storage';
-import { storage } from '@lib/firebase';
+import { eventsStorage } from '@features/events/lib/firebase';
 import { UploadProgress } from '../types/form.types';
 import { validateVideoFile } from '../utils/validation';
 import { VIDEO_UPLOAD_ERRORS } from '../utils/constants';
@@ -60,7 +60,7 @@ class UploadService {
       
       // Create storage reference for video
       const videoStorageRef = ref(
-        storage, 
+        eventsStorage, 
         `events/videos/${userId}/${videoFileName}`
       );
 

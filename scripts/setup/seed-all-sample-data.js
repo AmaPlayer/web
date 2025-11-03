@@ -4,7 +4,7 @@
  * This script seeds both sample events and leaderboard data in the correct order.
  * This is the easiest way to populate your database with demo data.
  *
- * Usage: node scripts/seed-all-sample-data.js [--events=10] [--users=20] [--clear]
+ * Usage: node scripts/setup/seed-all-sample-data.js [--events=10] [--users=20] [--clear]
  *
  * Options:
  *   --events     Number of sample events to create (default: 10)
@@ -37,7 +37,7 @@ function runScript(scriptName, args) {
     const scriptPath = path.join(__dirname, scriptName);
     const child = spawn('node', [scriptPath, ...args], {
       stdio: 'inherit',
-      cwd: path.join(__dirname, '..')
+      cwd: path.join(__dirname, '../..')
     });
 
     child.on('close', (code) => {

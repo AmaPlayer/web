@@ -18,7 +18,7 @@ import {
   Unsubscribe,
   increment
 } from 'firebase/firestore';
-import { db } from '@lib/firebase';
+import { eventsDb } from '../lib/firebase';
 import { 
   Event, 
   EventFilters, 
@@ -109,7 +109,7 @@ class EventService {
    */
   async getEvents(filters: EventFilters): Promise<Event[]> {
     try {
-      let q = query(collection(db, this.COLLECTION));
+      let q = query(collection(eventsDb, this.COLLECTION));
 
       // Apply filters
       if (filters.category) {
@@ -141,7 +141,7 @@ class EventService {
    */
   async getEventById(id: string): Promise<Event> {
     try {
-      const docRef = doc(db, this.COLLECTION, id);
+      const docRef = doc(eventsDb, this.COLLECTION, id);
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
@@ -163,17 +163,32 @@ class EventService {
    */
   async createEvent(userId: string, data: CreateEventDTO): Promise<Event> {
     try {
+      console.log('🔄 Creating event...', { userId, title: data.title });
+      
+      // Validate user authentication first
+      if (!userId) {
+        throw new APIError(401, 'User must be authenticated to create events');
+      }
+
       // Handle video file upload to Firebase Storage
       let videoUrl: string | undefined;
       let thumbnailUrl: string | undefined;
 
       if (data.videoFile) {
-        const uploadResult = await uploadService.uploadEventVideo(
-          data.videoFile,
-          userId
-        );
-        videoUrl = uploadResult.videoUrl;
-        thumbnailUrl = uploadResult.thumbnailUrl;
+        console.log('📹 Uploading video file...');
+        try {
+          const uploadResult = await uploadService.uploadEventVideo(
+            data.videoFile,
+            userId
+          );
+          videoUrl = uploadResult.videoUrl;
+          thumbnailUrl = uploadResult.thumbnailUrl;
+          console.log('✅ Video uploaded successfully');
+        } catch (uploadError) {
+          console.error('❌ Video upload failed:', uploadError);
+          // Don't fail event creation if video upload fails
+          console.log('⚠️ Continuing without video...');
+        }
       }
 
       // Determine category based on status and dates
@@ -184,19 +199,19 @@ class EventService {
       const eventType = data.eventType || EventType.COMMUNITY;
       const hostType = eventType === EventType.TALENT_HUNT ? HostType.AMAPLAYER_OFFICIAL : HostType.USER;
 
-      // Create event document
+      // Create event document with validation
       const eventData = {
-        title: data.title,
-        description: data.description,
-        sport: data.sport,
-        location: data.location,
+        title: data.title?.trim() || 'Untitled Event',
+        description: data.description?.trim() || '',
+        sport: data.sport?.trim() || 'General',
+        location: data.location?.trim() || 'TBD',
         startDate: Timestamp.fromDate(data.startDate),
         endDate: data.endDate ? Timestamp.fromDate(data.endDate) : null,
         status,
         category,
         createdBy: userId,
-        videoUrl,
-        thumbnailUrl,
+        videoUrl: videoUrl || null,
+        thumbnailUrl: thumbnailUrl || null,
         participantIds: [],
         interestedIds: [],
         maybeIds: [],
@@ -209,9 +224,9 @@ class EventService {
         isOfficial: eventType === EventType.TALENT_HUNT,
         eventType,
         hostType,
-        maxParticipants: data.maxParticipants,
-        prizes: data.prizes,
-        rules: data.rules,
+        maxParticipants: data.maxParticipants || null,
+        prizes: data.prizes || [],
+        rules: data.rules || null,
         submissionDeadline: data.submissionDeadline 
           ? Timestamp.fromDate(data.submissionDeadline) 
           : null,
@@ -223,16 +238,40 @@ class EventService {
         updatedAt: serverTimestamp(),
       };
 
-      const docRef = await addDoc(collection(db, this.COLLECTION), eventData);
+      console.log('💾 Saving event to database...');
+      const docRef = await addDoc(collection(eventsDb, this.COLLECTION), eventData);
+      console.log('✅ Event saved with ID:', docRef.id);
+      
+      console.log('📖 Fetching created event...');
       const newEvent = await this.getEventById(docRef.id);
+      console.log('✅ Event creation completed successfully');
 
       return newEvent;
     } catch (error) {
+      console.error('❌ Event creation failed:', error);
+      
       if (error instanceof APIError) {
         throw error;
       }
-      console.error('Failed to create event:', error);
-      throw new APIError(500, 'Failed to create event.', error);
+      
+      // Handle specific Firebase errors
+      if (error.code === 'permission-denied') {
+        throw new APIError(403, 'Permission denied. Please check if you are authenticated and have the required permissions.');
+      }
+      
+      if (error.code === 'unavailable') {
+        throw new APIError(503, 'Service temporarily unavailable. Please try again later.');
+      }
+      
+      if (error.code === 'invalid-argument') {
+        throw new APIError(400, 'Invalid event data provided. Please check your input.');
+      }
+      
+      // Generic error
+      throw new APIError(500, 'Failed to create event. Please try again.', {
+        originalError: error.message,
+        code: error.code
+      });
     }
   }
 
@@ -241,7 +280,7 @@ class EventService {
    */
   async updateEvent(eventId: string, userId: string, data: Partial<CreateEventDTO>): Promise<Event> {
     try {
-      const docRef = doc(db, this.COLLECTION, eventId);
+      const docRef = doc(eventsDb, this.COLLECTION, eventId);
       
       // Verify event exists and user has permission
       const existingEvent = await this.getEventById(eventId);
@@ -318,7 +357,7 @@ class EventService {
         throw new APIError(403, 'You do not have permission to delete this event');
       }
 
-      const docRef = doc(db, this.COLLECTION, eventId);
+      const docRef = doc(eventsDb, this.COLLECTION, eventId);
       await deleteDoc(docRef);
     } catch (error) {
       if (error instanceof APIError) {
@@ -333,7 +372,7 @@ class EventService {
    * Subscribe to real-time event updates
    */
   subscribeToEvent(eventId: string, callback: (event: Event) => void): Unsubscribe {
-    const docRef = doc(db, this.COLLECTION, eventId);
+    const docRef = doc(eventsDb, this.COLLECTION, eventId);
     
     const unsubscribe = onSnapshot(
       docRef, 
@@ -354,7 +393,7 @@ class EventService {
    * Subscribe to real-time events list
    */
   subscribeToEvents(filters: EventFilters, callback: (events: Event[]) => void): Unsubscribe {
-    let q = query(collection(db, this.COLLECTION));
+    let q = query(collection(eventsDb, this.COLLECTION));
 
     // Apply filters (same as getEvents)
     if (filters.category) {
@@ -388,7 +427,7 @@ class EventService {
    */
   async incrementViewCount(eventId: string): Promise<void> {
     try {
-      const docRef = doc(db, this.COLLECTION, eventId);
+      const docRef = doc(eventsDb, this.COLLECTION, eventId);
       await updateDoc(docRef, {
         viewCount: increment(1),
         updatedAt: serverTimestamp()
@@ -404,7 +443,7 @@ class EventService {
    */
   async updateEventMetrics(eventId: string, updates: Partial<Event>): Promise<void> {
     try {
-      const docRef = doc(db, this.COLLECTION, eventId);
+      const docRef = doc(eventsDb, this.COLLECTION, eventId);
       const updateData = {
         ...updates,
         updatedAt: serverTimestamp()
@@ -440,7 +479,7 @@ class EventService {
 
         // Update if trending status changed
         if (event.isTrending !== isTrending) {
-          const docRef = doc(db, this.COLLECTION, event.id);
+          const docRef = doc(eventsDb, this.COLLECTION, event.id);
           await updateDoc(docRef, {
             isTrending,
             updatedAt: serverTimestamp()

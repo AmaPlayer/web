@@ -700,53 +700,7 @@ class StatisticsService {
     this.initializeStorage();
   }
 
-  /**
-   * Utility method to seed sample statistics data (for testing)
-   */
-  async seedSampleStatisticsData(userId: string = 'test-user'): Promise<void> {
-    // Create sample goals
-    const sampleGoals: Goal[] = [
-      {
-        id: 'goal_1',
-        title: 'Event Master',
-        description: 'Join 25 events this quarter',
-        category: 'participation',
-        targetValue: 25,
-        currentValue: 18,
-        deadline: Timestamp.fromMillis(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-        difficulty: 'medium',
-        estimatedTime: '1 month'
-      },
-      {
-        id: 'goal_2',
-        title: 'Achievement Collector',
-        description: 'Earn 15 achievements',
-        category: 'achievement',
-        targetValue: 15,
-        currentValue: 8,
-        difficulty: 'hard',
-        estimatedTime: '2 months'
-      },
-      {
-        id: 'goal_3',
-        title: 'Social Butterfly',
-        description: 'Reach 200 social interactions',
-        category: 'social',
-        targetValue: 200,
-        currentValue: 145,
-        deadline: Timestamp.fromMillis(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
-        difficulty: 'easy',
-        estimatedTime: '2 weeks'
-      }
-    ];
 
-    const allGoals = JSON.parse(localStorage.getItem(GOALS_STORAGE_KEY) || '{}');
-    allGoals[userId] = sampleGoals;
-    localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(allGoals));
-
-    // Generate insights
-    await this.generateUserInsights(userId);
-  }
 }
 
 // Export singleton instance

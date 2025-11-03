@@ -1,0 +1,131 @@
+
+/* FooterNav Fallback Variables and Enhanced Styles */
+:root {
+  --bg-navbar: #ffffff;
+  --border-primary: #e5e7eb;
+  --text-secondary: #6b7280;
+  --accent-primary: #00ff88;
+  --shadow-secondary: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode fallbacks */
+[data-theme="dark"], .dark-mode {
+  --bg-navbar: #1f2937;
+  --border-primary: #374151;
+  --text-secondary: #9ca3af;
+  --accent-primary: #00ff88;
+}
+
+/* Enhanced FooterNav with maximum visibility */
+.footer-nav {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  background: var(--bg-navbar, #ffffff) !important;
+  border-top: 1px solid var(--border-primary, #e5e7eb) !important;
+  z-index: 99999 !important; /* Maximum z-index */
+  padding: 10px 0 !important;
+  box-shadow: var(--shadow-secondary, 0 -2px 10px rgba(0, 0, 0, 0.1)) !important;
+  display: flex !important;
+  align-items: center !important;
+  min-height: 70px !important;
+  width: 100% !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.footer-nav-container {
+  display: flex !important;
+  justify-content: space-around !important;
+  align-items: center !important;
+  max-width: 600px !important;
+  margin: 0 auto !important;
+  padding: 0 10px !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.footer-nav-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: none !important;
+  border: none !important;
+  padding: 12px !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+  min-width: 60px !important;
+  min-height: 50px !important;
+  color: var(--text-secondary, #6b7280) !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.footer-nav-item:hover {
+  background: rgba(0, 255, 136, 0.1) !important;
+  color: var(--accent-primary, #00ff88) !important;
+  transform: translateY(-3px) !important;
+}
+
+.footer-nav-item.active {
+  background: rgba(0, 255, 136, 0.2) !important;
+  color: var(--accent-primary, #00ff88) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.3) !important;
+}
+
+.footer-nav-icon {
+  font-size: 24px !important;
+  margin-bottom: 4px !important;
+  transition: transform 0.3s ease !important;
+  display: block !important;
+}
+
+.footer-nav-label {
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  color: inherit !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  display: block !important;
+  text-align: center !important;
+}
+
+/* Ensure all pages have bottom padding for footer */
+.event-page,
+.main-content,
+body {
+  padding-bottom: 100px !important;
+}
+
+/* Debug styles - remove after testing */
+.footer-nav-debug {
+  border: 3px solid red !important;
+  background: yellow !important;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .footer-nav {
+    padding: 8px 0 !important;
+    min-height: 65px !important;
+  }
+  
+  .footer-nav-item {
+    min-width: 50px !important;
+    padding: 8px 4px !important;
+  }
+  
+  .footer-nav-icon {
+    font-size: 20px !important;
+  }
+  
+  .footer-nav-label {
+    font-size: 9px !important;
+  }
+}

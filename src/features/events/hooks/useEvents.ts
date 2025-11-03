@@ -67,14 +67,31 @@ export function useCreateEvent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ userId, data }: { userId: string; data: CreateEventDTO }) =>
-      eventService.createEvent(userId, data),
-    onSuccess: () => {
+    mutationFn: async ({ userId, data }: { userId: string; data: CreateEventDTO }) => {
+      console.log('🔄 Starting event creation mutation...', { userId, title: data.title });
+      
+      // Validate authentication state
+      if (!userId) {
+        console.error('❌ No user ID provided');
+        throw new Error('You must be signed in to create events');
+      }
+      
+      try {
+        const result = await eventService.createEvent(userId, data);
+        console.log('✅ Event creation mutation completed');
+        return result;
+      } catch (error) {
+        console.error('❌ Event creation mutation failed:', error);
+        throw error;
+      }
+    },
+    onSuccess: (newEvent) => {
+      console.log('🎉 Event created successfully:', newEvent.id);
       // Invalidate events list to refetch
       queryClient.invalidateQueries({ queryKey: eventKeys.lists() });
     },
     onError: (error) => {
-      console.error('Failed to create event:', error);
+      console.error('❌ Event creation failed in mutation:', error);
     },
   });
 }

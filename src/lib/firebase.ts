@@ -6,15 +6,6 @@ import { FirebaseStorage, getStorage, connectStorageEmulator } from 'firebase/st
 import { Messaging, getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { Analytics, getAnalytics, isSupported as isAnalyticsSupported } from 'firebase/analytics';
 
-import { validateFirebaseConfig } from '../utils/validation/configValidation';
-import { FirebaseConfig } from '../types/api/firebase';
-
-import { getAnalytics } from 'firebase/analytics';
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
-
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
@@ -25,19 +16,53 @@ const firebaseConfig = {
   measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
 
+// Validate Firebase configuration
+const validateMainFirebaseConfig = () => {
+  const requiredFields = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+  const missingFields = requiredFields.filter(field => !firebaseConfig[field as keyof typeof firebaseConfig]);
+  
+  if (missingFields.length > 0) {
+    console.error('❌ Firebase Configuration Error - Missing fields:', missingFields);
+    console.error('🔧 Please check your .env file and ensure all REACT_APP_FIREBASE_* variables are set');
+    console.error('📋 Current config:', firebaseConfig);
+    throw new Error(`Firebase configuration incomplete. Missing: ${missingFields.join(', ')}`);
+  }
+  
+  console.log('✅ Main Firebase configuration validated successfully');
+};
+
+// Validate before initializing
+validateMainFirebaseConfig();
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 
-// Default services
+// Initialize main app services
 const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-// New database instance for the Events feature
-const eventsDb = getFirestore(app, 'events-db');
+// Initialize Messaging (only if supported)
+let messaging: Messaging | null = null;
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  try {
+    messaging = getMessaging(app);
+  } catch (error) {
+    console.warn('Firebase Messaging not supported:', error);
+  }
+}
 
-export { app, db, auth, storage, analytics, eventsDb };
+// Initialize Analytics (only if supported)
+let analytics: Analytics | null = null;
+if (typeof window !== 'undefined') {
+  isAnalyticsSupported().then((supported) => {
+    if (supported) {
+      analytics = getAnalytics(app);
+      console.log('✅ Analytics initialized and shared with events system');
+    }
+  });
+}
+
 // Connect to emulators in development
 if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_USE_FIREBASE_EMULATOR) {
   connectAuthEmulator(auth, 'http://localhost:9099');
@@ -45,4 +70,5 @@ if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_USE_FIREBASE
   connectStorageEmulator(storage, 'localhost', 9199);
 }
 
+export { app, db, auth, storage, messaging, analytics, getToken, onMessage };
 export default app;

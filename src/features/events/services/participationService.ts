@@ -15,7 +15,7 @@ import {
   DocumentSnapshot,
   Unsubscribe
 } from 'firebase/firestore';
-import { db } from '@lib/firebase';
+import { eventsDb } from '@features/events/lib/firebase';
 import { eventService } from './eventService';
 
 // API Error class for typed error responses
@@ -92,7 +92,7 @@ class ParticipationService {
 
       if (existingParticipation) {
         // Update existing participation
-        const docRef = doc(db, this.COLLECTION, existingParticipation.id!);
+        const docRef = doc(eventsDb, this.COLLECTION, existingParticipation.id!);
         await updateDoc(docRef, {
           type,
           timestamp: serverTimestamp(),
@@ -108,7 +108,7 @@ class ParticipationService {
         return updated;
       } else {
         // Add new participation
-        const docRef = await addDoc(collection(db, this.COLLECTION), participationData);
+        const docRef = await addDoc(collection(eventsDb, this.COLLECTION), participationData);
         const newDoc = await getDoc(docRef);
         const newParticipation = firestoreToParticipation(newDoc);
 
@@ -137,7 +137,7 @@ class ParticipationService {
         throw new APIError(404, 'Participation not found');
       }
 
-      const docRef = doc(db, this.COLLECTION, participation.id);
+      const docRef = doc(eventsDb, this.COLLECTION, participation.id);
       await deleteDoc(docRef);
 
       // Update event participant counts
@@ -157,7 +157,7 @@ class ParticipationService {
   async getParticipants(eventId: string): Promise<EventParticipation[]> {
     try {
       const q = query(
-        collection(db, this.COLLECTION),
+        collection(eventsDb, this.COLLECTION),
         where('eventId', '==', eventId),
         orderBy('timestamp', 'desc')
       );
@@ -179,7 +179,7 @@ class ParticipationService {
   ): Promise<EventParticipation[]> {
     try {
       const q = query(
-        collection(db, this.COLLECTION),
+        collection(eventsDb, this.COLLECTION),
         where('eventId', '==', eventId),
         where('type', '==', type),
         orderBy('timestamp', 'desc')
@@ -202,7 +202,7 @@ class ParticipationService {
   ): Promise<EventParticipation | null> {
     try {
       const q = query(
-        collection(db, this.COLLECTION),
+        collection(eventsDb, this.COLLECTION),
         where('eventId', '==', eventId),
         where('userId', '==', userId)
       );
@@ -295,7 +295,7 @@ class ParticipationService {
   async getUserEvents(userId: string): Promise<EventParticipation[]> {
     try {
       const q = query(
-        collection(db, this.COLLECTION),
+        collection(eventsDb, this.COLLECTION),
         where('userId', '==', userId),
         orderBy('timestamp', 'desc')
       );
@@ -326,7 +326,7 @@ class ParticipationService {
     callback: (participants: EventParticipation[]) => void
   ): Unsubscribe {
     const q = query(
-      collection(db, this.COLLECTION),
+      collection(eventsDb, this.COLLECTION),
       where('eventId', '==', eventId),
       orderBy('timestamp', 'desc')
     );
@@ -353,7 +353,7 @@ class ParticipationService {
     callback: (participations: EventParticipation[]) => void
   ): Unsubscribe {
     const q = query(
-      collection(db, this.COLLECTION),
+      collection(eventsDb, this.COLLECTION),
       where('userId', '==', userId),
       orderBy('timestamp', 'desc')
     );

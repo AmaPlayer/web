@@ -68,33 +68,52 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 
-// Override React's error handling to get better debugging info
-const originalError = console.error;
-console.error = (...args: unknown[]) => {
-  if (args[0] && typeof args[0] === 'string' && args[0].includes('Objects are not valid as a React child')) {
-    console.error('🚨 REACT ERROR #31 DETAILED DEBUG:');
-    console.error('🚨 Args:', args);
-    console.error('🚨 Stack trace:', new Error().stack);
-    
-    // Try to extract the object information from the error URL
+// Override React's error handling to get better debugging info (only in development)
+if (process.env.NODE_ENV === 'development') {
+  const originalError = console.error;
+  console.error = (...args: unknown[]) => {
+    // Filter out known non-critical errors
     const errorMessage = args[0];
-    const urlMatch = errorMessage.match(/visit (https:\/\/[^\s]+)/);
-    if (urlMatch) {
-      console.error('🚨 Error URL:', urlMatch[1]);
-      // Decode the URL parameters to see the object structure
-      try {
-        const url = new URL(urlMatch[1]);
-        const params = url.searchParams.get('args[]');
-        if (params) {
-          console.error('🚨 Object being rendered:', decodeURIComponent(params));
+    if (typeof errorMessage === 'string') {
+      // Skip WebSocket errors (we handle these gracefully)
+      if (errorMessage.includes('WebSocket connection') || 
+          errorMessage.includes('Failed to connect to WebSocket')) {
+        return; // Don't log WebSocket errors
+      }
+      
+      // Skip empty src attribute warnings (we handle these)
+      if (errorMessage.includes('empty string') && errorMessage.includes('src attribute')) {
+        return; // Don't log empty src warnings
+      }
+      
+      // Only show detailed debug for React child errors
+      if (errorMessage.includes('Objects are not valid as a React child')) {
+        console.error('🚨 REACT ERROR #31 DETAILED DEBUG:');
+        console.error('🚨 Args:', args);
+        console.error('🚨 Stack trace:', new Error().stack);
+        
+        // Try to extract the object information from the error URL
+        const urlMatch = errorMessage.match(/visit (https:\/\/[^\s]+)/);
+        if (urlMatch) {
+          console.error('🚨 Error URL:', urlMatch[1]);
+          // Decode the URL parameters to see the object structure
+          try {
+            const url = new URL(urlMatch[1]);
+            const params = url.searchParams.get('args[]');
+            if (params) {
+              console.error('🚨 Object being rendered:', decodeURIComponent(params));
+            }
+          } catch (e) {
+            console.error('🚨 Could not parse error URL:', e);
+          }
         }
-      } catch (e) {
-        console.error('🚨 Could not parse error URL:', e);
       }
     }
-  }
-  originalError.apply(console, args);
-};
+    
+    // Call original error for all other errors
+    originalError.apply(console, args);
+  };
+}
 
 root.render(
   <React.StrictMode>
@@ -168,6 +187,13 @@ if ('serviceWorker' in navigator) {
 
 // Add debug utilities to window for development
 if (process.env.NODE_ENV === 'development') {
+  // Initialize Firestore debugging
+  import('./utils/debug/firestoreDebugger').then(({ startFirestoreDebugging }) => {
+    startFirestoreDebugging();
+    console.log('🔍 Firestore debugging enabled - will track permission errors');
+  }).catch(err => {
+    console.warn('Failed to initialize Firestore debugging:', err);
+  });
   // Initialize performance monitoring utilities
   import('./utils/performance/PerformanceMonitoringUtils').then(({ performanceMonitoringUtils }) => {
     // Auto-start performance monitoring
