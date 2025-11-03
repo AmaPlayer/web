@@ -1,5 +1,6 @@
 import React, { memo, useEffect, useState } from 'react';
 import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
+import { useLanguage } from '../../../contexts/UnifiedPreferencesContext';
 import './Toast.css';
 
 export interface ToastProps {
@@ -22,6 +23,7 @@ const Toast = memo<ToastProps>(({
   onDismiss,
   action
 }) => {
+  const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
 
@@ -89,7 +91,7 @@ const Toast = memo<ToastProps>(({
         <button 
           className="toast-dismiss"
           onClick={handleDismiss}
-          aria-label="Dismiss notification"
+          aria-label={t('dismissNotification') || 'Dismiss notification'}
         >
           <X size={16} />
         </button>

@@ -9,7 +9,7 @@ import ConfirmationDialog from '../../../components/common/ui/ConfirmationDialog
 import { useSettingsForm } from '../../../hooks/useSettingsForm';
 import { useToast } from '../../../hooks/useToast';
 import { useConfirmation } from '../../../hooks/useConfirmation';
-import { useLanguage } from '../../../contexts/LanguageContext';
+import { useLanguage } from '../../../contexts/UnifiedPreferencesContext';
 import { validateDisplayName, validateEmailField } from '../../../utils/validation/formValidation';
 import '../styles/AccountSection.css';
 

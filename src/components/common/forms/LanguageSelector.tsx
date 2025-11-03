@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, memo } from 'react';
 import { Globe, ChevronDown } from 'lucide-react';
-import { useLanguage } from '../../../contexts/LanguageContext';
+import { useLanguage } from '../../../contexts/UnifiedPreferencesContext';
 import './LanguageSelector.css';
 
 interface LanguageSelectorProps {

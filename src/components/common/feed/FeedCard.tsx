@@ -3,6 +3,7 @@ import { memo, useState, useCallback, useEffect } from 'react';
 import { MessageCircle, MoreHorizontal, Play } from 'lucide-react';
 import { useInViewport } from '../../../utils/performance/infiniteScroll';
 import { useToast } from '../../../hooks/useToast';
+import { useLanguage } from '../../../contexts/UnifiedPreferencesContext';
 import LoadingSpinner from '../feedback/LoadingSpinner';
 import LikeButton from '../../../features/social/components/LikeButton';
 import RoleBadge from '../ui/RoleBadge';
@@ -92,6 +93,7 @@ const FeedCard: React.FC<FeedCardProps> = memo(({
   }) as { elementRef: React.RefObject<HTMLDivElement>; hasBeenInViewport: boolean };
 
   const { showToast } = useToast();
+  const { t } = useLanguage();
   const [commentCount, setCommentCount] = useState<number>(item.commentsCount || 0);
 
   // Update local state when item props change (for real-time updates)
@@ -176,7 +178,7 @@ const FeedCard: React.FC<FeedCardProps> = memo(({
               <h4 className="user-name">{item.userDisplayName}</h4>
               <RoleBadge role={item.userRole} size="small" />
             </div>
-            <span className="post-time">{formatTime(item.createdAt)}</span>
+            <span className="post-time">{formatTime(item.createdAt, t)}</span>
           </div>
         </div>
         <button className="more-options">
@@ -271,6 +273,7 @@ const FeedCard: React.FC<FeedCardProps> = memo(({
 
 // Memoized talent card component
 const TalentCard: React.FC<TalentCardProps> = memo(({ talent }) => {
+  const { t } = useLanguage();
   const [playing, setPlaying] = useState<boolean>(false);
 
   const handlePlayToggle = useCallback((e: React.MouseEvent) => {
@@ -311,7 +314,7 @@ const TalentCard: React.FC<TalentCardProps> = memo(({ talent }) => {
         <h3 className="talent-title">{talent.title}</h3>
         <p className="talent-category">{talent.category}</p>
         <div className="talent-stats">
-          <span className="views">{formatNumber(talent.views || 0)} views</span>
+          <span className="views">{formatNumber(talent.views || 0)} {t('views')}</span>
           <span className="rating">⭐ {talent.rating || 0}/5</span>
         </div>
       </div>
@@ -339,6 +342,7 @@ const ProfileCard: React.FC<ProfileCardProps> = memo(({
   isLikeLoading = false,
   isCommentLoading = false
 }) => {
+  const { t } = useLanguage();
   const [isFollowing, setIsFollowing] = useState<boolean>(profile.isFollowing);
 
   const handleFollow = useCallback(async (e: React.MouseEvent) => {
@@ -392,7 +396,7 @@ const ProfileCard: React.FC<ProfileCardProps> = memo(({
           className={`follow-btn ${isFollowing ? 'following' : ''}`}
           onClick={handleFollow}
         >
-          {isFollowing ? 'Following' : 'Follow'}
+          {isFollowing ? t('following') : t('follow')}
         </button>
       )}
     </div>
@@ -407,7 +411,7 @@ const ProfileCard: React.FC<ProfileCardProps> = memo(({
 });
 
 // Utility functions
-const formatTime = (timestamp: string | Date): string => {
+const formatTime = (timestamp: string | Date, t: (key: string) => string): string => {
   const now = new Date();
   const time = new Date(timestamp);
   const diff = now.getTime() - time.getTime();
@@ -416,9 +420,9 @@ const formatTime = (timestamp: string | Date): string => {
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
   
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  return `${days}d ago`;
+  if (minutes < 60) return `${minutes}${t('minutesAgo')}`;
+  if (hours < 24) return `${hours}${t('hoursAgo')}`;
+  return `${days}${t('daysAgo')}`;
 };
 
 const formatNumber = (num: number): string => {

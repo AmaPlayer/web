@@ -5,6 +5,7 @@ import SettingsMenu from '../common/settings/SettingsMenu';
 import NotificationDropdown from '../common/notifications/NotificationDropdown';
 import { User } from 'firebase/auth';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage, useTheme } from '../../contexts/UnifiedPreferencesContext';
 import { db } from '../../lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import './NavigationBar.css';
@@ -25,6 +26,8 @@ interface NavigationBarProps {
  */
 const NavigationBar = ({ currentUser, isGuest, onTitleClick, title = "AmaPlayer", showBackButton = false, onBackClick }: NavigationBarProps) => {
   const { isGuest: authIsGuest } = useAuth();
+  const { t } = useLanguage();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
@@ -99,7 +102,7 @@ const NavigationBar = ({ currentUser, isGuest, onTitleClick, title = "AmaPlayer"
           <button
             className="nav-back-button"
             onClick={onBackClick}
-            aria-label="Go back to previous page"
+            aria-label={t('nav.goBack')}
             type="button"
           >
             <ArrowLeft size={24} aria-hidden="true" />
@@ -127,9 +130,9 @@ const NavigationBar = ({ currentUser, isGuest, onTitleClick, title = "AmaPlayer"
             <span 
               className="guest-indicator"
               role="status"
-              aria-label="Currently in guest mode"
+              aria-label={t('nav.guestMode')}
             >
-              Guest Mode
+              {t('nav.guestMode')}
             </span>
           )}
           
@@ -138,12 +141,12 @@ const NavigationBar = ({ currentUser, isGuest, onTitleClick, title = "AmaPlayer"
             <button
               className={`search-btn ${location.pathname === '/search' ? 'active' : ''}`}
               onClick={handleSearchClick}
-              aria-label="Search users"
-              title="Search"
+              aria-label={t('nav.search')}
+              title={t('nav.search')}
               type="button"
             >
               <Search size={24} aria-hidden="true" />
-              <span className="sr-only">Search</span>
+              <span className="sr-only">{t('nav.search')}</span>
             </button>
 
             {/* Notifications */}
@@ -153,10 +156,10 @@ const NavigationBar = ({ currentUser, isGuest, onTitleClick, title = "AmaPlayer"
                   ref={notificationButtonRef}
                   className="notification-btn"
                   onClick={handleNotificationsToggle}
-                  aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+                  aria-label={unreadCount > 0 ? `${t('nav.notifications')} (${unreadCount} ${t('nav.unread')})` : t('nav.notifications')}
                   aria-expanded={notificationsOpen}
                   aria-haspopup="true"
-                  title="Notifications"
+                  title={t('nav.notifications')}
                   type="button"
                 >
                   <Bell size={24} aria-hidden="true" />
@@ -166,7 +169,7 @@ const NavigationBar = ({ currentUser, isGuest, onTitleClick, title = "AmaPlayer"
                     </span>
                   )}
                   <span className="sr-only">
-                    Notifications{unreadCount > 0 ? ` (${unreadCount} unread)` : ''}
+                    {unreadCount > 0 ? `${t('nav.notifications')} (${unreadCount} ${t('nav.unread')})` : t('nav.notifications')}
                   </span>
                 </button>
 
@@ -184,14 +187,14 @@ const NavigationBar = ({ currentUser, isGuest, onTitleClick, title = "AmaPlayer"
                 ref={settingsButtonRef}
                 className="settings-btn"
                 onClick={handleSettingsToggle}
-                aria-label="Open settings menu"
+                aria-label={t('nav.settings')}
                 aria-expanded={settingsOpen}
                 aria-haspopup="true"
-                title="Settings"
+                title={t('nav.settings')}
                 type="button"
               >
                 <Settings size={24} aria-hidden="true" />
-                <span className="sr-only">Settings</span>
+                <span className="sr-only">{t('nav.settings')}</span>
               </button>
               
               <SettingsMenu

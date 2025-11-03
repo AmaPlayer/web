@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { Sun, Moon } from 'lucide-react';
-import { useTheme } from '../../../contexts/ThemeContext';
+import { useTheme } from '../../../contexts/UnifiedPreferencesContext';
 import { ThemeToggleProps } from '../../../types/components/common';
 import './ThemeToggle.css';
 

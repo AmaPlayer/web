@@ -2,6 +2,36 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 
+// Apply theme before first paint to prevent FOUC
+(() => {
+  try {
+    const STORAGE_KEY = 'amaplayer-preferences';
+    const stored = localStorage.getItem(STORAGE_KEY);
+    
+    if (stored) {
+      const preferences = JSON.parse(stored);
+      const theme = preferences.theme || 'dark';
+      const root = document.documentElement;
+      
+      if (theme === 'dark') {
+        root.classList.add('dark-mode');
+        root.setAttribute('data-theme', 'dark');
+      } else {
+        root.classList.add('light-mode');
+        root.setAttribute('data-theme', 'light');
+      }
+    } else {
+      // Default to dark mode
+      const root = document.documentElement;
+      root.classList.add('dark-mode');
+      root.setAttribute('data-theme', 'dark');
+    }
+  } catch (error) {
+    // Silently fail and let the provider handle it
+    console.warn('Failed to apply early theme:', error);
+  }
+})();
+
 // Main app imports
 const App = require('./App').default;
 // Advanced Web Vitals tracking will be loaded dynamically

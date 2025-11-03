@@ -2,11 +2,11 @@ import { useState, FormEvent, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Home, Eye, EyeOff } from 'lucide-react';
-import ThemeToggle from '../../components/common/ui/ThemeToggle';
-import LanguageSelector from '../../components/common/forms/LanguageSelector';
+import ThemeToggle from '../../components/common/ThemeToggle';
+import LanguageSelector from '../../components/common/LanguageSelector';
 import LoadingSpinner from '../../components/common/ui/LoadingSpinner';
 import ToastContainer from '../../components/common/ui/ToastContainer';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/UnifiedPreferencesContext';
 import { useToast } from '../../hooks/useToast';
 import { validateEmail } from '../../utils/validation/validation';
 import authErrorHandler from '../../utils/error/authErrorHandler';
@@ -60,16 +60,16 @@ export default function Login() {
     // Validate email
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
-      setEmailError(emailValidation.error || 'Invalid email');
+      setEmailError(emailValidation.error || t('invalidEmail'));
       isValid = false;
     }
 
     // Validate password
     if (!password.trim()) {
-      setPasswordError('Password is required');
+      setPasswordError(t('passwordRequired'));
       isValid = false;
     } else if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
+      setPasswordError(t('passwordMinLength'));
       isValid = false;
     }
 
@@ -77,7 +77,7 @@ export default function Login() {
   };
 
   const handleSuccessfulLogin = (): void => {
-    showSuccess('Login Successful', 'Welcome back! Redirecting to your dashboard...');
+    showSuccess(t('loginSuccessful'), t('welcomeBack'));
     // Navigate to home after successful login
     setTimeout(() => navigate('/home'), 1000);
   };
@@ -109,9 +109,9 @@ export default function Login() {
 
       // Show toast notification for better UX
       if (errorInfo.canRetry) {
-        showWarning('Login Failed', errorMessage);
+        showWarning(t('loginFailed'), errorMessage);
       } else {
-        showError('Login Failed', errorMessage);
+        showError(t('loginFailed'), errorMessage);
       }
 
       // Handle specific validation errors
@@ -143,7 +143,7 @@ export default function Login() {
       
       setError(errorMessage);
       setCanRetry(errorInfo.canRetry);
-      showError('Guest Login Failed', errorMessage);
+      showError(t('guestLoginFailed'), errorMessage);
     } finally {
       setLoading(false);
     }
@@ -165,7 +165,7 @@ export default function Login() {
       
       setError(errorMessage);
       setCanRetry(errorInfo.canRetry);
-      showError('Google Login Failed', errorMessage);
+      showError(t('googleLoginFailed'), errorMessage);
     } finally {
       setLoading(false);
     }
@@ -187,7 +187,7 @@ export default function Login() {
       
       setError(errorMessage);
       setCanRetry(errorInfo.canRetry);
-      showError('Apple Login Failed', errorMessage);
+      showError(t('appleLoginFailed'), errorMessage);
     } finally {
       setLoading(false);
     }
@@ -210,7 +210,7 @@ export default function Login() {
     <>
       <ToastContainer toasts={toasts} position="top-right" />
       <div className="auth-container auth-page">
-        <button className="home-btn" onClick={handleHomeClick} title="Go to Welcome Page">
+        <button className="home-btn" onClick={handleHomeClick} title={t('goToWelcomePage')}>
           <Home size={20} />
         </button>
       <div className="auth-controls-only">
@@ -221,7 +221,7 @@ export default function Login() {
         <h1>{t('amaplayer')}</h1>
         {role && (
           <div className="role-indicator">
-            <p>Login as <strong>{role}</strong></p>
+            <p>{t('loginAs')} <strong>{role}</strong></p>
           </div>
         )}
         <form onSubmit={handleSubmit}>
@@ -235,7 +235,7 @@ export default function Login() {
                   onClick={() => handleSubmit({ preventDefault: () => {} } as FormEvent<HTMLFormElement>)}
                   disabled={loading}
                 >
-                  Retry
+                  {t('retry')}
                 </button>
               )}
             </div>
@@ -269,7 +269,7 @@ export default function Login() {
                 type="button"
                 className="password-toggle-btn"
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? t('hidePassword') : t('showPassword')}
                 disabled={loading}
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -286,14 +286,14 @@ export default function Login() {
                 className="checkbox-input"
               />
               <span className="checkbox-custom"></span>
-              <span className="checkbox-text">Keep me logged in</span>
+              <span className="checkbox-text">{t('keepMeLoggedIn')}</span>
             </label>
           </div>
           <button disabled={loading} type="submit" className="auth-btn">
             {loading ? (
               <>
                 <LoadingSpinner size="small" color="white" className="in-button" />
-                Signing in...
+                {t('signingIn')}
               </>
             ) : (
               t('login')
@@ -309,10 +309,10 @@ export default function Login() {
             {loading ? (
               <>
                 <LoadingSpinner size="small" color="white" className="in-button" />
-                Connecting...
+                {t('connecting')}
               </>
             ) : (
-              'Join AmaPlayer with Google'
+              t('joinAmaPlayerWithGoogle')
             )}
           </button>
           <button
@@ -323,10 +323,10 @@ export default function Login() {
             {loading ? (
               <>
                 <LoadingSpinner size="small" color="white" className="in-button" />
-                Connecting...
+                {t('connecting')}
               </>
             ) : (
-              'Sign in with Apple'
+              t('signInWithAppleButton')
             )}
           </button>
         </div>
@@ -339,7 +339,7 @@ export default function Login() {
             {loading ? (
               <>
                 <LoadingSpinner size="small" color="inherit" className="in-button" />
-                Connecting...
+                {t('connecting')}
               </>
             ) : (
               t('continueAsGuest')

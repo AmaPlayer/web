@@ -12,10 +12,12 @@ import {
   ValidationMessages,
   formatValidationErrors
 } from '../utils/validationUtils';
+import { useLanguage } from '../../../contexts/UnifiedPreferencesContext';
 import '../styles/PositionSelectionPage.css';
 
 const PositionSelectionPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { sportId } = useParams<{ sportId?: string }>();
   const { 
     selectedSports, 
@@ -174,13 +176,13 @@ const PositionSelectionPage: React.FC = () => {
   if (!currentSport) {
     return (
       <AthleteOnboardingLayout
-        title="Loading..."
+        title={t('loading')}
         showBackButton={false}
         onBack={() => {}}
       >
         <div className="loading-container">
           <div className="loading-spinner" />
-          <p>Loading sport information...</p>
+          <p>{t('loading')}</p>
         </div>
       </AthleteOnboardingLayout>
     );
@@ -188,7 +190,7 @@ const PositionSelectionPage: React.FC = () => {
 
   return (
     <AthleteOnboardingLayout
-      title={`Choose Your Position`}
+      title={t('chooseYourPosition')}
       showBackButton={true}
       onBack={handleBack}
     >
@@ -198,7 +200,7 @@ const PositionSelectionPage: React.FC = () => {
             <span className="sport-name">{currentSport.name}</span>
           </div>
           <p className="position-selection-description">
-            What position do you play in {currentSport.name}? This helps us provide relevant content and connect you with similar players.
+            {t('whatPositionDoYouPlay')} {currentSport.name}? {t('positionSelectionDescription')}
           </p>
           
           {/* Validation Error Display */}
@@ -231,10 +233,10 @@ const PositionSelectionPage: React.FC = () => {
             ))
           ) : (
             <div className="no-positions-found">
-              <p>No positions available for {currentSport.name}</p>
+              <p>{t('noPositionsAvailable')} {currentSport.name}</p>
               <button onClick={handleBack} className="back-to-sport-btn">
                 <ArrowLeft size={16} />
-                Choose Different Sport
+                {t('chooseDifferentSport')}
               </button>
             </div>
           )}
@@ -252,11 +254,11 @@ const PositionSelectionPage: React.FC = () => {
               {isLoading ? (
                 <>
                   <div className="loading-spinner" style={{ width: '20px', height: '20px', marginRight: '8px' }} />
-                  Loading...
+                  {t('loading')}
                 </>
               ) : (
                 <>
-                  Continue as {selectedPosition.name}
+                  {t('continueAs')} {selectedPosition.name}
                   <ChevronRight size={20} />
                 </>
               )}
@@ -272,7 +274,7 @@ const PositionSelectionPage: React.FC = () => {
                 setError(formatValidationErrors(validation.errors));
               }}
             >
-              Select a position to continue
+              {t('selectPositionToContinue')}
             </button>
           )}
         </div>
@@ -281,7 +283,7 @@ const PositionSelectionPage: React.FC = () => {
         {isLoading && (
           <div className="loading-overlay">
             <div className="loading-spinner" />
-            <p>Loading...</p>
+            <p>{t('loading')}</p>
           </div>
         )}
       </div>

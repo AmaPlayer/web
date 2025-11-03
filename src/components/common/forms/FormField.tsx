@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
 import { AlertCircle, CheckCircle, Info } from 'lucide-react';
+import { useLanguage } from '../../../contexts/UnifiedPreferencesContext';
 import './FormField.css';
 
 export interface FormFieldProps {
@@ -29,6 +30,7 @@ const FormField: React.FC<FormFieldProps> = ({
   helpText,
   showValidationIcon = true
 }) => {
+  const { t } = useLanguage();
   const hasError = !!error;
   const hasWarning = !!warning && !hasError;
   const hasSuccess = !!success && !hasError && !hasWarning;
@@ -61,7 +63,7 @@ const FormField: React.FC<FormFieldProps> = ({
     <div className={`form-field ${getValidationClass()} ${disabled ? 'disabled' : ''} ${className}`}>
       <label htmlFor={name} className="form-label">
         {label}
-        {required && <span className="required-indicator" aria-label="required">*</span>}
+        {required && <span className="required-indicator" aria-label={t('required') || 'required'}>*</span>}
       </label>
       
       <div className="form-input-container">

@@ -1,8 +1,9 @@
 import { useState, FormEvent, ChangeEvent } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import ThemeToggle from '../../components/common/ui/ThemeToggle';
-import LanguageSelector from '../../components/common/forms/LanguageSelector';
+import ThemeToggle from '../../components/common/ThemeToggle';
+import LanguageSelector from '../../components/common/LanguageSelector';
+import { useLanguage } from '../../contexts/UnifiedPreferencesContext';
 import { runFirebaseDiagnostics } from '../../utils/diagnostics/firebaseDiagnostic';
 import './Auth.css';
 
@@ -15,6 +16,7 @@ export default function Signup() {
   const [loading, setLoading] = useState<boolean>(false);
   const [diagnosticLoading, setDiagnosticLoading] = useState<boolean>(false);
   const { signup, googleLogin, appleLogin } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   async function handleDiagnostic(): Promise<void> {
@@ -34,7 +36,7 @@ export default function Signup() {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      return setError('Passwords do not match');
+      return setError(t('passwordsDoNotMatch'));
     }
 
     try {
@@ -49,7 +51,7 @@ export default function Signup() {
       console.error('Signup form error:', error);
       
       // Display the specific error message from the auth context
-      const errorMessage = error.message || 'Failed to create an account';
+      const errorMessage = error.message || t('failedToCreateAccount');
       setError(errorMessage);
     }
     setLoading(false);
@@ -62,7 +64,7 @@ export default function Signup() {
       await googleLogin();
       navigate('/home');
     } catch (error) {
-      setError('Failed to sign up with Google');
+      setError(t('failedToSignUpWithGoogle'));
       console.error('Google signup error:', error);
     }
     setLoading(false);
@@ -79,14 +81,14 @@ export default function Signup() {
       if (error && typeof error === 'object' && 'code' in error) {
         const firebaseError = error as { code: string };
         if (firebaseError.code === 'auth/operation-not-allowed') {
-          setError('Apple Sign-in is not enabled. Please contact support.');
+          setError(t('appleSignInNotEnabled'));
         } else if (firebaseError.code === 'auth/cancelled-popup-request') {
-          setError('Sign-in was cancelled');
+          setError(t('signInCancelled'));
         } else {
-          setError('Failed to sign up with Apple');
+          setError(t('failedToSignUpWithApple'));
         }
       } else {
-        setError('Failed to sign up with Apple');
+        setError(t('failedToSignUpWithApple'));
       }
     }
     setLoading(false);
@@ -99,13 +101,13 @@ export default function Signup() {
         <ThemeToggle />
       </div>
       <div className="auth-card">
-        <h1>AmaPlayer</h1>
+        <h1>{t('amaplayer')}</h1>
         <form onSubmit={handleSubmit}>
           {error && <div className="error">{error}</div>}
           <div className="form-group">
             <input
               type="text"
-              placeholder="Full Name"
+              placeholder={t('fullName')}
               value={displayName}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setDisplayName(e.target.value)}
               required
@@ -114,7 +116,7 @@ export default function Signup() {
           <div className="form-group">
             <input
               type="email"
-              placeholder="Email"
+              placeholder={t('email')}
               value={email}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
               required
@@ -123,7 +125,7 @@ export default function Signup() {
           <div className="form-group">
             <input
               type="password"
-              placeholder="Password"
+              placeholder={t('password')}
               value={password}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
               required
@@ -132,14 +134,14 @@ export default function Signup() {
           <div className="form-group">
             <input
               type="password"
-              placeholder="Confirm Password"
+              placeholder={t('confirmPassword')}
               value={confirmPassword}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
               required
             />
           </div>
           <button disabled={loading} type="submit" className="auth-btn">
-            Sign Up
+            {t('signUp')}
           </button>
         </form>
         <div className="social-login">
@@ -148,14 +150,14 @@ export default function Signup() {
             className="auth-btn google-btn"
             onClick={handleGoogleSignup}
           >
-            Sign up with Google
+            {t('signUpWithGoogle')}
           </button>
           <button 
             disabled={loading} 
             className="auth-btn apple-btn"
             onClick={handleAppleSignup}
           >
-            Sign up with Apple
+            {t('signUpWithApple')}
           </button>
         </div>
         
@@ -163,7 +165,7 @@ export default function Signup() {
         {process.env.NODE_ENV === 'development' && (
           <div className="diagnostic-section" style={{ marginTop: '20px', padding: '10px', border: '1px dashed #ccc', borderRadius: '5px' }}>
             <p style={{ fontSize: '12px', color: '#666', margin: '0 0 10px 0' }}>
-              Development Tools
+              {t('developmentTools')}
             </p>
             <button 
               disabled={diagnosticLoading}
@@ -176,18 +178,18 @@ export default function Signup() {
                 padding: '8px 16px'
               }}
             >
-              {diagnosticLoading ? 'Running Diagnostics...' : 'Test Firebase Connection'}
+              {diagnosticLoading ? t('runningDiagnostics') : t('testFirebaseConnection')}
             </button>
           </div>
         )}
         
         <div className="auth-link-section">
-          <p>Already have an account?</p>
+          <p>{t('alreadyHaveAccount')}</p>
           <button 
             className="auth-link-btn"
             onClick={() => navigate('/login')}
           >
-            Log in
+            {t('login')}
           </button>
         </div>
       </div>

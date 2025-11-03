@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { useLanguage } from '../../../contexts/UnifiedPreferencesContext';
 import './ConfirmationDialog.css';
 
 export interface ConfirmationDialogProps {
@@ -25,6 +26,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   onCancel,
   isLoading = false
 }) => {
+  const { t } = useLanguage();
   const dialogRef = useRef<HTMLDivElement>(null);
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -94,7 +96,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             className="dialog-close"
             onClick={onCancel}
             disabled={isLoading}
-            aria-label="Close dialog"
+            aria-label={t('close')}
           >
             <X size={20} />
           </button>
@@ -126,7 +128,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             {isLoading ? (
               <>
                 <div className="button-spinner" />
-                Processing...
+                {t('processing') || 'Processing...'}
               </>
             ) : (
               confirmText

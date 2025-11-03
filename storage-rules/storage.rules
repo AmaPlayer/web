@@ -151,6 +151,28 @@ service firebase.storage {
         && validateImageFile();
     }
     
+    // Event videos - user-created events
+    match /events/videos/{eventId}/{videoId}.mp4 {
+      allow read: if true;
+      allow write: if request.auth != null 
+        && validateEventVideoFile();
+    }
+    
+    // Event thumbnails - auto-generated or uploaded
+    match /events/thumbnails/{eventId}/{thumbnailId}.jpg {
+      allow read: if true;
+      allow write: if request.auth != null 
+        && validateEventThumbnailFile();
+    }
+    
+    // Challenge submissions - user video submissions for challenges
+    match /events/submissions/{challengeId}/{userId}/{submissionId}.mp4 {
+      allow read: if true;
+      allow write: if request.auth != null 
+        && request.auth.uid == userId
+        && validateEventVideoFile();
+    }
+    
     // Temporary uploads (for processing)
     match /temp/{userId}/{fileName} {
       allow read, write: if request.auth != null 
@@ -195,6 +217,24 @@ service firebase.storage {
     
     function validateMediaFile() {
       return validateImageFile() || validateVideoFile() || validateAudioFile() || validateDocumentFile();
+    }
+    
+    function validateEventVideoFile() {
+      return request.resource.size < 50 * 1024 * 1024 // 50MB limit for event videos
+        && request.resource.contentType.matches('video/.*')
+        && request.resource.contentType in [
+          'video/mp4', 'video/mov', 'video/avi', 'video/wmv',
+          'video/flv', 'video/webm', 'video/mkv', 'video/m4v'
+        ];
+    }
+    
+    function validateEventThumbnailFile() {
+      return request.resource.size < 5 * 1024 * 1024 // 5MB limit for event thumbnails
+        && request.resource.contentType.matches('image/.*')
+        && request.resource.contentType in [
+          'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 
+          'image/webp', 'image/bmp', 'image/avif'
+        ];
     }
     
     function isGuestUser() {

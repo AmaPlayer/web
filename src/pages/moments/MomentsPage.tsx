@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/UnifiedPreferencesContext';
 import NavigationBar from '../../components/layout/NavigationBar';
 import FooterNav from '../../components/layout/FooterNav';
 import VideoPlayer from '../../components/common/video/VideoPlayer';
@@ -24,6 +25,7 @@ import './MomentsPage.css';
  */
 const MomentsPage: React.FC = () => {
   const { currentUser, isGuest } = useAuth();
+  const { t } = useLanguage();
   const [moments, setMoments] = useState<MomentVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -305,7 +307,7 @@ const MomentsPage: React.FC = () => {
         currentUser={currentUser}
         isGuest={isGuest()}
         onTitleClick={handleTitleClick}
-        title="Moments"
+        title={t('moments.title')}
       />
       
       <div className="moments-content">
@@ -337,8 +339,8 @@ const MomentsPage: React.FC = () => {
           {!loading && !error && moments.length === 0 && (
             <div className="moments-empty">
               <div className="empty-content">
-                <h2>No Moments to Discover</h2>
-                <p>The community hasn't shared any moments yet. Be the first to create and share content!</p>
+                <h2>{t('moments.empty.title')}</h2>
+                <p>{t('moments.empty.description')}</p>
               </div>
             </div>
           )}
@@ -369,9 +371,9 @@ const MomentsPage: React.FC = () => {
                     <VideoErrorBoundary
                       fallback={
                         <div className="video-error-fallback">
-                          <p>This video couldn't be loaded</p>
+                          <p>{t('moments.error.videoLoad')}</p>
                           <button onClick={() => window.location.reload()}>
-                            Refresh Page
+                            {t('moments.error.refresh')}
                           </button>
                         </div>
                       }

@@ -1,6 +1,7 @@
 // Verification Request Modal - Allow users to create verification requests
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useLanguage } from '../../../contexts/UnifiedPreferencesContext';
 import { db } from '../../../lib/firebase';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import VerificationService from '../../../services/api/verificationService';
@@ -41,6 +42,7 @@ interface VerificationRequestModalProps {
 
 const VerificationRequestModal: React.FC<VerificationRequestModalProps> = ({ isOpen, onClose, userProfile }) => {
   const { currentUser } = useAuth();
+  const { t } = useLanguage();
   const [step, setStep] = useState<number>(1); // 1: Review, 2: Creating, 3: Success
   const [userVideos, setUserVideos] = useState<TalentVideo[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -170,11 +172,11 @@ const VerificationRequestModal: React.FC<VerificationRequestModalProps> = ({ isO
       <div className="modal-content verification-modal-content">
         <div className="modal-header">
           <h2>
-            {step === 1 && 'Request Verification'}
-            {step === 2 && 'Creating Request...'}
-            {step === 3 && 'Verification Request Created!'}
+            {step === 1 && (t('requestVerification') || 'Request Verification')}
+            {step === 2 && (t('creatingRequest') || 'Creating Request...')}
+            {step === 3 && (t('verificationRequestCreated') || 'Verification Request Created!')}
           </h2>
-          <button className="close-btn" onClick={onClose}>
+          <button className="close-btn" onClick={onClose} aria-label={t('close')}>
             <X size={24} />
           </button>
         </div>
@@ -254,14 +256,14 @@ const VerificationRequestModal: React.FC<VerificationRequestModalProps> = ({ isO
                   onClick={onClose}
                   disabled={loading}
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button 
                   className="btn-primary" 
                   onClick={handleCreateVerificationRequest}
                   disabled={loading || userVideos.length === 0}
                 >
-                  {loading ? 'Creating...' : 'Create Verification Request'}
+                  {loading ? (t('creating') || 'Creating...') : (t('createVerificationRequest') || 'Create Verification Request')}
                 </button>
               </div>
             </div>
@@ -337,7 +339,7 @@ const VerificationRequestModal: React.FC<VerificationRequestModalProps> = ({ isO
 
               <div className="modal-actions">
                 <button className="btn-primary" onClick={onClose}>
-                  Done
+                  {t('done') || 'Done'}
                 </button>
               </div>
             </div>

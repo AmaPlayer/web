@@ -1,6 +1,7 @@
 // Share modal for internal sharing (friends, feed, groups) with tab navigation
 import React, { memo, useState, useCallback, useEffect, ReactNode, MouseEvent } from 'react';
 import { X, Users, Rss, MessageCircle, Loader2 } from 'lucide-react';
+import { useLanguage } from '../../../contexts/UnifiedPreferencesContext';
 import LazyImage from '../ui/LazyImage';
 import ShareToFriends from './ShareToFriends';
 import ShareToFeed from './ShareToFeed';
@@ -48,6 +49,7 @@ const ShareModal = memo<ShareModalProps>(({
   onClose, 
   onShareComplete 
 }) => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<ShareTab>(SHARE_TABS.FRIENDS);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [shareMessage, setShareMessage] = useState<string>('');
@@ -170,7 +172,7 @@ const ShareModal = memo<ShareModalProps>(({
       return (
         <div className="share-loading">
           <Loader2 size={24} className="spinning" />
-          <p>Loading...</p>
+          <p>{t('loading')}</p>
         </div>
       );
     }
@@ -250,11 +252,12 @@ const ShareModal = memo<ShareModalProps>(({
         <div className="share-modal" onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}>
           {/* Header */}
           <div className="modal-header">
-            <h3>Share Post</h3>
+            <h3>{t('sharePost')}</h3>
             <button 
               className="close-btn" 
               onClick={onClose}
               disabled={isSubmitting}
+              aria-label={t('close')}
             >
               <X size={24} />
             </button>
@@ -293,7 +296,7 @@ const ShareModal = memo<ShareModalProps>(({
           </div>
           {post.caption && <p className="post-caption">{post.caption}</p>}
           <div className="share-stats">
-            <span>{post.shareCount || 0} shares</span>
+            <span>{post.shareCount || 0} {t('shares') || 'shares'}</span>
           </div>
         </div>
 

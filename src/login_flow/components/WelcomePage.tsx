@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useTranslation from '../hooks/useTranslation';
-import ThemeToggle from '../../components/common/ui/ThemeToggle';
-import LanguageSelector from '../../components/common/forms/LanguageSelector';
+import { useLanguage } from '../../contexts/UnifiedPreferencesContext';
+import { LanguageSelector } from '../../components/common/LanguageSelector';
+import { ThemeToggle } from '../../components/common/ThemeToggle';
 import './WelcomePage.css';
 
-const WelcomePage: React.FC = () => {
+const WelcomePageContent: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t } = useLanguage();
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
 
   // Handle scroll to hide/show header controls
   useEffect(() => {
@@ -34,6 +36,20 @@ const WelcomePage: React.FC = () => {
     };
   }, [lastScrollY]);
 
+  // Handle click outside settings dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+        setIsSettingsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const handleLetsPlayClick = (): void => {
     navigate('/athlete-onboarding/sport');
   };
@@ -57,8 +73,30 @@ const WelcomePage: React.FC = () => {
     <div className="welcome-container">
       <div className={`welcome-header ${isHeaderVisible ? 'visible' : 'hidden'}`}>
         <div className="welcome-controls">
-          <LanguageSelector />
-          <ThemeToggle />
+          <div className="settings-dropdown" ref={settingsRef}>
+            <button
+              className="settings-button"
+              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+              aria-label="Settings"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+            {isSettingsOpen && (
+              <div className="settings-menu">
+                <div className="settings-item">
+                  <span className="settings-label">Language</span>
+                  <LanguageSelector variant="dropdown" />
+                </div>
+                <div className="settings-item">
+                  <span className="settings-label">Theme</span>
+                  <ThemeToggle variant="icon" />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -89,19 +127,15 @@ const WelcomePage: React.FC = () => {
           <h2 className="join-free-title">{t('joinForFree')}</h2>
           <div className="role-options">
             <div className="role-option" onClick={() => handleRoleClick('athlete')} style={{ cursor: 'pointer' }}>
-              <div className="role-icon">🏃</div>
               <h4>{t('athlete')}</h4>
             </div>
             <div className="role-option" onClick={() => handleRoleClick('coach')} style={{ cursor: 'pointer' }}>
-              <div className="role-icon">🎯</div>
               <h4>{t('coach')}</h4>
             </div>
             <div className="role-option" onClick={() => handleRoleClick('organization')} style={{ cursor: 'pointer' }}>
-              <div className="role-icon">🏢</div>
               <h4>{t('organization')}</h4>
             </div>
             <div className="role-option" onClick={() => handleRoleClick('parent')} style={{ cursor: 'pointer' }}>
-              <div className="role-icon">👨‍👩‍👧</div>
               <h4>{t('parent')}</h4>
             </div>
           </div>
@@ -110,12 +144,6 @@ const WelcomePage: React.FC = () => {
         {/* Vision and Mission Section */}
         <div className="vision-mission-section">
           <div className="vision-mission-card">
-            <div className="card-icon vision-icon">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
-            </div>
             <h3 className="card-title">{t('vision') || 'Our Vision'}</h3>
             <p className="card-description">
               {t('visionText') || 'To create a global platform that connects athletes, coaches, and sports enthusiasts, empowering them to showcase their talent and achieve their dreams.'}
@@ -123,12 +151,6 @@ const WelcomePage: React.FC = () => {
           </div>
 
           <div className="vision-mission-card">
-            <div className="card-icon mission-icon">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-              </svg>
-            </div>
             <h3 className="card-title">{t('mission') || 'Our Mission'}</h3>
             <p className="card-description">
               {t('missionText') || 'To provide innovative tools and opportunities for athletes to connect, grow, and succeed in their sporting journey while building a vibrant community.'}
@@ -138,6 +160,10 @@ const WelcomePage: React.FC = () => {
       </div>
     </div>
   );
+};
+
+const WelcomePage: React.FC = () => {
+  return <WelcomePageContent />;
 };
 
 export default WelcomePage;

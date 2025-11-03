@@ -9,10 +9,12 @@ import {
   ValidationMessages,
   formatValidationErrors 
 } from '../utils/validationUtils';
+import { useLanguage } from '../../../contexts/UnifiedPreferencesContext';
 import '../styles/SportSelectionPage.css';
 
 const SportSelectionPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { selectedSports, toggleSport, setError, error } = useOnboardingStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -47,8 +49,9 @@ const SportSelectionPage: React.FC = () => {
     
     // Validate that at least one sport is selected
     if (selectedSports.length === 0) {
-      setValidationErrors(['Please select at least one sport']);
-      setError('Please select at least one sport');
+      const errorMsg = t('pleaseSelectAtLeastOneSport');
+      setValidationErrors([errorMsg]);
+      setError(errorMsg);
       return;
     }
 
@@ -101,14 +104,14 @@ const SportSelectionPage: React.FC = () => {
 
   return (
     <AthleteOnboardingLayout
-      title="Choose Your Sport"
+      title={t('chooseYourSport')}
       showBackButton={true}
       onBack={handleBack}
     >
       <div className="sport-selection-container">
         <div className="sport-selection-header">
           <p className="sport-selection-description">
-            Select the sports you're interested in. You can choose multiple sports.
+            {t('selectSportsDescription')}
           </p>
           
           {/* Validation Error Display */}
@@ -131,17 +134,17 @@ const SportSelectionPage: React.FC = () => {
               <Search className="search-icon" size={20} />
               <input
                 type="text"
-                placeholder="Search sports..."
+                placeholder={t('searchSports')}
                 value={searchTerm}
                 onChange={handleSearchChange}
                 className="search-input"
-                aria-label="Search sports"
+                aria-label={t('searchSports')}
               />
               {searchTerm && (
                 <button
                   onClick={clearSearch}
                   className="clear-search-btn"
-                  aria-label="Clear search"
+                  aria-label={t('clearSearch')}
                 >
                   <X size={16} />
                 </button>
@@ -165,9 +168,9 @@ const SportSelectionPage: React.FC = () => {
             ))
           ) : (
             <div className="no-sports-found">
-              <p>No sports found matching "{searchTerm}"</p>
+              <p>{t('noSportsFound')} "{searchTerm}"</p>
               <button onClick={clearSearch} className="clear-search-link">
-                Clear search
+                {t('clearSearch')}
               </button>
             </div>
           )}
@@ -185,11 +188,11 @@ const SportSelectionPage: React.FC = () => {
               {isLoading ? (
                 <>
                   <div className="loading-spinner" style={{ width: '20px', height: '20px', marginRight: '8px' }} />
-                  Loading...
+                  {t('loading')}
                 </>
               ) : (
                 <>
-                  Continue with {selectedSports.length} sport{selectedSports.length > 1 ? 's' : ''}
+                  {t('continueWithSports')} {selectedSports.length} {selectedSports.length > 1 ? t('sports') : t('sport')}
                   <ChevronRight size={20} />
                 </>
               )}
@@ -200,11 +203,12 @@ const SportSelectionPage: React.FC = () => {
               disabled={true}
               onClick={() => {
                 setHasUserInteracted(true);
-                setValidationErrors(['Please select at least one sport']);
-                setError('Please select at least one sport');
+                const errorMsg = t('pleaseSelectAtLeastOneSport');
+                setValidationErrors([errorMsg]);
+                setError(errorMsg);
               }}
             >
-              Select at least one sport to continue
+              {t('selectAtLeastOneSport')}
             </button>
           )}
         </div>
@@ -213,7 +217,7 @@ const SportSelectionPage: React.FC = () => {
         {isLoading && (
           <div className="loading-overlay">
             <div className="loading-spinner" />
-            <p>Loading...</p>
+            <p>{t('loading')}</p>
           </div>
         )}
       </div>

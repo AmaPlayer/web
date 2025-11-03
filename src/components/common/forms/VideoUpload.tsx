@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Video, X, Play, Pause, Volume2, VolumeX, Maximize } from 'lucide-react';
+import { useLanguage } from '../../../contexts/UnifiedPreferencesContext';
 import { validateVideoFile, SUPPORTED_VIDEO_TYPES, MAX_VIDEO_SIZE } from '../../../services/api/videoService';
 import './VideoUpload.css';
 
@@ -19,6 +20,7 @@ export default function VideoUpload({
   showPreview = true,
   className = ''
 }: VideoUploadProps) {
+  const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
@@ -235,15 +237,15 @@ export default function VideoUpload({
             <div className="upload-icon">
               <Video size={48} />
             </div>
-            <h3>Upload Video</h3>
-            <p>Drag and drop your video here, or click to browse</p>
+            <h3>{t('uploadVideo') || 'Upload Video'}</h3>
+            <p>{t('dragDropVideo') || 'Drag and drop your video here, or click to browse'}</p>
             <div className="upload-info">
-              <p>Supported formats: {acceptedTypes.map(type => type.split('/')[1].toUpperCase()).join(', ')}</p>
-              <p>Maximum size: {Math.floor(MAX_VIDEO_SIZE / (1024 * 1024))}MB</p>
+              <p>{t('supportedFormats') || 'Supported formats'}: {acceptedTypes.map(type => type.split('/')[1].toUpperCase()).join(', ')}</p>
+              <p>{t('maximumSize') || 'Maximum size'}: {Math.floor(MAX_VIDEO_SIZE / (1024 * 1024))}MB</p>
             </div>
             <button type="button" className="upload-btn">
               <Upload size={20} />
-              Choose Video
+              {t('chooseVideo') || 'Choose Video'}
             </button>
           </div>
         </div>
@@ -269,7 +271,7 @@ export default function VideoUpload({
                       type="button"
                       className="control-btn play-pause-btn"
                       onClick={togglePlayPause}
-                      aria-label={isPlaying ? "Pause" : "Play"}
+                      aria-label={isPlaying ? (t('pause') || 'Pause') : (t('play') || 'Play')}
                     >
                       {isPlaying ? <Pause size={18} /> : <Play size={18} />}
                     </button>
@@ -296,7 +298,7 @@ export default function VideoUpload({
                         type="button"
                         className="control-btn volume-btn"
                         onClick={toggleMute}
-                        aria-label={isMuted ? "Unmute" : "Mute"}
+                        aria-label={isMuted ? (t('unmute') || 'Unmute') : (t('mute') || 'Mute')}
                       >
                         {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
                       </button>
@@ -315,7 +317,7 @@ export default function VideoUpload({
                       type="button"
                       className="control-btn fullscreen-btn"
                       onClick={toggleFullscreen}
-                      aria-label="Fullscreen"
+                      aria-label={t('fullscreen') || 'Fullscreen'}
                     >
                       <Maximize size={16} />
                     </button>
@@ -328,15 +330,15 @@ export default function VideoUpload({
           <div className="video-info">
             <div className="video-details">
               <h4>{selectedVideo.name}</h4>
-              <p>Size: {formatFileSize(selectedVideo.size)}</p>
-              <p>Type: {selectedVideo.type}</p>
+              <p>{t('size') || 'Size'}: {formatFileSize(selectedVideo.size)}</p>
+              <p>{t('type') || 'Type'}: {selectedVideo.type}</p>
             </div>
             <button
               type="button"
               className="remove-btn"
               onClick={removeVideo}
-              title="Remove video"
-              aria-label="Remove video"
+              title={t('removeVideo') || 'Remove video'}
+              aria-label={t('removeVideo') || 'Remove video'}
             >
               <X size={20} />
             </button>

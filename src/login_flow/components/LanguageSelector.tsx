@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useLanguage, languages } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/UnifiedPreferencesContext';
+import { languages } from '../../translations';
 import '../styles/LanguageSelector.css';
 
 const LanguageSelector: React.FC = () => {

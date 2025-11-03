@@ -96,6 +96,27 @@
 │   │   └── {userId2}/...
 │   └── {groupId2}/...
 │
+├── events/
+│   ├── videos/
+│   │   ├── {eventId}/
+│   │   │   ├── {videoId}.mp4
+│   │   │   └── processed/
+│   │   │       ├── {videoId}_720p.mp4
+│   │   │       └── {videoId}_480p.mp4
+│   │   └── {eventId2}/...
+│   ├── thumbnails/
+│   │   ├── {eventId}/
+│   │   │   ├── {thumbnailId}.jpg
+│   │   │   └── {thumbnailId}_small.jpg
+│   │   └── {eventId2}/...
+│   └── submissions/
+│       ├── {challengeId}/
+│       │   ├── {userId}/
+│       │   │   ├── {submissionId}.mp4
+│       │   │   └── {submissionId}_thumbnail.jpg
+│       │   └── {userId2}/...
+│       └── {challengeId2}/...
+│
 └── temp/
     ├── {userId}/
     │   ├── processing_queue/
@@ -132,6 +153,11 @@
 
 // Comments
 "comments/comment789/1234567890-reaction_gif.gif"
+
+// Events
+"events/videos/event123/video456.mp4"
+"events/thumbnails/event123/thumb789.jpg"
+"events/submissions/challenge456/user123/submission789.mp4"
 ```
 
 ## File Size Limits
@@ -173,7 +199,10 @@ const USE_CASE_LIMITS = {
   messageAttachments: 25 * 1024 * 1024, // 25MB
   commentMedia: 10 * 1024 * 1024,      // 10MB
   athleteHighlights: 200 * 1024 * 1024, // 200MB (premium content)
-  trainingVideos: 500 * 1024 * 1024    // 500MB (professional use)
+  trainingVideos: 500 * 1024 * 1024,   // 500MB (professional use)
+  eventVideos: 50 * 1024 * 1024,       // 50MB (event content)
+  eventThumbnails: 5 * 1024 * 1024,    // 5MB (event thumbnails)
+  challengeSubmissions: 50 * 1024 * 1024 // 50MB (challenge videos)
 };
 ```
 
@@ -247,6 +276,24 @@ match /messages/{userId1}/{userId2}/{fileName} {
   allow write: if request.auth.uid == userId1 || request.auth.uid == userId2;
   allow read: if request.auth.uid == userId1 || request.auth.uid == userId2;
 }
+
+// Event videos - authenticated users can upload
+match /events/videos/{eventId}/{videoId}.mp4 {
+  allow read: if true; // Public read access
+  allow write: if request.auth != null && validateEventVideoFile();
+}
+
+// Event thumbnails - authenticated users can upload
+match /events/thumbnails/{eventId}/{thumbnailId}.jpg {
+  allow read: if true; // Public read access
+  allow write: if request.auth != null && validateEventThumbnailFile();
+}
+
+// Challenge submissions - users can only upload their own
+match /events/submissions/{challengeId}/{userId}/{submissionId}.mp4 {
+  allow read: if true; // Public read access
+  allow write: if request.auth.uid == userId && validateEventVideoFile();
+}
 ```
 
 ### File Validation
@@ -261,6 +308,18 @@ function validateVideoFile() {
   return request.resource.size < 100 * 1024 * 1024 // 100MB
     && request.resource.contentType.matches('video/.*')
     && request.resource.contentType in SUPPORTED_VIDEO_TYPES;
+}
+
+function validateEventVideoFile() {
+  return request.resource.size < 50 * 1024 * 1024 // 50MB for event videos
+    && request.resource.contentType.matches('video/.*')
+    && request.resource.contentType in SUPPORTED_VIDEO_TYPES;
+}
+
+function validateEventThumbnailFile() {
+  return request.resource.size < 5 * 1024 * 1024 // 5MB for event thumbnails
+    && request.resource.contentType.matches('image/.*')
+    && request.resource.contentType in SUPPORTED_IMAGE_TYPES;
 }
 ```
 

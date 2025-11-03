@@ -1,6 +1,7 @@
 // Filter modal for feed content with advanced filtering options
 import { memo, useState, useCallback, ChangeEvent } from 'react';
 import { X, Filter, RefreshCw } from 'lucide-react';
+import { useLanguage } from '../../../contexts/UnifiedPreferencesContext';
 import './Modal.css';
 
 interface FilterValues {
@@ -27,6 +28,7 @@ interface FilterModalProps {
 }
 
 const FilterModal = memo<FilterModalProps>(({ currentFilters = {}, onApply, onClose }) => {
+  const { t } = useLanguage();
   const [filters, setFilters] = useState<FilterValues>({
     contentType: currentFilters.contentType || 'all',
     sortBy: currentFilters.sortBy || 'newest',
@@ -81,12 +83,12 @@ const FilterModal = memo<FilterModalProps>(({ currentFilters = {}, onApply, onCl
         <div className="modal-header">
           <div className="filter-header-title">
             <Filter size={20} />
-            <h3>Filters</h3>
+            <h3>{t('filters') || 'Filters'}</h3>
             <span className="active-filters-count">
-              {getActiveFiltersCount()} active
+              {getActiveFiltersCount()} {t('active') || 'active'}
             </span>
           </div>
-          <button className="close-btn" onClick={onClose}>
+          <button className="close-btn" onClick={onClose} aria-label={t('close')}>
             <X size={24} />
           </button>
         </div>
@@ -97,19 +99,19 @@ const FilterModal = memo<FilterModalProps>(({ currentFilters = {}, onApply, onCl
             className={`filter-tab ${activeTab === 'content' ? 'active' : ''}`}
             onClick={() => setActiveTab('content')}
           >
-            Content
+            {t('content') || 'Content'}
           </button>
           <button 
             className={`filter-tab ${activeTab === 'engagement' ? 'active' : ''}`}
             onClick={() => setActiveTab('engagement')}
           >
-            Engagement
+            {t('engagement') || 'Engagement'}
           </button>
           <button 
             className={`filter-tab ${activeTab === 'user' ? 'active' : ''}`}
             onClick={() => setActiveTab('user')}
           >
-            User
+            {t('user') || 'User'}
           </button>
         </div>
 
@@ -381,7 +383,7 @@ const FilterModal = memo<FilterModalProps>(({ currentFilters = {}, onApply, onCl
             onClick={handleResetFilters}
           >
             <RefreshCw size={16} />
-            Reset All
+            {t('resetAll') || 'Reset All'}
           </button>
           
           <div className="primary-actions">
@@ -389,13 +391,13 @@ const FilterModal = memo<FilterModalProps>(({ currentFilters = {}, onApply, onCl
               className="cancel-btn"
               onClick={onClose}
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button 
               className="apply-filters-btn"
               onClick={handleApplyFilters}
             >
-              Apply Filters ({getActiveFiltersCount()})
+              {t('applyFilters') || 'Apply Filters'} ({getActiveFiltersCount()})
             </button>
           </div>
         </div>

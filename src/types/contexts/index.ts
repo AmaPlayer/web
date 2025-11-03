@@ -5,5 +5,7 @@
  */
 
 export * from './auth';
-export * from './theme';
-export * from './language';
+// Note: theme.ts and language.ts types are deprecated - use preferences.ts instead
+// export * from './theme';
+// export * from './language';
+export * from './preferences';

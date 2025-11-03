@@ -10,14 +10,11 @@ const CacheDetector = (): null => {
       
       // Prevent infinite reload - only reload once per 10 seconds
       if (lastReload && (now - parseInt(lastReload)) < 10000) {
-        console.log('CACHE DETECTOR: Recent reload detected, skipping to prevent infinite loop');
         return;
       }
       
       // Only check if version is missing or different
       if (!storedVersion || storedVersion !== currentVersion) {
-        console.log('CACHE DETECTOR: Version mismatch, updating version...');
-        
         // Just update the version without forcing reload
         try {
           localStorage.setItem('amaplayer-version', currentVersion);
@@ -32,7 +29,6 @@ const CacheDetector = (): null => {
           
           // Very specific check - only reload if we're definitely on old 3D page
           if (title === 'React App' || url.includes('landingpage3d')) {
-            console.log('CACHE DETECTOR: Confirmed old page, reloading once...');
             try {
               localStorage.setItem('amaplayer-last-reload', now.toString());
             } catch (e) {
@@ -41,8 +37,6 @@ const CacheDetector = (): null => {
             window.location.reload();
           }
         }, 1000);
-      } else {
-        console.log('CACHE DETECTOR: Version matches, no action needed');
       }
     };
     

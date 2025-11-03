@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { AlertCircle, X, RefreshCw } from 'lucide-react';
+import { useLanguage } from '../../../contexts/UnifiedPreferencesContext';
 import './ErrorMessage.css';
 
 interface ErrorMessageProps {
@@ -19,6 +20,7 @@ const ErrorMessage = memo<ErrorMessageProps>(({
   retryLabel = 'Try Again',
   className = ''
 }) => {
+  const { t } = useLanguage();
   return (
     <div className={`error-message ${type} ${className}`}>
       <div className="error-content">
@@ -31,10 +33,10 @@ const ErrorMessage = memo<ErrorMessageProps>(({
           <button 
             className="retry-button"
             onClick={onRetry}
-            aria-label={retryLabel}
+            aria-label={retryLabel || t('tryAgain') || 'Try Again'}
           >
             <RefreshCw size={14} />
-            <span>{retryLabel}</span>
+            <span>{retryLabel || t('tryAgain') || 'Try Again'}</span>
           </button>
         )}
         
@@ -42,7 +44,7 @@ const ErrorMessage = memo<ErrorMessageProps>(({
           <button 
             className="dismiss-button"
             onClick={onDismiss}
-            aria-label="Dismiss error"
+            aria-label={t('dismissError') || 'Dismiss error'}
           >
             <X size={14} />
           </button>

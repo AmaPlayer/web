@@ -533,13 +533,165 @@ service cloud.firestore {
       allow delete: if request.auth != null && isAdminUser();
     }
     
-    // Events collection rules - for admin dashboard event management
+    // Events collection rules - for sports events platform
     match /events/{eventId} {
-      // Anyone can read active events (for mobile app)
-      allow read: if request.auth != null;
+      // Anyone can read events (including guests for browsing)
+      allow read: if true;
       
-      // Only admins can create, update, delete events
-      allow create, update, delete: if request.auth != null && isAdminUser();
+      // Only authenticated non-guest users can create events
+      allow create: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == request.resource.data.createdBy
+        && validateEventData();
+      
+      // Event creator can update their own events, or allow engagement updates
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.createdBy ||
+        onlyEventEngagementChanged()
+      );
+      
+      // Event creator can delete their own events
+      allow delete: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == resource.data.createdBy;
+    }
+    
+    // Participations collection rules
+    match /participations/{participationId} {
+      // Anyone can read participations (for viewing participant lists)
+      allow read: if true;
+      
+      // Only authenticated non-guest users can create participations
+      allow create: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == request.resource.data.userId
+        && validateParticipationData();
+      
+      // Users can update their own participations
+      allow update: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == resource.data.userId;
+      
+      // Users can delete their own participations
+      allow delete: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == resource.data.userId;
+    }
+    
+    // Achievements collection rules
+    match /achievements/{achievementId} {
+      // Anyone can read achievements (for viewing user profiles)
+      allow read: if true;
+      
+      // System can create achievements (via Cloud Functions)
+      // Users cannot directly create achievements
+      allow create: if request.auth != null 
+        && request.auth.uid == request.resource.data.userId;
+      
+      // No updates or deletes allowed (immutable achievement records)
+      allow update, delete: if false;
+    }
+    
+    // Leaderboards collection rules
+    match /leaderboards/{leaderboardId} {
+      // Anyone can read leaderboards (public rankings)
+      allow read: if true;
+      
+      // System can create/update leaderboard entries (via Cloud Functions)
+      // Users cannot directly modify leaderboards
+      allow create, update: if request.auth != null 
+        && request.auth.uid == request.resource.data.userId;
+      
+      // No deletes allowed
+      allow delete: if false;
+    }
+    
+    // Challenges collection rules
+    match /challenges/{challengeId} {
+      // Anyone can read challenges
+      allow read: if true;
+      
+      // Event creators can create challenges for their events
+      allow create: if request.auth != null 
+        && !isGuestUser()
+        && validateChallengeData();
+      
+      // Challenge creator or participants can update (for submissions)
+      allow update: if request.auth != null 
+        && !isGuestUser()
+        && (request.auth.uid in resource.data.participants || onlyChallengeSubmissionsChanged());
+      
+      // Challenge creator can delete
+      allow delete: if request.auth != null 
+        && !isGuestUser();
+    }
+    
+    // Event Stats subcollection under users
+    match /users/{userId}/eventStats/{statsId} {
+      // Anyone can read event stats (for viewing profiles)
+      allow read: if true;
+      
+      // Only the user or system can create/update their stats
+      allow create, update: if request.auth != null 
+        && request.auth.uid == userId;
+      
+      // Users can delete their own stats
+      allow delete: if request.auth != null 
+        && !isGuestUser()
+        && request.auth.uid == userId;
+    }
+    
+    // Validation functions for events
+    function validateEventData() {
+      return request.resource.data.keys().hasAll(['title', 'description', 'sport', 'location', 'startDate', 'status', 'category', 'createdBy', 'createdAt'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 2000
+        && request.resource.data.sport is string
+        && request.resource.data.location is string
+        && request.resource.data.status in ['upcoming', 'ongoing', 'completed', 'cancelled']
+        && request.resource.data.category in ['upcoming', 'ongoing_tournament', 'amaplayer', 'past_events']
+        && request.resource.data.createdBy is string
+        && request.resource.data.createdBy == request.auth.uid;
+    }
+    
+    function validateParticipationData() {
+      return request.resource.data.keys().hasAll(['userId', 'eventId', 'type', 'timestamp'])
+        && request.resource.data.userId is string
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.eventId is string
+        && request.resource.data.type in ['going', 'interested', 'maybe'];
+    }
+    
+    function validateChallengeData() {
+      return request.resource.data.keys().hasAll(['eventId', 'title', 'description', 'type', 'startDate', 'endDate'])
+        && request.resource.data.eventId is string
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.description is string
+        && request.resource.data.type in ['skill', 'endurance', 'creativity', 'team'];
+    }
+    
+    function onlyEventEngagementChanged() {
+      let affectedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return affectedKeys.hasOnly(['participantIds', 'interestedIds', 'maybeIds', 'reactions', 'viewCount', 'shareCount', 'commentCount', 'updatedAt']) ||
+             affectedKeys.hasOnly(['participantIds', 'updatedAt']) ||
+             affectedKeys.hasOnly(['interestedIds', 'updatedAt']) ||
+             affectedKeys.hasOnly(['maybeIds', 'updatedAt']) ||
+             affectedKeys.hasOnly(['reactions', 'updatedAt']) ||
+             affectedKeys.hasOnly(['viewCount', 'updatedAt']) ||
+             affectedKeys.hasOnly(['shareCount', 'updatedAt']) ||
+             affectedKeys.hasOnly(['commentCount', 'updatedAt']) ||
+             affectedKeys.hasOnly(['isTrending', 'updatedAt']) ||
+             affectedKeys.hasOnly(['submissionCount', 'updatedAt']);
+    }
+    
+    function onlyChallengeSubmissionsChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['submissions', 'updatedAt']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participants', 'updatedAt']);
     }
     
     // Admin logs collection - for tracking admin actions

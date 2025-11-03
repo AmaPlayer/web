@@ -4,6 +4,7 @@ import { Flag, X } from 'lucide-react';
 import { db } from '../../../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useLanguage } from '../../../contexts/UnifiedPreferencesContext';
 import './ReportContent.css';
 
 interface ReportContentProps {
@@ -30,6 +31,7 @@ const ReportContent: React.FC<ReportContentProps> = ({
   onClose 
 }) => {
   const { currentUser, isGuest } = useAuth();
+  const { t } = useLanguage();
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
   const [customReason, setCustomReason] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -171,14 +173,14 @@ const ReportContent: React.FC<ReportContentProps> = ({
       <div className="report-modal-overlay" onClick={onClose}>
         <div className="report-modal success-modal" onClick={(e) => e.stopPropagation()}>
           <div className="report-header">
-            <h3>✅ Report Submitted</h3>
-            <button className="close-btn" onClick={onClose}>
+            <h3>✅ {t('reportSubmitted') || 'Report Submitted'}</h3>
+            <button className="close-btn" onClick={onClose} aria-label={t('close')}>
               <X size={20} />
             </button>
           </div>
           <div className="success-message">
-            <p>Thank you for helping keep AmaPlayer safe! Your report has been submitted and will be reviewed by our moderation team.</p>
-            <p><strong>Report ID:</strong> #{Date.now().toString(36).toUpperCase()}</p>
+            <p>{t('reportSubmittedMessage') || 'Thank you for helping keep AmaPlayer safe! Your report has been submitted and will be reviewed by our moderation team.'}</p>
+            <p><strong>{t('reportId') || 'Report ID'}:</strong> #{Date.now().toString(36).toUpperCase()}</p>
           </div>
         </div>
       </div>
@@ -191,9 +193,9 @@ const ReportContent: React.FC<ReportContentProps> = ({
         <div className="report-header">
           <div className="report-title">
             <Flag size={20} />
-            <h3>Report Content</h3>
+            <h3>{t('reportContent') || 'Report Content'}</h3>
           </div>
-          <button className="close-btn" onClick={onClose}>
+          <button className="close-btn" onClick={onClose} aria-label={t('close')}>
             <X size={20} />
           </button>
         </div>
@@ -248,14 +250,14 @@ const ReportContent: React.FC<ReportContentProps> = ({
 
           <div className="report-actions">
             <button className="cancel-btn" onClick={onClose}>
-              Cancel
+              {t('cancel')}
             </button>
             <button 
               className="submit-btn" 
               onClick={handleSubmitReport}
               disabled={submitting || (selectedReasons.length === 0 && !customReason.trim())}
             >
-              {submitting ? 'Submitting...' : 'Submit Report'}
+              {submitting ? (t('submitting') || 'Submitting...') : (t('submitReport') || 'Submit Report')}
             </button>
           </div>
         </div>

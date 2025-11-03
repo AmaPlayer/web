@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Settings } from 'lucide-react';
 import SettingsMenu from '../../../components/common/settings/SettingsMenu';
 import { User } from 'firebase/auth';
+import { useLanguage } from '../../../contexts/UnifiedPreferencesContext';
 import './NavigationBar.css';
 
 interface NavigationBarProps {
@@ -17,6 +18,7 @@ interface NavigationBarProps {
  * Handles top navigation, user actions, and app branding.
  */
 const NavigationBar = ({ currentUser, isGuest, onTitleClick, title = "AmaPlayer" }: NavigationBarProps) => {
+  const { t } = useLanguage();
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -52,9 +54,9 @@ const NavigationBar = ({ currentUser, isGuest, onTitleClick, title = "AmaPlayer"
             <span 
               className="guest-indicator"
               role="status"
-              aria-label="Currently in guest mode"
+              aria-label={t('nav.guestMode')}
             >
-              Guest Mode
+              {t('nav.guestMode')}
             </span>
           )}
           
@@ -63,14 +65,14 @@ const NavigationBar = ({ currentUser, isGuest, onTitleClick, title = "AmaPlayer"
               ref={settingsButtonRef}
               className="settings-btn"
               onClick={handleSettingsToggle}
-              aria-label="Open settings menu"
+              aria-label={t('nav.settings')}
               aria-expanded={settingsOpen}
               aria-haspopup="true"
-              title="Settings"
+              title={t('nav.settings')}
               type="button"
             >
               <Settings size={24} aria-hidden="true" />
-              <span className="sr-only">Settings</span>
+              <span className="sr-only">{t('nav.settings')}</span>
             </button>
             
             <SettingsMenu

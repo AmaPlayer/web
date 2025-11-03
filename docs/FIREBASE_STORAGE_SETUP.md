@@ -31,6 +31,9 @@ The current `storage.rules` file includes secure rules for:
 - Post images: `/posts/{allPaths=**}`
 - Post videos: `/post-videos/{userId}/{fileName}`
 - Talent showcase videos: `/athlete-highlights/{userId}/{fileName}`
+- **Event videos**: `/events/videos/{eventId}/{videoId}.mp4` (50MB limit)
+- **Event thumbnails**: `/events/thumbnails/{eventId}/{thumbnailId}.jpg` (5MB limit)
+- **Challenge submissions**: `/events/submissions/{challengeId}/{userId}/{submissionId}.mp4` (50MB limit)
 
 ### 4. Test Upload Functionality
 1. Try creating a new post with an image
@@ -47,9 +50,31 @@ match /posts/{allPaths=**} {
   allow write: if request.auth != null && validateImageFile();
 }
 
+// Event videos - authenticated users can upload
+match /events/videos/{eventId}/{videoId}.mp4 {
+  allow read: if true;
+  allow write: if request.auth != null && validateEventVideoFile();
+}
+
+// Event thumbnails - authenticated users can upload
+match /events/thumbnails/{eventId}/{thumbnailId}.jpg {
+  allow read: if true;
+  allow write: if request.auth != null && validateEventThumbnailFile();
+}
+
+// Challenge submissions - users can only upload their own submissions
+match /events/submissions/{challengeId}/{userId}/{submissionId}.mp4 {
+  allow read: if true;
+  allow write: if request.auth != null 
+    && request.auth.uid == userId
+    && validateEventVideoFile();
+}
+
 // Helper functions ensure:
 // - Images: max 10MB, image/* content type
-// - Videos: max 100MB, video/* content type
+// - Videos: max 50MB, video/* content type (general)
+// - Event Videos: max 50MB, video/* content type
+// - Event Thumbnails: max 5MB, image/* content type
 ```
 
 ## Troubleshooting

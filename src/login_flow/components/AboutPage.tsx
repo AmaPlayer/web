@@ -1,8 +1,8 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import useTranslation from '../hooks/useTranslation';
-import ThemeToggle from '../../components/common/ui/ThemeToggle';
-import LanguageSelector from '../../components/common/forms/LanguageSelector';
+import { useLanguage } from '../../contexts/UnifiedPreferencesContext';
+import { LanguageSelector } from '../../components/common/LanguageSelector';
+import { ThemeToggle } from '../../components/common/ThemeToggle';
 import videoSource from '../assets/video/sport.mp4';
 import './AboutPage.css';
 
@@ -15,10 +15,10 @@ interface RoleInfoMap {
   [key: string]: RoleInfo;
 }
 
-const AboutPage: React.FC = () => {
+const AboutPageContent: React.FC = () => {
   const navigate = useNavigate();
   const { role } = useParams<{ role: string }>();
-  const { t } = useTranslation();
+  const { t } = useLanguage();
 
   const roleInfo: RoleInfoMap = {
     athlete: { 
@@ -57,8 +57,8 @@ const AboutPage: React.FC = () => {
     <div className="about-container">
       <div className="about-page-header">
         <div className="about-page-controls">
-          <LanguageSelector />
-          <ThemeToggle />
+          <LanguageSelector variant="dropdown" />
+          <ThemeToggle variant="icon" />
         </div>
       </div>
       
@@ -71,7 +71,7 @@ const AboutPage: React.FC = () => {
               className="role-badge-image" 
             />
             <span className="role-badge-text">
-              {t('joiningAs', 'Joining as')} {t(currentRole?.title || '')}
+              {t('joiningAs')} {t(currentRole?.title || '')}
             </span>
           </div>
           <h1 className="about-title">{t('welcomeToAmaplayer')}</h1>
@@ -83,7 +83,7 @@ const AboutPage: React.FC = () => {
             <div className="card-icon mission-icon">🎯</div>
             <h3 className="card-title">{t('ourMission')}</h3>
             <p className="card-description">
-              {t('missionDescription', "To create the world's most comprehensive platform that connects athletes, coaches, and organizations, fostering talent development and creating opportunities for athletic excellence across all sports disciplines.")}
+              {t('missionDescription')}
             </p>
           </div>
 
@@ -91,7 +91,7 @@ const AboutPage: React.FC = () => {
             <div className="card-icon vision-icon">🌟</div>
             <h3 className="card-title">{t('ourVision')}</h3>
             <p className="card-description">
-              {t('visionDescription', 'To revolutionize the sports industry by building a global ecosystem where every athlete has access to world-class coaching, every coach can discover exceptional talent, and every organization can build championship-winning teams.')}
+              {t('visionDescription')}
             </p>
           </div>
         </div>
@@ -108,8 +108,8 @@ const AboutPage: React.FC = () => {
               className="about-video"
             >
               <source src={videoSource} type="video/mp4" />
-              <p>{t('videoLoadError', "If you're seeing this, the video failed to load. Please check the console for errors.")}</p>
-              {t('videoNotSupported', 'Your browser does not support the video tag.')}
+              <p>{t('videoLoadError')}</p>
+              {t('videoNotSupported')}
             </video>
           </div>
         </div>
@@ -125,6 +125,10 @@ const AboutPage: React.FC = () => {
       </div>
     </div>
   );
+};
+
+const AboutPage: React.FC = () => {
+  return <AboutPageContent />;
 };
 
 export default AboutPage;

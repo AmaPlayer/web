@@ -2,15 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trophy, Target, Star, ChevronRight } from 'lucide-react';
 import { useOnboardingStore, AthleteProfile } from '../store/onboardingStore';
-import ThemeToggle from '../../../components/common/ui/ThemeToggle';
-import LanguageSelector from '../../../components/common/forms/LanguageSelector';
-import useTranslation from '../../../login_flow/hooks/useTranslation';
+import { useLanguage, useTheme } from '../../../contexts/UnifiedPreferencesContext';
+import ThemeToggle from '../../../components/common/ThemeToggle';
+import LanguageSelector from '../../../components/common/LanguageSelector';
 import videoSource from '../../../login_flow/assets/video/sport.mp4';
 import '../styles/AthleteAboutPage.css';
 
 const AthleteAboutPage: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t } = useLanguage();
   const { getAthleteProfile, resetOnboarding } = useOnboardingStore();
   const [athleteProfile, setAthleteProfile] = useState<AthleteProfile | null>(null);
 
@@ -52,7 +52,7 @@ const AthleteAboutPage: React.FC = () => {
 
   const getSpecializationDisplay = (specializations: Record<string, string>): string => {
     const values = Object.values(specializations);
-    if (values.length === 0) return 'No specializations selected';
+    if (values.length === 0) return t('noSpecializationsSelected');
     return values.join(', ');
   };
 
@@ -60,7 +60,7 @@ const AthleteAboutPage: React.FC = () => {
     return (
       <div className="athlete-about-loading">
         <div className="loading-spinner"></div>
-        <p>Loading your profile...</p>
+        <p>{t('loadingYourProfile')}</p>
       </div>
     );
   }
@@ -69,8 +69,8 @@ const AthleteAboutPage: React.FC = () => {
     <div className="athlete-about-container">
       <div className="athlete-about-header">
         <div className="athlete-about-controls">
-          <LanguageSelector />
-          <ThemeToggle />
+          <LanguageSelector variant="dropdown" />
+          <ThemeToggle variant="icon" />
         </div>
       </div>
       
@@ -79,16 +79,16 @@ const AthleteAboutPage: React.FC = () => {
           <div className="athlete-badge">
             <img 
               src={athleteProfile.sports?.[0]?.image || 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'} 
-              alt={athleteProfile.sports?.[0]?.name || 'Athlete'} 
+              alt={athleteProfile.sports?.[0]?.name || t('athlete')} 
               className="athlete-badge-image" 
             />
             <div className="athlete-badge-info">
               <span className="athlete-badge-text">
-                {t('joiningAs', 'Joining as')} Athlete
+                {t('joiningAs')} {t('athlete')}
               </span>
               <div className="athlete-sport-position">
                 <span className="sport-name">
-                  {athleteProfile.sports?.map(sport => sport.name).join(', ') || 'Multiple Sports'}
+                  {athleteProfile.sports?.map(sport => sport.name).join(', ') || t('multipleSports')}
                 </span>
                 <span className="position-separator">•</span>
                 <span className="position-name">{athleteProfile.position?.name}</span>
@@ -103,10 +103,10 @@ const AthleteAboutPage: React.FC = () => {
           </div>
           
           <h1 className="athlete-about-title">
-            Welcome to AmaPlayer!
+            {t('welcomeToAmaPlayer')}
           </h1>
           <p className="athlete-about-subtitle">
-            Your personalized sports journey starts here
+            {t('personalizedSportsJourney')}
           </p>
         </div>
 
@@ -115,12 +115,12 @@ const AthleteAboutPage: React.FC = () => {
             <div className="card-icon sport-icon">
               <Trophy size={32} />
             </div>
-            <h3 className="card-title">Your Sports</h3>
+            <h3 className="card-title">{t('yourSports')}</h3>
             <p className="card-description">
-              <strong>{athleteProfile.sports?.map(sport => sport.name).join(', ') || 'Multiple Sports'}</strong>
+              <strong>{athleteProfile.sports?.map(sport => sport.name).join(', ') || t('multipleSports')}</strong>
             </p>
             <p className="card-subdescription">
-              Ready to connect with fellow athletes
+              {t('readyToConnect')}
             </p>
           </div>
 
@@ -128,7 +128,7 @@ const AthleteAboutPage: React.FC = () => {
             <div className="card-icon position-icon">
               <Target size={32} />
             </div>
-            <h3 className="card-title">Your Position & Specialty</h3>
+            <h3 className="card-title">{t('yourPositionAndSpecialty')}</h3>
             <p className="card-description">
               <strong>{athleteProfile.position?.name}</strong>
               {athleteProfile.subcategory && (
@@ -141,7 +141,7 @@ const AthleteAboutPage: React.FC = () => {
               )}
             </p>
             <p className="card-subdescription">
-              Your specialized area of expertise
+              {t('yourSpecializedArea')}
             </p>
           </div>
 
@@ -150,12 +150,12 @@ const AthleteAboutPage: React.FC = () => {
               <div className="card-icon specialization-icon">
                 <Star size={32} />
               </div>
-              <h3 className="card-title">Your Specializations</h3>
+              <h3 className="card-title">{t('yourSpecializations')}</h3>
               <p className="card-description">
                 <strong>{getSpecializationDisplay(athleteProfile.specializations)}</strong>
               </p>
               <p className="card-subdescription">
-                Your unique playing style and preferences
+                {t('yourUniquePlayingStyle')}
               </p>
             </div>
           )}
@@ -166,7 +166,7 @@ const AthleteAboutPage: React.FC = () => {
             <div className="card-icon mission-icon">🎯</div>
             <h3 className="card-title">{t('ourMission')}</h3>
             <p className="card-description">
-              {t('missionDescription', "To create the world's most comprehensive platform that connects athletes, coaches, and organizations, fostering talent development and creating opportunities for athletic excellence across all sports disciplines.")}
+              {t('missionDescription')}
             </p>
           </div>
 
@@ -174,7 +174,7 @@ const AthleteAboutPage: React.FC = () => {
             <div className="card-icon vision-icon">🌟</div>
             <h3 className="card-title">{t('ourVision')}</h3>
             <p className="card-description">
-              {t('visionDescription', 'To revolutionize the sports industry by building a global ecosystem where every athlete has access to world-class coaching, every coach can discover exceptional talent, and every organization can build championship-winning teams.')}
+              {t('visionDescription')}
             </p>
           </div>
         </div>
@@ -191,8 +191,8 @@ const AthleteAboutPage: React.FC = () => {
               className="about-video"
             >
               <source src={videoSource} type="video/mp4" />
-              <p>{t('videoLoadError', "If you're seeing this, the video failed to load. Please check the console for errors.")}</p>
-              {t('videoNotSupported', 'Your browser does not support the video tag.')}
+              <p>{t('videoLoadError')}</p>
+              {t('videoNotSupported')}
             </video>
           </div>
         </div>
@@ -203,7 +203,7 @@ const AthleteAboutPage: React.FC = () => {
             <ChevronRight size={20} />
           </button>
           <button className="edit-profile-btn" onClick={handleEditProfile}>
-            Edit My Profile
+            {t('editMyProfile')}
           </button>
         </div>
       </div>

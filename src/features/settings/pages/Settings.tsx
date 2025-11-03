@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { Settings as SettingsIcon, User, Shield, Eye, Bell } from 'lucide-react';
+import { useLanguage, useTheme } from '../../../contexts/UnifiedPreferencesContext';
+import LanguageSelector from '../../../components/common/LanguageSelector';
+import ThemeToggle from '../../../components/common/ThemeToggle';
 import AccountSection from '../components/AccountSection';
 import PasswordChangeSection from '../components/PasswordChangeSection';
 import ConfirmationDialog from '../../../components/common/ui/ConfirmationDialog';
@@ -20,6 +23,9 @@ interface SettingsState {
 }
 
 const Settings: React.FC<SettingsPageProps> = ({ initialTab = 'account' }) => {
+  const { t } = useLanguage();
+  const { theme } = useTheme();
+  
   const [state, setState] = useState<SettingsState>({
     activeTab: initialTab,
     hasUnsavedChanges: false,
@@ -32,32 +38,32 @@ const Settings: React.FC<SettingsPageProps> = ({ initialTab = 'account' }) => {
   // Handle unsaved changes warning
   useUnsavedChanges({
     hasUnsavedChanges: state.hasUnsavedChanges,
-    message: 'You have unsaved changes in your settings. Are you sure you want to leave?',
+    message: t('unsavedChangesMessage'),
     onNavigateAway: async () => {
       return await showConfirmation({
-        title: 'Unsaved Changes',
-        message: 'You have unsaved changes that will be lost. Are you sure you want to leave?',
-        confirmText: 'Leave',
-        cancelText: 'Stay',
+        title: t('unsavedChanges'),
+        message: t('unsavedChangesMessage'),
+        confirmText: t('leave'),
+        cancelText: t('stay'),
         variant: 'warning'
       });
     }
   });
 
   const tabs = [
-    { id: 'account', label: 'Account', icon: User },
-    { id: 'security', label: 'Security', icon: Shield },
-    { id: 'privacy', label: 'Privacy', icon: Eye },
-    { id: 'notifications', label: 'Notifications', icon: Bell }
+    { id: 'account', label: t('account'), icon: User },
+    { id: 'security', label: t('security'), icon: Shield },
+    { id: 'privacy', label: t('privacy'), icon: Eye },
+    { id: 'notifications', label: t('notifications'), icon: Bell }
   ];
 
   const handleTabChange = async (tabId: string) => {
     if (state.hasUnsavedChanges) {
       const confirmed = await showConfirmation({
-        title: 'Unsaved Changes',
-        message: 'You have unsaved changes in this tab. Are you sure you want to switch tabs?',
-        confirmText: 'Switch Tab',
-        cancelText: 'Stay',
+        title: t('unsavedChanges'),
+        message: t('unsavedChangesTabMessage'),
+        confirmText: t('switchTab'),
+        cancelText: t('stay'),
         variant: 'warning'
       });
 
@@ -82,6 +88,17 @@ const Settings: React.FC<SettingsPageProps> = ({ initialTab = 'account' }) => {
         return (
           <div className="settings-tab-content">
             <AccountSection />
+            
+            {/* Language and Theme Preferences */}
+            <div className="preferences-section">
+              <h3>{t('chooseLanguage')}</h3>
+              <LanguageSelector variant="dropdown" />
+            </div>
+            
+            <div className="preferences-section">
+              <h3>{t('privacy')}</h3>
+              <ThemeToggle variant="switch" showLabel={true} />
+            </div>
           </div>
         );
       case 'security':
@@ -93,16 +110,16 @@ const Settings: React.FC<SettingsPageProps> = ({ initialTab = 'account' }) => {
       case 'privacy':
         return (
           <div className="settings-tab-content">
-            <h3>Privacy Settings</h3>
-            <p>Control your privacy and visibility settings.</p>
+            <h3>{t('privacySettings')}</h3>
+            <p>{t('privacyDescription')}</p>
             {/* Privacy section content will be implemented later */}
           </div>
         );
       case 'notifications':
         return (
           <div className="settings-tab-content">
-            <h3>Notification Preferences</h3>
-            <p>Manage your notification settings.</p>
+            <h3>{t('notificationPreferences')}</h3>
+            <p>{t('notificationDescription')}</p>
             {/* Notifications section content will be implemented later */}
           </div>
         );
@@ -128,7 +145,7 @@ const Settings: React.FC<SettingsPageProps> = ({ initialTab = 'account' }) => {
         <div className="settings-header">
           <div className="settings-title">
             <SettingsIcon size={24} />
-            <h1>Settings</h1>
+            <h1>{t('settings')}</h1>
           </div>
         </div>
 
@@ -157,7 +174,7 @@ const Settings: React.FC<SettingsPageProps> = ({ initialTab = 'account' }) => {
           {state.isLoading ? (
             <div className="settings-loading">
               <LoadingSpinner size="large" />
-              <p>Loading settings...</p>
+              <p>{t('loadingSettings')}</p>
             </div>
           ) : (
             renderTabContent()

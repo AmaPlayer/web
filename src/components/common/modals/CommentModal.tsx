@@ -2,6 +2,7 @@
 import { memo, useState, useCallback, useEffect, FormEvent } from 'react';
 import { X, Send, Heart, MoreHorizontal, User } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useLanguage } from '../../../contexts/UnifiedPreferencesContext';
 import { validateComment, getCharacterCount } from '../../../utils/validation/validation';
 import { handleCommentError, retryWithBackoff } from '../../../utils/error/engagementErrorHandler';
 import { useToast } from '../../../hooks/useToast';
@@ -20,6 +21,7 @@ interface CommentModalProps {
 
 const CommentModal = memo<CommentModalProps>(({ post, onClose, onCommentAdded }) => {
   const { currentUser } = useAuth();
+  const { t } = useLanguage();
   const { showToast } = useToast();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState<string>('');
@@ -291,8 +293,8 @@ const CommentModal = memo<CommentModalProps>(({ post, onClose, onCommentAdded })
       <div className="comment-modal" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
-          <h3>Comments</h3>
-          <button className="close-btn" onClick={onClose}>
+          <h3>{t('comments')}</h3>
+          <button className="close-btn" onClick={onClose} aria-label={t('close')}>
             <X size={24} />
           </button>
         </div>
@@ -369,7 +371,7 @@ const CommentModal = memo<CommentModalProps>(({ post, onClose, onCommentAdded })
                             {likesCount > 0 && <span>{likesCount}</span>}
                           </button>
                         )}
-                        <button className="comment-reply">Reply</button>
+                        <button className="comment-reply">{t('reply')}</button>
                       </div>
                     </div>
                   </div>
@@ -381,8 +383,8 @@ const CommentModal = memo<CommentModalProps>(({ post, onClose, onCommentAdded })
               <div className="empty-icon">
                 <User size={48} />
               </div>
-              <h4>No comments yet</h4>
-              <p>Be the first to comment on this post!</p>
+              <h4>{t('noCommentsYet') || 'No comments yet'}</h4>
+              <p>{t('beFirstToComment') || 'Be the first to comment on this post!'}</p>
             </div>
           )}
         </div>
@@ -409,7 +411,7 @@ const CommentModal = memo<CommentModalProps>(({ post, onClose, onCommentAdded })
               <div className="comment-input-container">
                 <input
                   type="text"
-                  placeholder="Add a comment..."
+                  placeholder={t('writeComment')}
                   value={newComment}
                   onChange={handleCommentChange}
                   disabled={submitting}
@@ -420,7 +422,7 @@ const CommentModal = memo<CommentModalProps>(({ post, onClose, onCommentAdded })
                   type="submit" 
                   className="send-btn"
                   disabled={!newComment.trim() || submitting || !!validationError}
-                  aria-label="Send comment"
+                  aria-label={t('sendComment') || 'Send comment'}
                 >
                   {submitting ? (
                     <LoadingSpinner size="small" color="white" />
@@ -442,7 +444,7 @@ const CommentModal = memo<CommentModalProps>(({ post, onClose, onCommentAdded })
 
         {!currentUser && (
           <div className="guest-comment-notice">
-            <p>Sign in to join the conversation</p>
+            <p>{t('signInToComment') || 'Sign in to join the conversation'}</p>
           </div>
         )}
       </div>

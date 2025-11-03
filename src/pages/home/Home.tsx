@@ -1,5 +1,6 @@
 import React, { useEffect, useCallback, useMemo, memo, Suspense, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/UnifiedPreferencesContext';
 import { useNavigate } from 'react-router-dom';
 import { adaptFirebaseUser } from '../../utils/auth/userAdapter';
 import { usePostOperations } from '../../hooks/usePostOperations';
@@ -78,6 +79,7 @@ interface AdvancedFeatures {
  */
 function Home(): React.JSX.Element {
   const { currentUser: firebaseUser, logout, isGuest } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   
   // Memoize isGuest value to prevent function calls on every render
@@ -224,9 +226,9 @@ function Home(): React.JSX.Element {
   const handleEnableNotifications = useCallback(async () => {
     const success = await enableNotifications();
     if (success) {
-      alert('🔔 Notifications enabled! You\'ll now get notified when someone likes your posts.');
+      alert(t('notificationsEnabled'));
     }
-  }, [enableNotifications]);
+  }, [enableNotifications, t]);
 
   const handleDismissNotificationPrompt = useCallback(() => {
     dismissPrompt();

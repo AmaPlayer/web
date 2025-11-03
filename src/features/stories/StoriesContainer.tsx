@@ -1,6 +1,7 @@
 // Stories Container - Main component for displaying stories on Home page
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/UnifiedPreferencesContext';
 import { StoriesService } from '../../services/api/storiesService';
 import { Plus, Play } from 'lucide-react';
 import StoryViewer from './StoryViewer';
@@ -21,6 +22,7 @@ type NavigationDirection = 'next' | 'prev';
 
 export default function StoriesContainer() {
   const { currentUser, isGuest } = useAuth();
+  const { t } = useLanguage();
   const [stories, setStories] = useState<Story[]>([]);
   const [groupedStories, setGroupedStories] = useState<UserStoriesGroup[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -153,7 +155,7 @@ export default function StoriesContainer() {
       <div className="stories-container">
         <div className="stories-loading">
           <div className="loading-spinner"></div>
-          <span>Loading stories...</span>
+          <span>{t('stories.loading')}</span>
         </div>
       </div>
     );
@@ -162,8 +164,8 @@ export default function StoriesContainer() {
   return (
     <div className="stories-container">
       <div className="stories-header">
-        <h3>Stories</h3>
-        <span className="stories-count">{stories.length} active</span>
+        <h3>{t('stories.title')}</h3>
+        <span className="stories-count">{stories.length} {t('stories.active')}</span>
       </div>
       
       <div className="stories-scroll">
@@ -184,7 +186,7 @@ export default function StoriesContainer() {
                 <Plus size={20} />
               </div>
             </div>
-            <span className="story-username">Add Story</span>
+            <span className="story-username">{t('stories.addStory')}</span>
           </div>
         )}
         
@@ -216,7 +218,7 @@ export default function StoriesContainer() {
               </div>
             </div>
             <span className="story-username">
-              {userGroup.userId === currentUser?.uid ? 'You' : userGroup.userDisplayName}
+              {userGroup.userId === currentUser?.uid ? t('stories.you') : userGroup.userDisplayName}
             </span>
           </div>
         ))}

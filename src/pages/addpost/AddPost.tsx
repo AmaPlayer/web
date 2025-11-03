@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { db, storage } from '../../lib/firebase';
 import { Image, Video, Upload, ArrowLeft, Wifi, WifiOff } from 'lucide-react';
 import VideoUpload from '../../components/common/forms/VideoUpload';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/UnifiedPreferencesContext';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { uploadVideoFile, generateVideoMetadata, VIDEO_PATHS } from '../../services/api/videoService';

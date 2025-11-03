@@ -2,8 +2,7 @@ import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { LanguageProvider } from './contexts/LanguageContext';
+import { UnifiedPreferencesProvider } from './contexts/UnifiedPreferencesContext';
 import PrivateRoute from './features/auth/PrivateRoute';
 import NetworkStatus from './components/common/network/NetworkStatus';
 import CacheDetector from './components/CacheDetector';
@@ -18,6 +17,9 @@ import './styles/global.css';
 import './styles/themes.css';
 import './App.css';
 import './performance.css';
+// Events feature styles
+import './features/events/styles/index.css';
+import './features/events/styles/accessibility.css';
 
 // Lazy load components for better performance
 const WelcomePage = React.lazy(() => import('./login_flow/components/WelcomePage'));
@@ -29,7 +31,6 @@ const Profile = React.lazy(() => import('./features/profile/pages/Profile'));
 const Search = React.lazy(() => import('./pages/search/Search'));
 const AddPost = React.lazy(() => import('./pages/addpost/AddPost'));
 const Messages = React.lazy(() => import('./pages/messages/Messages'));
-const Events = React.lazy(() => import('./pages/events/Events'));
 const PostDetail = React.lazy(() => import('./pages/postdetail/PostDetail'));
 const StoryDetail = React.lazy(() => import('./features/stories/StoryDetail'));
 const StorySharePage = React.lazy(() => import('./features/stories/StorySharePage'));
@@ -38,6 +39,32 @@ const VideoVerificationPage = React.lazy(() => import('./features/profile/pages/
 const Settings = React.lazy(() => import('./features/settings/pages/Settings'));
 const MomentsPage = React.lazy(() => import('./pages/moments/MomentsPage'));
 
+// Events Platform Components
+const EventPage = React.lazy(() => import('./features/events/pages/EventPage'));
+const EventDetailPage = React.lazy(() => import('./features/events/pages/EventDetailPage'));
+const AthleteProfilePage = React.lazy(() => import('./features/events/pages/AthleteProfilePage'));
+
+// Event route wrappers to handle params
+const EventDetailWrapper = () => {
+  const { eventId } = require('react-router-dom').useParams();
+  const navigate = require('react-router-dom').useNavigate();
+  return React.createElement(EventDetailPage, { 
+    eventId: eventId || '', 
+    onBack: () => navigate('/events') 
+  });
+};
+
+const AthleteProfileWrapper = () => {
+  const { userId } = require('react-router-dom').useParams();
+  const navigate = require('react-router-dom').useNavigate();
+  const { currentUser } = require('./contexts/AuthContext').useAuth();
+  return React.createElement(AthleteProfilePage, { 
+    userId: userId || '', 
+    isOwnProfile: currentUser?.uid === userId,
+    onBack: () => navigate('/events') 
+  });
+};
+
 // Athlete Onboarding Components
 const SportSelectionPage = React.lazy(() => import('./features/athlete-onboarding/components/SportSelectionPage'));
 const PositionSelectionPage = React.lazy(() => import('./features/athlete-onboarding/components/PositionSelectionPage'));
@@ -45,6 +72,9 @@ const MultiSportPositionFlow = React.lazy(() => import('./features/athlete-onboa
 const SubcategorySelectionPage = React.lazy(() => import('./features/athlete-onboarding/components/SubcategorySelectionPage'));
 const SpecializationPage = React.lazy(() => import('./features/athlete-onboarding/components/SpecializationPage'));
 const AthleteAboutPage = React.lazy(() => import('./features/athlete-onboarding/components/AthleteAboutPage'));
+
+// Debug Components (only in development)
+// Language Testing Panel removed
 
 // Optimized loading component for Suspense fallback
 const LoadingSpinner: React.FC = () => (
@@ -76,8 +106,6 @@ function AppContent(): React.JSX.Element {
     const manageCache = (): void => {
       const currentVersion = '2.1.0';
       
-      console.log('APP: Starting conservative cache management...');
-      
       // Set document title
       document.title = 'AmaPlayer - Sports Social Media Platform v2.1';
       
@@ -86,7 +114,6 @@ function AppContent(): React.JSX.Element {
         const storedVersion = localStorage.getItem('amaplayer-version');
         if (!storedVersion || storedVersion !== currentVersion) {
           localStorage.setItem('amaplayer-version', currentVersion);
-          console.log('APP: Updated version to', currentVersion);
         }
       } catch (e) {
         // Silently handle localStorage errors
@@ -96,7 +123,6 @@ function AppContent(): React.JSX.Element {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => {
           if (registrations.length > 0) {
-            console.log('APP: Clearing service workers...');
             registrations.forEach(registration => registration.unregister());
           }
         });
@@ -166,7 +192,30 @@ function AppContent(): React.JSX.Element {
               } />
               <Route path="/events" element={
                 <PrivateRoute>
-                  <Events />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <EventPage />
+                  </Suspense>
+                </PrivateRoute>
+              } />
+              <Route path="/events/create" element={
+                <PrivateRoute>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <EventPage />
+                  </Suspense>
+                </PrivateRoute>
+              } />
+              <Route path="/events/:eventId" element={
+                <PrivateRoute>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <EventDetailWrapper />
+                  </Suspense>
+                </PrivateRoute>
+              } />
+              <Route path="/events/profile/:userId" element={
+                <PrivateRoute>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <AthleteProfileWrapper />
+                  </Suspense>
                 </PrivateRoute>
               } />
               <Route path="/profile" element={
@@ -211,13 +260,11 @@ function App(): React.JSX.Element {
       <ErrorBoundary name="App-Providers" userFriendlyMessage="Failed to initialize the application. Please refresh the page.">
         <Router>
           <QueryClientProvider client={queryClient}>
-            <ThemeProvider>
-              <LanguageProvider>
-                <AuthProvider>
-                  <AppContent />
-                </AuthProvider>
-              </LanguageProvider>
-            </ThemeProvider>
+            <AuthProvider>
+              <UnifiedPreferencesProvider>
+                <AppContent />
+              </UnifiedPreferencesProvider>
+            </AuthProvider>
           </QueryClientProvider>
         </Router>
       </ErrorBoundary>

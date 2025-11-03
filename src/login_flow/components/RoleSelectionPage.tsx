@@ -1,8 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import useTranslation from '../hooks/useTranslation';
-import ThemeToggle from '../../components/common/ui/ThemeToggle';
-import LanguageSelector from '../../components/common/forms/LanguageSelector';
+import { useLanguage } from '../../contexts/UnifiedPreferencesContext';
+import { LanguageSelector } from '../../components/common/LanguageSelector';
+import { ThemeToggle } from '../../components/common/ThemeToggle';
 import './RoleSelectionPage.css';
 
 interface Role {
@@ -12,9 +12,9 @@ interface Role {
   description: string;
 }
 
-const RoleSelectionPage: React.FC = () => {
+const RoleSelectionPageContent: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t } = useLanguage();
 
   const roles: Role[] = [
     { 
@@ -100,10 +100,14 @@ const RoleSelectionPage: React.FC = () => {
         className="back-button"
         onClick={() => navigate('/')}
       >
-        ← {t('backToHome', 'Back to Home')}
+        ← {t('backToHome')}
       </button>
     </div>
   );
+};
+
+const RoleSelectionPage: React.FC = () => {
+  return <RoleSelectionPageContent />;
 };
 
 export default RoleSelectionPage;

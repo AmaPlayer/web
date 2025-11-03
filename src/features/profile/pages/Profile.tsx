@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from
 import { useNavigate, useParams } from 'react-router-dom';
 import { Edit3 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useLanguage, useTheme } from '../../../contexts/UnifiedPreferencesContext';
 import NavigationBar from '../../../components/layout/NavigationBar';
 import FooterNav from '../../../components/layout/FooterNav';
 import RoleSelector from '../components/RoleSelector';
@@ -32,6 +33,8 @@ const Profile: React.FC = React.memo(() => {
   const navigate = useNavigate();
   const { userId } = useParams<{ userId?: string }>();
   const { currentUser: firebaseUser, isGuest } = useAuth();
+  const { t } = useLanguage();
+  const { theme } = useTheme();
   const [currentRole, setCurrentRole] = useState<UserRole>('athlete');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -993,11 +996,11 @@ const Profile: React.FC = React.memo(() => {
           currentUser={firebaseUser}
           isGuest={isGuest()}
           onTitleClick={handleTitleClick}
-          title="Profile"
+          title={t('profile')}
         />
-        <div className="profile-loading" role="status" aria-label="Loading profile">
+        <div className="profile-loading" role="status" aria-label={t('loadingProfile')}>
           <div className="loading-spinner"></div>
-          <p>Loading profile...</p>
+          <p>{t('loadingProfile')}</p>
         </div>
         <FooterNav />
       </main>
@@ -1011,11 +1014,11 @@ const Profile: React.FC = React.memo(() => {
           currentUser={firebaseUser}
           isGuest={isGuest()}
           onTitleClick={handleTitleClick}
-          title="Profile"
+          title={t('profile')}
         />
         <div className="profile-error" role="alert">
           <p>{error}</p>
-          <button onClick={() => window.location.reload()}>Retry</button>
+          <button onClick={() => window.location.reload()}>{t('retry')}</button>
         </div>
         <FooterNav />
       </main>
@@ -1051,7 +1054,7 @@ const Profile: React.FC = React.memo(() => {
         currentUser={firebaseUser}
         isGuest={isGuest()}
         onTitleClick={handleTitleClick}
-        title="Profile"
+        title={t('profile')}
         showBackButton={true}
         onBackClick={handleGoBack}
       />
@@ -1090,11 +1093,11 @@ const Profile: React.FC = React.memo(() => {
                 <button
                   className="edit-profile-button"
                   onClick={handleEditProfile}
-                  aria-label="Edit profile"
+                  aria-label={t('editProfile')}
                   type="button"
                 >
                   <Edit3 size={18} aria-hidden="true" />
-                  <span className="edit-text">Edit</span>
+                  <span className="edit-text">{t('edit')}</span>
                 </button>
               )}
             </div>
@@ -1118,18 +1121,18 @@ const Profile: React.FC = React.memo(() => {
               />
             )}
 
-            <div className="profile-stats" role="group" aria-label="Profile statistics">
+            <div className="profile-stats" role="group" aria-label={t('profile')}>
               <div className="stat-item">
-                <span className="stat-number" aria-label={`${profileStats.posts} posts`}>{profileStats.posts}</span>
-                <span className="stat-label">Posts</span>
+                <span className="stat-number" aria-label={`${profileStats.posts} ${t('posts')}`}>{profileStats.posts}</span>
+                <span className="stat-label">{t('posts')}</span>
               </div>
               <div className="stat-item">
-                <span className="stat-number" aria-label={`${profileStats.followers} follower${profileStats.followers !== 1 ? 's' : ''}`}>{profileStats.followers}</span>
-                <span className="stat-label">Followers</span>
+                <span className="stat-number" aria-label={`${profileStats.followers} ${t('followers')}`}>{profileStats.followers}</span>
+                <span className="stat-label">{t('followers')}</span>
               </div>
               <div className="stat-item">
-                <span className="stat-number" aria-label={`${profileStats.following} following`}>{profileStats.following}</span>
-                <span className="stat-label">Following</span>
+                <span className="stat-number" aria-label={`${profileStats.following} ${t('following')}`}>{profileStats.following}</span>
+                <span className="stat-label">{t('following')}</span>
               </div>
             </div>
 
@@ -1139,9 +1142,9 @@ const Profile: React.FC = React.memo(() => {
                 onClick={handleFollowToggle}
                 disabled={followLoading}
                 type="button"
-                aria-label={isFollowing ? 'Unfollow this user' : 'Follow this user'}
+                aria-label={isFollowing ? t('following') : t('follow')}
               >
-                {followLoading ? 'Loading...' : (isFollowing ? 'Following' : 'Follow')}
+                {followLoading ? t('loading') : (isFollowing ? t('following') : t('follow'))}
               </button>
             )}
           </div>
@@ -1150,12 +1153,12 @@ const Profile: React.FC = React.memo(() => {
         {/* Personal Details Section */}
         <section className="personal-details" aria-labelledby="personal-details-heading">
           <div className="section-header">
-            <h2 id="personal-details-heading" className="section-title">Personal Details</h2>
+            <h2 id="personal-details-heading" className="section-title">{t('personalDetails')}</h2>
             {isOwner && (
               <button
                 className="section-edit-button"
                 onClick={handleEditProfile}
-                aria-label="Edit personal details"
+                aria-label={t('editProfile')}
                 type="button"
               >
                 <Edit3 size={16} aria-hidden="true" />
@@ -1164,59 +1167,59 @@ const Profile: React.FC = React.memo(() => {
           </div>
           <div className="details-card" role="group" aria-labelledby="personal-details-heading">
             <div className="field-row">
-              <span className="field-label" id="name-label">NAME</span>
+              <span className="field-label" id="name-label">{t('name').toUpperCase()}</span>
               <span className="field-value" aria-labelledby="name-label">{personalDetails.name}</span>
             </div>
             {currentRoleConfig.editableFields.includes('dateOfBirth') && (
               <div className="field-row">
-                <span className="field-label" id="dob-label">DATE OF BIRTH</span>
-                <span className="field-value" aria-labelledby="dob-label">{personalDetails.dateOfBirth || 'Not specified'}</span>
+                <span className="field-label" id="dob-label">{t('dateOfBirth').toUpperCase()}</span>
+                <span className="field-value" aria-labelledby="dob-label">{personalDetails.dateOfBirth || t('notSpecified')}</span>
               </div>
             )}
             {currentRoleConfig.editableFields.includes('gender') && (
               <div className="field-row">
-                <span className="field-label" id="gender-label">GENDER</span>
-                <span className="field-value" aria-labelledby="gender-label">{personalDetails.gender || 'Not specified'}</span>
+                <span className="field-label" id="gender-label">{t('gender').toUpperCase()}</span>
+                <span className="field-value" aria-labelledby="gender-label">{personalDetails.gender || t('notSpecified')}</span>
               </div>
             )}
             {currentRoleConfig.editableFields.includes('mobile') && (
               <div className="field-row">
-                <span className="field-label" id="mobile-label">MOBILE</span>
-                <span className="field-value" aria-labelledby="mobile-label">{personalDetails.mobile || 'Not specified'}</span>
+                <span className="field-label" id="mobile-label">{t('mobile').toUpperCase()}</span>
+                <span className="field-value" aria-labelledby="mobile-label">{personalDetails.mobile || t('notSpecified')}</span>
               </div>
             )}
             {currentRoleConfig.editableFields.includes('email') && (
               <div className="field-row">
-                <span className="field-label" id="email-label">EMAIL</span>
-                <span className="field-value" aria-labelledby="email-label">{personalDetails.email || 'Not specified'}</span>
+                <span className="field-label" id="email-label">{t('email').toUpperCase()}</span>
+                <span className="field-value" aria-labelledby="email-label">{personalDetails.email || t('notSpecified')}</span>
               </div>
             )}
             {currentRoleConfig.editableFields.includes('city') && (
               <div className="field-row">
-                <span className="field-label" id="city-label">CITY</span>
-                <span className="field-value" aria-labelledby="city-label">{personalDetails.city || 'Not specified'}</span>
+                <span className="field-label" id="city-label">{t('city').toUpperCase()}</span>
+                <span className="field-value" aria-labelledby="city-label">{personalDetails.city || t('notSpecified')}</span>
               </div>
             )}
             {currentRoleConfig.editableFields.includes('playerType') && (
               <div className="field-row">
-                <span className="field-label" id="player-type-label">PLAYER TYPE</span>
-                <span className="field-value" aria-labelledby="player-type-label">{personalDetails.playerType || 'Not specified'}</span>
+                <span className="field-label" id="player-type-label">{t('playerType').toUpperCase()}</span>
+                <span className="field-value" aria-labelledby="player-type-label">{personalDetails.playerType || t('notSpecified')}</span>
               </div>
             )}
             {currentRoleConfig.editableFields.includes('sport') && (
               <div className="field-row">
-                <span className="field-label" id="sport-label">SPORT</span>
-                <span className="field-value" aria-labelledby="sport-label">{personalDetails.sport || 'Not specified'}</span>
+                <span className="field-label" id="sport-label">{t('sport').toUpperCase()}</span>
+                <span className="field-value" aria-labelledby="sport-label">{personalDetails.sport || t('notSpecified')}</span>
               </div>
             )}
             {currentRoleConfig.editableFields.includes('position') && (
               <div className="field-row">
-                <span className="field-label" id="position-label">POSITION</span>
-                <span className="field-value" aria-labelledby="position-label">{personalDetails.position || 'Not specified'}</span>
+                <span className="field-label" id="position-label">{t('position').toUpperCase()}</span>
+                <span className="field-value" aria-labelledby="position-label">{personalDetails.position || t('notSpecified')}</span>
               </div>
             )}
             <div className="field-row">
-              <span className="field-label" id="role-label">ROLE</span>
+              <span className="field-label" id="role-label">{t('role').toUpperCase()}</span>
               <span className="field-value" aria-labelledby="role-label">{currentRoleConfig.displayName}</span>
             </div>
           </div>
