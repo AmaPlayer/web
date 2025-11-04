@@ -10,6 +10,9 @@ export interface SafeComment {
   userDisplayName: string;
   userPhotoURL: string;
   timestamp: Timestamp | Date | null;
+  likes: unknown[];
+  likesCount: number;
+  replies: unknown[];
   isValid: boolean;
 }
 
@@ -69,6 +72,9 @@ export const ultraSafeCommentData = (comment: unknown): SafeComment => {
       userDisplayName: safenizeString('Unknown User'),
       userPhotoURL: safenizeString(''),
       timestamp: null,
+      likes: [],
+      likesCount: 0,
+      replies: [],
       isValid: false
     };
   }
@@ -82,12 +88,16 @@ export const ultraSafeCommentData = (comment: unknown): SafeComment => {
     userDisplayName: safenizeString(commentObj.userDisplayName, 'Unknown User'),
     userPhotoURL: safenizeString(commentObj.userPhotoURL, ''),
     timestamp: (commentObj.timestamp as Timestamp | Date) || null,
+    likes: Array.isArray(commentObj.likes) ? commentObj.likes : [],
+    likesCount: typeof commentObj.likesCount === 'number' ? commentObj.likesCount : (Array.isArray(commentObj.likes) ? commentObj.likes.length : 0),
+    replies: Array.isArray(commentObj.replies) ? commentObj.replies : [],
     isValid: true
   };
   
-  // Third layer: Final validation - ensure ALL fields are safe strings
+  // Third layer: Final validation - ensure string fields are safe strings (skip arrays and numbers)
   (Object.keys(safeComment) as Array<keyof SafeComment>).forEach(key => {
-    if (key !== 'timestamp' && key !== 'isValid') {
+    // Skip timestamp, isValid, likes, likesCount, and replies - these can be objects/arrays/numbers
+    if (key !== 'timestamp' && key !== 'isValid' && key !== 'likes' && key !== 'likesCount' && key !== 'replies') {
       const value = safeComment[key];
       if (typeof value === 'object' && value !== null) {
         console.error(`🚨 CRITICAL: Object found in ${key}:`, value);
@@ -158,6 +168,9 @@ export const getEmergencyComment = (): SafeComment => ({
   userDisplayName: 'System',
   userPhotoURL: '',
   timestamp: null,
+  likes: [],
+  likesCount: 0,
+  replies: [],
   isValid: true
 });
 

@@ -608,33 +608,76 @@ class PostsService extends BaseService<Post> {
    */
   async toggleCommentLike(postId: string, commentIndex: number, userId: string): Promise<void> {
     try {
+      console.log('🔍 toggleCommentLike called:', { postId, commentIndex, userId });
+
       const post = await this.getById(postId);
       if (!post) {
         throw new Error('Post not found');
       }
 
+      console.log('📝 Post retrieved:', {
+        postId,
+        commentsCount: (post.comments as unknown[])?.length,
+        firstComment: (post.comments as unknown[])?.[0]
+      });
+
       const comments = (post.comments as unknown[]) || [];
 
       if (commentIndex < 0 || commentIndex >= comments.length) {
-        throw new Error('Comment not found');
+        throw new Error(`Comment not found at index ${commentIndex}. Total comments: ${comments.length}`);
       }
 
       const comment = comments[commentIndex] as any;
-      const likes = (comment.likes as string[]) || [];
-      const hasLiked = likes.includes(userId);
+      console.log('💬 Comment before toggle:', {
+        commentIndex,
+        comment,
+        hasLikesField: 'likes' in comment,
+        currentLikes: comment.likes,
+        likesType: typeof comment.likes,
+        firstLikeType: comment.likes?.[0] ? typeof comment.likes[0] : 'none'
+      });
+
+      // Handle both string[] and object[] formats for likes
+      const likes = (comment.likes || []) as any[];
+
+      // Check if user has liked - support both formats
+      const hasLiked = likes.some((like: any) =>
+        typeof like === 'string'
+          ? like === userId
+          : like?.userId === userId
+      );
+
+      console.log('🔄 Like toggle state:', {
+        hasLiked,
+        currentLikesArray: likes,
+        firstLikeValue: likes[0],
+        willAddLike: !hasLiked
+      });
 
       // Toggle like
       const updatedComments = comments.map((c: any, index: number) => {
         if (index === commentIndex) {
           const newLikes = hasLiked
-            ? likes.filter((id: string) => id !== userId)
+            ? likes.filter((like: any) =>
+                typeof like === 'string'
+                  ? like !== userId
+                  : like?.userId !== userId
+              )
             : [...likes, userId];
 
-          return {
+          const updatedComment = {
             ...(c as object),
             likes: newLikes,
             likesCount: newLikes.length
           };
+
+          console.log('✨ Updated comment:', {
+            newLikes,
+            newLikesCount: newLikes.length,
+            updatedComment
+          });
+
+          return updatedComment;
         }
         return c;
       });
@@ -647,14 +690,33 @@ class PostsService extends BaseService<Post> {
       };
 
       // Debug: Log what we're saving
-      console.log(`👍 Comment like toggled in post: ${postId}`, {
+      console.log(`👍 Comment like toggled - updating Firestore:`, {
+        postId,
         commentIndex,
         userId,
         updatedComment: updatedComments[commentIndex],
-        fullPayload: updatePayload
+        updatePayloadKeys: Object.keys(updatePayload),
+        commentsArrayLength: (updatePayload.comments as unknown[]).length,
+        updatedCommentLikes: (updatedComments[commentIndex] as any).likes,
+        updatedCommentLikesCount: (updatedComments[commentIndex] as any).likesCount
       });
 
+      console.log('📤 Full update payload being sent to Firestore:', JSON.stringify(updatePayload, null, 2));
+
       await this.update(postId, updatePayload as Partial<Post>);
+
+      console.log('✅ Firestore update completed successfully');
+
+      // Verify the update by re-fetching
+      const verifyPost = await this.getById(postId);
+      const verifyComment = (verifyPost?.comments as unknown[])?.[commentIndex] as any;
+      console.log('🔍 Verification - Comment after update:', {
+        commentIndex,
+        likes: verifyComment?.likes,
+        likesCount: verifyComment?.likesCount,
+        hasLikesField: verifyComment && 'likes' in verifyComment
+      });
+
     } catch (error) {
       console.error('❌ Error toggling comment like:', error);
       throw error;

@@ -239,18 +239,31 @@ function Home(): React.JSX.Element {
   }, [refreshPosts]);
 
   const handleLikeComment = useCallback(async (postId: string, commentIndex: number) => {
+    console.log('❤️ handleLikeComment called in Home.tsx:', { postId, commentIndex });
+
     const firebaseUserValue = firebaseUserRef.current;
 
-    if (!firebaseUserValue) return;
+    if (!firebaseUserValue) {
+      console.warn('⚠️ No firebase user found, cannot like comment');
+      return;
+    }
+
+    console.log('👤 User:', firebaseUserValue.uid);
 
     try {
       const PostsService = (await import('../../services/api/postsService')).default;
+      console.log('🚀 Calling toggleCommentLike...');
+
       await PostsService.toggleCommentLike(postId, commentIndex, firebaseUserValue.uid);
+
+      console.log('✅ toggleCommentLike completed, now refreshing posts...');
 
       // Refresh posts to show updated like count
       await refreshPosts();
+
+      console.log('✅ Posts refreshed successfully');
     } catch (error) {
-      console.error('Failed to like comment:', error);
+      console.error('❌ Failed to like comment:', error);
     }
   }, [refreshPosts]);
 

@@ -100,7 +100,22 @@ export const usePostOperations = (): UsePostOperationsReturn => {
       };
 
       const result = await measureApiCall(apiCall, 'loadPosts');
+
+      console.log('📥 Posts fetched from Firebase:', {
+        postsCount: result.posts.length,
+        firstPostId: result.posts[0]?.id,
+        firstPostComments: result.posts[0]?.comments,
+        firstCommentLikes: result.posts[0]?.comments?.[0]?.likes
+      });
+
       const postsData = result.posts.map(post => sanitizeEngagementData(post));
+
+      console.log('🧹 Posts after sanitization:', {
+        postsCount: postsData.length,
+        firstPostId: postsData[0]?.id,
+        firstPostComments: postsData[0]?.comments,
+        firstCommentLikes: postsData[0]?.comments?.[0]?.likes
+      });
 
       if (loadMore) {
         addPosts(postsData);
