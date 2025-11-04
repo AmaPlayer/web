@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { Plus, Upload, X } from 'lucide-react';
 import NavigationBar from '../../components/layout/NavigationBar';
 import FooterNav from '../../components/layout/FooterNav';
 import VideoPlayer from '../../components/common/video/VideoPlayer';
@@ -28,6 +29,12 @@ const MomentsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+  const [caption, setCaption] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Network status monitoring
   const { networkStatus, isGoodConnection } = useNetworkStatus();
@@ -114,18 +121,48 @@ const MomentsPage: React.FC = () => {
       // Apply feed diversity if enabled
       const enableFeedDiversity = process.env.REACT_APP_ENABLE_FEED_DIVERSITY !== 'false';
       let processedMoments = result.moments;
-      
-      if (enableFeedDiversity && processedMoments.length > 0) {
+
+      // Debug: Log videos before diversity filter
+      console.log('📊 BEFORE diversity filter:', {
+        totalVideos: processedMoments.length,
+        userDistribution: processedMoments.reduce((acc, m) => {
+          acc[m.userDisplayName] = (acc[m.userDisplayName] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>),
+        videoTypes: processedMoments.reduce((acc, m) => {
+          const type = m.isTalentVideo ? 'talent' : m.isPostVideo ? 'post' : 'moment';
+          acc[type] = (acc[type] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      });
+
+      // Only apply diversity filter if we have enough videos (10+)
+      // With small feeds, the diversity algorithm is too restrictive
+      if (enableFeedDiversity && processedMoments.length >= 10) {
         // Get custom config from environment or use defaults
         const maxConsecutive = parseInt(process.env.REACT_APP_FEED_MAX_CONSECUTIVE || '2', 10);
         const maxPercentage = parseFloat(process.env.REACT_APP_FEED_MAX_PERCENTAGE || '0.3');
-        
+
+        console.log('🎯 Applying diversity filter with:', { maxConsecutive, maxPercentage, videoCount: processedMoments.length });
+
         processedMoments = diversifyFeed(processedMoments, {
           maxConsecutiveFromSameUser: maxConsecutive,
           maxPercentageFromSingleUser: maxPercentage
         });
+
+        // Debug: Log videos after diversity filter
+        console.log('📊 AFTER diversity filter:', {
+          totalVideos: processedMoments.length,
+          userDistribution: processedMoments.reduce((acc, m) => {
+            acc[m.userDisplayName] = (acc[m.userDisplayName] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>),
+          videosFiltered: result.moments.length - processedMoments.length
+        });
+      } else if (processedMoments.length > 0) {
+        console.log('⏭️ Skipped diversity filter (feed too small, need 10+ videos)');
       }
-      
+
       setMoments(processedMoments);
       setRetryCount(0); // Reset retry count on success
     } catch (err) {
@@ -249,6 +286,101 @@ const MomentsPage: React.FC = () => {
     console.error('Video error:', error);
   };
 
+  // Handle create moment button click
+  const handleCreateMomentClick = () => {
+    if (isGuest()) {
+      alert('Please sign in to create moments');
+      return;
+    }
+    setShowCreateModal(true);
+  };
+
+  // Handle video file selection
+  const handleVideoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('video/')) {
+      setUploadError('Please select a valid video file');
+      return;
+    }
+
+    // Validate file size (max 100MB)
+    const maxSize = 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setUploadError('Video file size must be less than 100MB');
+      return;
+    }
+
+    // Check video duration
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(video.src);
+      if (video.duration > 30) {
+        setUploadError('Video must be 30 seconds or less');
+        setSelectedVideo(null);
+      } else {
+        setUploadError(null);
+        setSelectedVideo(file);
+      }
+    };
+    video.src = URL.createObjectURL(file);
+  };
+
+  // Handle moment upload
+  const handleUploadMoment = async () => {
+    if (!selectedVideo || !currentUser) return;
+
+    try {
+      setUploading(true);
+      setUploadError(null);
+
+      // Create moment
+      const momentId = await MomentsService.createMoment({
+        userId: currentUser.uid,
+        userDisplayName: currentUser.displayName || 'User',
+        userPhotoURL: currentUser.photoURL || null,
+        caption,
+        videoFile: selectedVideo,
+        duration: 0 // Will be updated after video processing
+      });
+
+      // Upload video
+      const uploadResult = await MomentsService.uploadVideo(selectedVideo, momentId);
+
+      // Update moment with video URL
+      await MomentsService.updateMoment(momentId, {
+        videoUrl: uploadResult.videoUrl,
+        thumbnailUrl: uploadResult.thumbnailUrl,
+        metadata: uploadResult.metadata
+      });
+
+      // Close modal and refresh feed
+      setShowCreateModal(false);
+      setSelectedVideo(null);
+      setCaption('');
+      fetchMoments();
+
+      alert('Moment created successfully!');
+    } catch (err) {
+      console.error('Error uploading moment:', err);
+      setUploadError('Failed to upload moment. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Handle modal close
+  const handleCloseModal = () => {
+    if (uploading) return;
+    setShowCreateModal(false);
+    setSelectedVideo(null);
+    setCaption('');
+    setUploadError(null);
+  };
+
   // Handle page visibility changes to pause/resume videos
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -307,7 +439,19 @@ const MomentsPage: React.FC = () => {
         onTitleClick={handleTitleClick}
         title="Moments"
       />
-      
+
+      {/* Create Moment Floating Button */}
+      {!isGuest() && (
+        <button
+          className="create-moment-btn"
+          onClick={handleCreateMomentClick}
+          aria-label="Create moment"
+          title="Create a new moment"
+        >
+          <Plus size={24} />
+        </button>
+      )}
+
       <div className="moments-content">
         <div className="moments-container">
           {loading && (
@@ -380,6 +524,8 @@ const MomentsPage: React.FC = () => {
                         moment={moment}
                         isActive={isVideoInView(moment.id)}
                         currentUserId={currentUser?.uid}
+                        currentUserName={currentUser?.displayName || undefined}
+                        currentUserPhotoURL={currentUser?.photoURL || null}
                         onLike={handleLike}
                         onComment={handleComment}
                         onShare={handleShare}
@@ -403,7 +549,119 @@ const MomentsPage: React.FC = () => {
           )}
         </div>
       </div>
-      
+
+      {/* Create Moment Modal */}
+      {showCreateModal && (
+        <div className="create-moment-modal-overlay" onClick={handleCloseModal}>
+          <div className="create-moment-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Create Moment</h2>
+              <button
+                className="modal-close-btn"
+                onClick={handleCloseModal}
+                disabled={uploading}
+                aria-label="Close"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {uploadError && (
+                <div className="upload-error">
+                  {uploadError}
+                </div>
+              )}
+
+              {!selectedVideo ? (
+                <div className="video-upload-area">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="video/*"
+                    onChange={handleVideoSelect}
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    className="upload-trigger-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    <Upload size={48} />
+                    <h3>Upload Video</h3>
+                    <p>Select a video up to 30 seconds</p>
+                    <span className="file-requirements">
+                      Max size: 100MB | Formats: MP4, MOV, AVI
+                    </span>
+                  </button>
+                </div>
+              ) : (
+                <div className="video-preview-section">
+                  <div className="video-preview">
+                    <video
+                      src={URL.createObjectURL(selectedVideo)}
+                      controls
+                      className="preview-video"
+                    />
+                  </div>
+                  <div className="video-info">
+                    <p className="selected-file-name">{selectedVideo.name}</p>
+                    <p className="selected-file-size">
+                      {(selectedVideo.size / (1024 * 1024)).toFixed(2)} MB
+                    </p>
+                  </div>
+                  <button
+                    className="change-video-btn"
+                    onClick={() => {
+                      setSelectedVideo(null);
+                      setUploadError(null);
+                    }}
+                    disabled={uploading}
+                  >
+                    Change Video
+                  </button>
+                </div>
+              )}
+
+              {selectedVideo && (
+                <div className="caption-section">
+                  <label htmlFor="moment-caption">Caption (optional)</label>
+                  <textarea
+                    id="moment-caption"
+                    value={caption}
+                    onChange={(e) => setCaption(e.target.value)}
+                    placeholder="Write a caption for your moment..."
+                    maxLength={150}
+                    rows={3}
+                    disabled={uploading}
+                  />
+                  <span className="character-count">
+                    {caption.length}/150
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="btn-cancel"
+                onClick={handleCloseModal}
+                disabled={uploading}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn-upload"
+                onClick={handleUploadMoment}
+                disabled={!selectedVideo || uploading}
+              >
+                {uploading ? 'Uploading...' : 'Post Moment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <FooterNav />
     </div>
   );

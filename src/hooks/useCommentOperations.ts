@@ -88,17 +88,27 @@ export const useCommentOperations = (): UseCommentOperationsReturn => {
         isGuest: isGuest || false
       };
 
-      // Add comment to comments collection
-      await addDoc(collection(db, 'comments'), commentData);
+      // Add comment to comments collection (for indexing and querying)
+      const commentDocRef = await addDoc(collection(db, 'comments'), commentData);
 
-      // Update post's comments array with the comment data (without serverTimestamp)
+      // Update post's comments array with the comment data (including the id)
       const postRef = doc(db, 'posts', postId);
       const commentForPost = {
-        ...commentData,
-        timestamp: new Date() // Use Date object instead of serverTimestamp for the post update
+        id: commentDocRef.id, // Include the comment ID - CRITICAL for validation
+        text: text.trim(),
+        userId: currentUser?.uid,
+        userDisplayName: currentUser?.displayName || 'Anonymous',
+        userPhotoURL: currentUser?.photoURL,
+        timestamp: new Date().toISOString(), // Use ISO string for consistency
+        likes: [], // Initialize empty likes array
+        replies: [] // Initialize empty replies array
       };
+
+      // Update post with new comment and increment count
       await updateDoc(postRef, {
-        comments: arrayUnion(commentForPost)
+        comments: arrayUnion(commentForPost),
+        commentsCount: (postData?.commentsCount || 0) + 1,
+        updatedAt: serverTimestamp()
       });
 
     } catch (err: any) {

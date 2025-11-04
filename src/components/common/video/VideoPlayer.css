@@ -17,6 +17,8 @@
   touch-action: pan-y; /* Allow vertical scrolling but prevent horizontal */
   -webkit-user-select: none;
   user-select: none;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .video-player-container.mobile {
@@ -43,6 +45,11 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
+  outline: none;
+}
+
+.video-wrapper:focus {
+  outline: none;
 }
 
 .video-player {
@@ -53,11 +60,13 @@
   object-fit: contain; /* Contain to fit within viewport without cropping */
   object-position: center;
   background: #000;
-  outline: none;
+  outline: none !important;
+  border: none !important;
   border-radius: 12px;
   transition: opacity 0.3s ease;
   /* Handle different aspect ratios */
   aspect-ratio: 9/16;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Loading State */
@@ -739,15 +748,13 @@
   border: 0;
 }
 
-/* Focus styles for keyboard navigation */
+/* Focus styles for keyboard navigation - Removed to hide blue border */
 .video-player-container:focus {
-  outline: 3px solid #007bff;
-  outline-offset: 2px;
+  outline: none;
 }
 
 .video-player:focus {
-  outline: 3px solid #007bff;
-  outline-offset: 2px;
+  outline: none;
 }
 
 .engagement-btn:focus,
@@ -759,10 +766,14 @@
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
-/* High contrast focus indicators */
+/* High contrast focus indicators - Removed for video container/player */
 @media (prefers-contrast: high) {
   .video-player-container:focus,
-  .video-player:focus,
+  .video-player:focus {
+    outline: none;
+    box-shadow: none;
+  }
+
   .engagement-btn:focus,
   .play-pause-btn:focus,
   .mute-btn:focus,
@@ -836,10 +847,9 @@
   }
 }
 
-/* Keyboard navigation indicators */
+/* Keyboard navigation indicators - Removed to hide blue border */
 .video-player-container[tabindex="0"]:focus-within {
-  outline: 3px solid #007bff;
-  outline-offset: 2px;
+  outline: none;
 }
 
 /* Skip to content functionality */

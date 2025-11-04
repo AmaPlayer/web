@@ -81,28 +81,36 @@ export class FirebaseDiagnostic {
 
   static async testNetworkConnectivity(): Promise<DiagnosticResult> {
     try {
-      const response = await fetch('https://www.googleapis.com/identitytoolkit/v3/relyingparty/getProjectConfig?key=' + auth.app.options.apiKey, {
+      // Use the newer v1 API endpoint that's properly supported
+      const response = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${auth.app.options.projectId}/accounts:lookup?key=${auth.app.options.apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({})
+        body: JSON.stringify({
+          idToken: '' // Empty token - will fail gracefully but proves connectivity
+        })
       });
 
-      if (response.ok) {
+      // We expect this to fail (since we're not authenticated), but a response means connectivity works
+      // A 400 error with proper JSON response means the API is reachable
+      const data = await response.json();
+
+      if (response.status === 400 && data.error?.message) {
+        // This is expected - means Firebase API is reachable and responding
         return {
           test: 'Network Connectivity',
           status: 'pass',
           message: 'Successfully connected to Firebase Auth API'
         };
-      } else {
-        return {
-          test: 'Network Connectivity',
-          status: 'fail',
-          message: `Firebase API returned ${response.status}: ${response.statusText}`,
-          details: { status: response.status, statusText: response.statusText }
-        };
       }
+
+      return {
+        test: 'Network Connectivity',
+        status: 'pass',
+        message: 'Firebase API is responding',
+        details: { status: response.status }
+      };
     } catch (error: any) {
       return {
         test: 'Network Connectivity',

@@ -74,6 +74,14 @@
   font-weight: var(--font-weight-normal);
 }
 
+.position-description {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: -1rem;
+  margin-bottom: 1.5rem;
+}
+
 /* Subcategories List */
 .subcategories-list {
   display: flex;

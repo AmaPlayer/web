@@ -103,6 +103,15 @@ export class MomentsService {
       const moments: MomentVideo[] = [];
       let lastDocument: DocumentSnapshot | null = null;
 
+      // Log all moments for debugging
+      console.log(`🎬 Found ${snapshot.docs.length} moments in moments collection:`);
+      snapshot.docs.forEach((doc, index) => {
+        const data = doc.data();
+        if (index < 10) { // Log first 10 for debugging
+          console.log(`  ${index + 1}. ${data.userDisplayName}: ${data.caption || 'No caption'} (${data.videoUrl?.substring(0, 60)}...)`);
+        }
+      });
+
       for (const docSnapshot of snapshot.docs) {
         const data = docSnapshot.data();
         const moment: MomentVideo = {
@@ -409,6 +418,39 @@ export class MomentsService {
   }
 
   /**
+   * Toggle like on a comment
+   */
+  static async toggleCommentLike(commentId: string, userId: string): Promise<void> {
+    try {
+      const commentRef = doc(db, this.COMMENTS_COLLECTION, commentId);
+      const commentSnap = await getDoc(commentRef);
+
+      if (!commentSnap.exists()) {
+        throw new Error('Comment not found');
+      }
+
+      const commentData = commentSnap.data();
+      const likes = (commentData.likes as string[]) || [];
+      const hasLiked = likes.includes(userId);
+
+      // Toggle like
+      const newLikes = hasLiked
+        ? likes.filter((id: string) => id !== userId)
+        : [...likes, userId];
+
+      await updateDoc(commentRef, {
+        likes: newLikes,
+        likesCount: newLikes.length
+      });
+
+      console.log(`👍 Comment like toggled: ${commentId}`);
+    } catch (error) {
+      console.error('❌ Error toggling comment like:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Track user interaction with a moment
    */
   static async trackInteraction(interaction: MomentInteraction): Promise<void> {
@@ -613,8 +655,110 @@ export class MomentsService {
   }
 
   /**
-   * Get combined feed of moments and verified talent videos
-   * This creates a mixed feed of user moments and talent showcase videos
+   * Get ALL video posts from posts collection (like the hosted version)
+   * No filtering - show all videos regardless of duration
+   */
+  static async getShortVideoPosts(limit = 10, currentUserId?: string): Promise<MomentVideo[]> {
+    try {
+      console.log('🎥 Fetching ALL video posts from posts collection...');
+
+      // Fetch ALL posts with an index-free query
+      const indexFreeQuery = query(
+        collection(db, 'posts'),
+        firestoreLimit(500) // High limit to get all posts
+      );
+
+      const snapshot = await getDocs(indexFreeQuery);
+      console.log(`📊 Found ${snapshot.size} total posts`);
+
+      const allVideos: MomentVideo[] = [];
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+
+        // Check if this post has a video URL (check ALL possible video fields including mediaUrl)
+        const videoUrl = data.videoUrl || data.mediaUrls?.[0] || data.mediaUrl || '';
+        // Support BOTH 'type' and 'mediaType' fields for backwards compatibility
+        const type = data.type || data.mediaType || '';
+        const userDisplayName = data.userDisplayName || data.displayName || 'Unknown';
+
+        // IMPORTANT: Include posts where type/mediaType is 'video' AND has a valid URL
+        // This handles both old posts (with mediaType) and new posts (with type)
+        const isVideoPost = type === 'video';
+        const hasValidVideoUrl = videoUrl && typeof videoUrl === 'string' && videoUrl.trim().length > 0;
+
+        // Only log video posts (not images or text)
+        if (isVideoPost) {
+          console.log(`📝 Video Post ${doc.id} by ${userDisplayName}:`, {
+            hasVideoUrl: !!data.videoUrl,
+            hasMediaUrls: !!data.mediaUrls,
+            hasMediaUrl: !!data.mediaUrl,
+            type: type,
+            videoDuration: data.videoDuration || data.duration,
+            videoUrl: videoUrl ? videoUrl.substring(0, 50) + '...' : 'none',
+            hasValidUrl: hasValidVideoUrl
+          });
+        }
+
+        // Only include if it's a video post AND has a valid video URL
+        if (isVideoPost && hasValidVideoUrl) {
+          console.log('✅ Including video post:', doc.id, 'by', userDisplayName);
+
+          const video: MomentVideo = {
+            id: doc.id,
+            userId: data.userId || 'unknown',
+            userDisplayName: data.userDisplayName || data.displayName || 'User',
+            userPhotoURL: data.userPhotoURL || data.photoURL || null,
+            videoUrl,
+            thumbnailUrl: data.thumbnailUrl || videoUrl,
+            caption: data.content || data.description || data.caption || '',
+            duration: data.videoDuration || data.duration || 0,
+            createdAt: data.timestamp || Timestamp.now(),
+            updatedAt: data.updatedAt || data.timestamp || Timestamp.now(),
+            isActive: true,
+            moderationStatus: 'approved',
+            engagement: {
+              likes: data.likes || [],
+              likesCount: data.likesCount || (Array.isArray(data.likes) ? data.likes.length : 0),
+              comments: data.comments || [],
+              commentsCount: data.commentsCount || (Array.isArray(data.comments) ? data.comments.length : 0),
+              shares: data.shares || [],
+              sharesCount: data.sharesCount || (Array.isArray(data.shares) ? data.shares.length : 0),
+              views: 0,
+              watchTime: 0,
+              completionRate: 0
+            },
+            metadata: {
+              width: data.videoWidth || 0,
+              height: data.videoHeight || 0,
+              fileSize: data.videoSize || 0,
+              format: 'video/mp4',
+              aspectRatio: data.videoAspectRatio || '9:16',
+              uploadedAt: data.timestamp?.toDate().toISOString() || new Date().toISOString(),
+              processingStatus: 'completed',
+              qualityVersions: []
+            },
+            isPostVideo: true,
+            isLiked: false
+          };
+
+          allVideos.push(video);
+        }
+      });
+
+      console.log(`✅ Returning ALL ${allVideos.length} video posts for moments feed (no filtering)`);
+      // Return ALL videos with no limit - just like the hosted version
+
+      return allVideos;
+    } catch (error) {
+      console.error('❌ Error fetching short video posts:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get combined feed of moments, verified talent videos, and short video posts
+   * This creates a mixed feed of user moments, talent showcase videos, and post videos
    */
   static async getCombinedFeed(options: MomentsQueryOptions = {}): Promise<PaginatedMomentsResult> {
     try {
@@ -624,30 +768,66 @@ export class MomentsService {
         includeEngagementMetrics = true
       } = options;
 
-      // Calculate how many of each type to fetch
-      // 70% moments, 30% talent videos
-      const momentsLimit = Math.ceil(limit * 0.7);
-      const talentLimit = Math.floor(limit * 0.3);
+      // Fetch ALL short videos from posts (under 30 seconds)
+      // Don't limit them - show all of them in the feed
+      const momentsLimit = Math.ceil(limit * 0.5);
+      const talentLimit = Math.floor(limit * 0.2);
 
-      // Fetch both types in parallel
-      const [momentsResult, talentVideos] = await Promise.all([
+      // Fetch all types in parallel
+      const [momentsResult, talentVideos, shortVideoPosts] = await Promise.all([
         this.getMoments({
           limit: momentsLimit,
           currentUserId,
           includeEngagementMetrics,
           moderationStatus: options.moderationStatus
         }),
-        this.getVerifiedTalentVideos(talentLimit)
+        this.getVerifiedTalentVideos(talentLimit),
+        this.getShortVideoPosts(1000, currentUserId) // Fetch ALL videos (high limit)
       ]);
 
-      // Merge and shuffle the results for a mixed feed
-      const combinedVideos = [...momentsResult.moments, ...talentVideos];
+      console.log('🎬 Combined Feed Fetch Results:', {
+        moments: momentsResult.moments.length,
+        talentVideos: talentVideos.length,
+        shortVideoPosts: shortVideoPosts.length,
+        total: momentsResult.moments.length + talentVideos.length + shortVideoPosts.length,
+        note: 'Showing ALL videos under 30 seconds from posts',
+        momentsLimit,
+        talentLimit
+      });
 
-      // Shuffle algorithm (Fisher-Yates)
-      for (let i = combinedVideos.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [combinedVideos[i], combinedVideos[j]] = [combinedVideos[j], combinedVideos[i]];
-      }
+      // Merge and shuffle the results for a mixed feed
+      let combinedVideos = [...momentsResult.moments, ...talentVideos, ...shortVideoPosts];
+
+      // CRITICAL: Filter out any videos with invalid or empty videoUrl
+      // This prevents "Video source not supported" errors
+      const videosBeforeFilter = combinedVideos.length;
+      combinedVideos = combinedVideos.filter(video => {
+        const hasValidUrl = video.videoUrl && typeof video.videoUrl === 'string' && video.videoUrl.trim().length > 0;
+        if (!hasValidUrl) {
+          console.warn('⚠️ Filtering out video with invalid URL:', video.id, 'by', video.userDisplayName);
+        }
+        return hasValidUrl;
+      });
+      console.log(`🔍 Filtered videos: ${videosBeforeFilter} → ${combinedVideos.length} (removed ${videosBeforeFilter - combinedVideos.length} invalid)`);
+
+      console.log('🔀 Before sorting:', combinedVideos.length, 'videos');
+      console.log('📋 User distribution:', combinedVideos.reduce((acc, v) => {
+        acc[v.userDisplayName] = (acc[v.userDisplayName] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>));
+
+      // Sort by timestamp (newest first) instead of shuffling
+      // This makes newly uploaded videos appear at the top
+      combinedVideos.sort((a, b) => {
+        const getTimestamp = (ts: any): number => {
+          if (ts && typeof ts === 'object' && 'seconds' in ts) return ts.seconds;
+          if (ts instanceof Date) return ts.getTime() / 1000;
+          if (typeof ts === 'string') return new Date(ts).getTime() / 1000;
+          return 0;
+        };
+        return getTimestamp(b.createdAt) - getTimestamp(a.createdAt); // Newest first
+      });
+      console.log('✅ Sorted by newest first - latest video will appear at top');
 
       // Update engagement metrics for all videos
       if (currentUserId && includeEngagementMetrics) {

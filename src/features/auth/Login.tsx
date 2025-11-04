@@ -22,7 +22,12 @@ export default function Login() {
   const [passwordError, setPasswordError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [canRetry, setCanRetry] = useState<boolean>(false);
-  const { login, guestLogin, googleLogin, appleLogin, getAuthErrorMessage } = useAuth();
+  const [showForgotPassword, setShowForgotPassword] = useState<boolean>(false);
+  const [resetEmail, setResetEmail] = useState<string>('');
+  const [resetEmailSent, setResetEmailSent] = useState<boolean>(false);
+  const [resetError, setResetError] = useState<string>('');
+  const [resetLoading, setResetLoading] = useState<boolean>(false);
+  const { login, guestLogin, googleLogin, appleLogin, resetPassword, getAuthErrorMessage } = useAuth();
   const { t } = useLanguage();
   const { toasts, showSuccess, showError, showWarning } = useToast();
   const navigate = useNavigate();
@@ -79,34 +84,60 @@ export default function Login() {
   const handleSuccessfulLogin = async (user: any): Promise<void> => {
     showSuccess('Login Successful', 'Welcome back! Redirecting to your dashboard...');
 
-    // Check for pending personal details
-    const pendingDetails = localStorage.getItem('pendingPersonalDetails');
-    if (pendingDetails && user) {
-      try {
-        const details = JSON.parse(pendingDetails);
-        const userService = (await import('../../../services/api/userService')).default;
+    try {
+      const userService = (await import('../../services/api/userService')).default;
 
-        // Save personal details to Firestore
-        await userService.updateUserProfile(user.uid, {
-          displayName: details.fullName,
-          bio: details.bio || undefined,
-          dateOfBirth: details.dateOfBirth,
-          gender: details.gender,
-          height: details.height || undefined,
-          weight: details.weight || undefined,
-          country: details.country,
-          state: details.state,
-          city: details.city,
-          mobile: details.phone || undefined,
-          location: `${details.city}, ${details.state}, ${details.country}`
-        });
+      // Check for pending athlete profile (sport/position/specializations)
+      const pendingAthleteProfile = localStorage.getItem('pendingAthleteProfile');
+      if (pendingAthleteProfile && user) {
+        try {
+          const athleteData = JSON.parse(pendingAthleteProfile);
 
-        // Clear the pending data
-        localStorage.removeItem('pendingPersonalDetails');
-        console.log('✅ Personal details saved after login');
-      } catch (error) {
-        console.error('Error saving pending personal details:', error);
+          // Save athlete profile to Firestore
+          await userService.updateUserProfile(user.uid, {
+            sports: athleteData.sports || [],
+            position: athleteData.position || null,
+            specializations: athleteData.specializations || {}
+          });
+
+          // Clear the pending athlete profile data
+          localStorage.removeItem('pendingAthleteProfile');
+          console.log('✅ Athlete profile saved after login');
+        } catch (error) {
+          console.error('Error saving pending athlete profile:', error);
+        }
       }
+
+      // Check for pending personal details
+      const pendingDetails = localStorage.getItem('pendingPersonalDetails');
+      if (pendingDetails && user) {
+        try {
+          const details = JSON.parse(pendingDetails);
+
+          // Save personal details to Firestore
+          await userService.updateUserProfile(user.uid, {
+            displayName: details.fullName,
+            bio: details.bio || undefined,
+            dateOfBirth: details.dateOfBirth,
+            gender: details.gender,
+            height: details.height || undefined,
+            weight: details.weight || undefined,
+            country: details.country,
+            state: details.state,
+            city: details.city,
+            mobile: details.phone || undefined,
+            location: `${details.city}, ${details.state}, ${details.country}`
+          });
+
+          // Clear the pending data
+          localStorage.removeItem('pendingPersonalDetails');
+          console.log('✅ Personal details saved after login');
+        } catch (error) {
+          console.error('Error saving pending personal details:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error importing userService:', error);
     }
 
     // Navigate to home after successful login
@@ -226,6 +257,41 @@ export default function Login() {
     }
   }
 
+  const handleForgotPassword = async (): Promise<void> => {
+    setResetError('');
+
+    if (!resetEmail.trim()) {
+      setResetError('Please enter your email address');
+      return;
+    }
+
+    const emailValidation = validateEmail(resetEmail);
+    if (!emailValidation.isValid) {
+      setResetError(emailValidation.error || 'Invalid email address');
+      return;
+    }
+
+    try {
+      setResetLoading(true);
+      await resetPassword(resetEmail);
+      setResetEmailSent(true);
+      showSuccess('Password Reset Email Sent', 'Check your inbox for password reset instructions');
+    } catch (error) {
+      const errorInfo = authErrorHandler.formatErrorForDisplay(error);
+      setResetError(errorInfo.message);
+      showError('Password Reset Failed', errorInfo.message);
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleCloseForgotPassword = (): void => {
+    setShowForgotPassword(false);
+    setResetEmail('');
+    setResetEmailSent(false);
+    setResetError('');
+  };
+
   const handleGoBack = (): void => {
     if (role) {
       navigate(`/about/${role}`);
@@ -321,6 +387,14 @@ export default function Login() {
               <span className="checkbox-custom"></span>
               <span className="checkbox-text">Keep me logged in</span>
             </label>
+            <button
+              type="button"
+              className="forgot-password-link"
+              onClick={() => setShowForgotPassword(true)}
+              disabled={loading}
+            >
+              Forgot Password?
+            </button>
           </div>
           <button disabled={loading} type="submit" className="auth-btn">
             {loading ? (
@@ -390,6 +464,87 @@ export default function Login() {
         </div>
       </div>
     </div>
+
+    {/* Forgot Password Modal */}
+    {showForgotPassword && (
+      <div className="modal-overlay" onClick={handleCloseForgotPassword}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h2>Reset Password</h2>
+            <button
+              className="modal-close-btn"
+              onClick={handleCloseForgotPassword}
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+          <div className="modal-body">
+            {resetEmailSent ? (
+              <div className="reset-success">
+                <div className="success-icon">✓</div>
+                <h3>Check Your Email</h3>
+                <p>
+                  We've sent password reset instructions to <strong>{resetEmail}</strong>.
+                  Please check your inbox and follow the link to reset your password.
+                </p>
+                <button
+                  className="btn-primary"
+                  onClick={handleCloseForgotPassword}
+                >
+                  Got it
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="reset-instructions">
+                  Enter your email address and we'll send you instructions to reset your password.
+                </p>
+                {resetError && <div className="error">{resetError}</div>}
+                <div className="form-group">
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={resetEmail}
+                    onChange={(e) => {
+                      setResetEmail(e.target.value);
+                      setResetError('');
+                    }}
+                    disabled={resetLoading}
+                    autoComplete="email"
+                    className={resetError ? 'input-error' : ''}
+                  />
+                </div>
+                <div className="modal-actions">
+                  <button
+                    className="btn-secondary"
+                    onClick={handleCloseForgotPassword}
+                    disabled={resetLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="btn-primary"
+                    onClick={handleForgotPassword}
+                    disabled={resetLoading}
+                  >
+                    {resetLoading ? (
+                      <>
+                        <LoadingSpinner size="small" color="white" className="in-button" />
+                        Sending...
+                      </>
+                    ) : (
+                      'Send Reset Email'
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }
+

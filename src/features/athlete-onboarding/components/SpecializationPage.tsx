@@ -27,6 +27,7 @@ const SpecializationPage: React.FC = () => {
   const { 
     selectedSports, 
     selectedPosition, 
+    selectedSubcategory,
     selectedSpecializations,
     setSpecialization,
     setSports,
@@ -81,28 +82,18 @@ const SpecializationPage: React.FC = () => {
     // Load specializations for the selected sport and position
     const specializationCategories = getSpecializationsBySportAndPosition(
       currentSport.id, 
-      currentPosition.id
+      currentPosition.id,
+      selectedSubcategory?.id
     );
 
     setCategories(specializationCategories);
     setPageLoading(false);
 
-    // If no specializations available, save profile and go to login immediately
-    if (!hasSpecializations(currentSport.id, currentPosition.id)) {
-      if (!currentUser?.uid) {
-        setError('Please log in to save your profile.');
-        navigate('/login');
-        return;
-      }
-      
-      saveProfile(currentUser.uid).then(() => {
-        navigate('/athlete-onboarding/personal-details');
-      }).catch((error) => {
-        console.error('Failed to save profile:', error);
-        setError('Failed to save profile. Please try again.');
-      });
+    // If no specializations available, go directly to personal details
+    if (!hasSpecializations(currentSport.id, currentPosition.id, selectedSubcategory?.id)) {
+      navigate('/athlete-onboarding/personal-details');
     }
-  }, [selectedSports, selectedPosition, sportId, positionId, navigate, setSports, setPosition, saveProfile, setError, currentUser]);
+  }, [selectedSports, selectedPosition, selectedSubcategory, sportId, positionId, navigate, setSports, setPosition, saveProfile, setError, currentUser]);
 
   const handleSpecializationSelect = (categoryId: string, optionId: string) => {
     setHasUserInteracted(true);
@@ -148,21 +139,14 @@ const SpecializationPage: React.FC = () => {
 
   const handleContinue = async () => {
     setHasUserInteracted(true);
-    
-    // Check if user is authenticated
-    if (!currentUser?.uid) {
-      setError('Please log in to save your profile.');
-      navigate('/login');
-      return;
-    }
-    
+
     // Validate required specializations
     const requiredCategories = categories
       .filter(cat => cat.required)
       .map(cat => cat.id);
-    
+
     const specializationValidation = validateSpecializationSelection(
-      selectedSpecializations, 
+      selectedSpecializations,
       requiredCategories
     );
 
@@ -172,56 +156,24 @@ const SpecializationPage: React.FC = () => {
       return;
     }
 
-    // Validate complete profile
-    const currentSport = selectedSports.find(s => s.id === sportId) || selectedSports[0];
-    const profileValidation = validateCompleteProfile(
-      currentSport,
-      selectedPosition,
-      selectedSpecializations,
-      requiredCategories
-    );
+    // Clear validation errors and navigate to personal details
+    setValidationErrors([]);
+    setError(null);
 
-    if (!profileValidation.isValid) {
-      setValidationErrors(profileValidation.errors);
-      setError(formatValidationErrors(profileValidation.errors));
-      return;
-    }
-
-    try {
-      // Clear validation errors before saving
-      setValidationErrors([]);
-      setError(null);
-      
-      // Save the athlete profile
-      await saveProfile(currentUser.uid);
-      
-      // Navigate to personal details form after completing sport onboarding
-      navigate('/athlete-onboarding/personal-details');
-    } catch (error) {
-      // Error is already handled in the store, but add validation context
-      console.error('Failed to complete onboarding:', error);
-      const errorMessage = error instanceof Error ? error.message : ValidationMessages.SAVE_ERROR;
-      setValidationErrors([errorMessage]);
-    }
+    // Navigate to personal details form (no auth required at this step)
+    navigate('/athlete-onboarding/personal-details');
   };
 
   const handleSkip = async () => {
     setHasUserInteracted(true);
-    
-    // Check if user is authenticated
-    if (!currentUser?.uid) {
-      setError('Please log in to save your profile.');
-      navigate('/login');
-      return;
-    }
-    
+
     // Validate that required specializations are completed
     const requiredCategories = categories
       .filter(cat => cat.required)
       .map(cat => cat.id);
-    
+
     const specializationValidation = validateSpecializationSelection(
-      selectedSpecializations, 
+      selectedSpecializations,
       requiredCategories
     );
 
@@ -231,22 +183,12 @@ const SpecializationPage: React.FC = () => {
       return;
     }
 
-    try {
-      // Clear validation errors before saving
-      setValidationErrors([]);
-      setError(null);
-      
-      // Save the athlete profile
-      await saveProfile(currentUser.uid);
-      
-      // Navigate to personal details form after completing sport onboarding
-      navigate('/athlete-onboarding/personal-details');
-    } catch (error) {
-      // Error is already handled in the store
-      console.error('Failed to complete onboarding:', error);
-      const errorMessage = error instanceof Error ? error.message : ValidationMessages.SAVE_ERROR;
-      setValidationErrors([errorMessage]);
-    }
+    // Clear validation errors and navigate to personal details
+    setValidationErrors([]);
+    setError(null);
+
+    // Navigate to personal details form (no auth required at this step)
+    navigate('/athlete-onboarding/personal-details');
   };
 
   const isOptionSelected = (categoryId: string, optionId: string): boolean => {
@@ -321,25 +263,38 @@ const SpecializationPage: React.FC = () => {
               </div>
 
               <div className="specialization-options">
-                {category.options.map((option) => (
-                  <button
-                    key={option.id}
-                    className={`specialization-option ${
-                      isOptionSelected(category.id, option.id) ? 'selected' : ''
-                    } ${justSelected === `${category.id}-${option.id}` ? 'success-state' : ''}`}
-                    onClick={() => handleSpecializationSelect(category.id, option.id)}
-                  >
-                    <div className="option-content">
-                      <div className="option-header">
-                        <h4>{option.name}</h4>
-                        {isOptionSelected(category.id, option.id) && (
-                          <Check className="check-icon" size={20} />
-                        )}
+                {category.type === 'input' ? (
+                  <div className="specialization-input-container">
+                    <input
+                      type="number"
+                      placeholder={category.placeholder}
+                      value={selectedSpecializations[category.id] || ''}
+                      onChange={(e) => handleSpecializationSelect(category.id, e.target.value)}
+                      className="specialization-input"
+                    />
+                    {category.unit && <span className="input-unit">{category.unit}</span>}
+                  </div>
+                ) : (
+                  (category.options || []).map((option) => (
+                    <button
+                      key={option.id}
+                      className={`specialization-option ${
+                        isOptionSelected(category.id, option.id) ? 'selected' : ''
+                      } ${justSelected === `${category.id}-${option.id}` ? 'success-state' : ''}`}
+                      onClick={() => handleSpecializationSelect(category.id, option.id)}
+                    >
+                      <div className="option-content">
+                        <div className="option-header">
+                          <h4>{option.name}</h4>
+                          {isOptionSelected(category.id, option.id) && (
+                            <Check className="check-icon" size={20} />
+                          )}
+                        </div>
+                        <p>{option.description}</p>
                       </div>
-                      <p>{option.description}</p>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  ))
+                )}
               </div>
             </div>
           ))}

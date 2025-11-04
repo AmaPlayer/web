@@ -16,7 +16,7 @@ import {
   DocumentSnapshot,
   Timestamp
 } from 'firebase/firestore';
-import { Post, CreatePostData, Like, Comment as PostComment } from '../../types/models/post';
+import { Post, CreatePostData, Like, Comment as PostComment, MediaType } from '../../types/models/post';
 import { 
   sanitizeEngagementData, 
   hasUserLikedPost, 
@@ -118,9 +118,27 @@ class PostsService extends BaseService<Post> {
    * Enhance post data with accurate engagement metrics using validation utilities
    */
   private enhancePostWithEngagement(postData: any, currentUserId?: string): Post {
+    // Debug: Log raw post data comments
+    if (process.env.NODE_ENV === 'development' && postData.comments?.length > 0) {
+      console.log('📥 Raw post data comments:', postData.id, postData.comments.map((c: any) => ({
+        id: c.id,
+        likes: c.likes,
+        likesCount: c.likesCount
+      })));
+    }
+
     // First sanitize and validate the engagement data
     const sanitizedPost = sanitizeEngagementData(postData);
-    
+
+    // Debug: Log sanitized comments
+    if (process.env.NODE_ENV === 'development' && sanitizedPost.comments?.length > 0) {
+      console.log('✨ Sanitized comments:', sanitizedPost.id, sanitizedPost.comments.map((c: any) => ({
+        id: c.id,
+        likes: c.likes,
+        likesCount: c.likesCount
+      })));
+    }
+
     // Add user interaction states
     const isLiked = currentUserId ? hasUserLikedPost(sanitizedPost.likes, currentUserId) : false;
     const hasShared = currentUserId ? hasUserSharedPost(sanitizedPost.shares, currentUserId) : false;
@@ -205,24 +223,76 @@ class PostsService extends BaseService<Post> {
   }
 
   /**
+   * Extract video duration from video file
+   */
+  private async extractVideoDuration(file: File): Promise<number> {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        const duration = Math.round(video.duration);
+        console.log('📹 Video duration extracted:', duration, 'seconds');
+        resolve(duration);
+      };
+
+      video.onerror = () => {
+        console.warn('⚠️ Could not extract video duration, defaulting to 0');
+        resolve(0);
+      };
+
+      video.src = URL.createObjectURL(file);
+    });
+  }
+
+  /**
    * Create post with optional media upload
    */
   async createPost(postData: CreatePostData, mediaFile: File | null = null): Promise<Post> {
     try {
       let mediaUrl: string | null = null;
       let mediaMetadata: MediaUploadResult['metadata'] | null = null;
+      let type: 'image' | 'video' | 'text' = 'text';
+      let duration = 0;
 
       // Upload media if provided
       if (mediaFile) {
         const uploadResult = await this.uploadMedia(mediaFile);
         mediaUrl = uploadResult.url;
         mediaMetadata = uploadResult.metadata;
+
+        // Detect media type
+        if (mediaFile.type.startsWith('video/')) {
+          type = 'video';
+          // Extract video duration
+          duration = await this.extractVideoDuration(mediaFile);
+          console.log('🎬 Video post detected:', { duration, type: mediaFile.type });
+        } else if (mediaFile.type.startsWith('image/')) {
+          type = 'image';
+          console.log('🖼️ Image post detected:', { type: mediaFile.type });
+        }
+      }
+
+      // Override with user-provided type/duration if available
+      if (postData.type) {
+        type = postData.type;
+      }
+      if (postData.duration !== undefined) {
+        duration = postData.duration;
       }
 
       const postDoc = {
         ...postData,
         mediaUrl,
         mediaMetadata,
+        // Add video-specific fields for moments feed compatibility
+        videoUrl: type === 'video' ? mediaUrl : null,
+        type,
+        duration,
+        videoDuration: duration,
+        mediaUrls: mediaUrl ? [mediaUrl] : [],
+        mediaType: type === 'video' ? 'video' as MediaType : (type === 'image' ? 'image' as MediaType : undefined),
         likesCount: 0,
         commentsCount: 0,
         sharesCount: 0,
@@ -234,7 +304,7 @@ class PostsService extends BaseService<Post> {
       };
 
       const result = await this.create(postDoc as Omit<Post, 'id'>);
-      console.log('✅ Post created successfully:', result.id);
+      console.log('✅ Post created successfully:', result.id, { type, duration, hasVideo: !!postDoc.videoUrl });
       return result;
     } catch (error) {
       console.error('❌ Error creating post:', error);
@@ -427,17 +497,166 @@ class PostsService extends BaseService<Post> {
       };
 
       const updatedComments = [...((post.comments as unknown[]) || []), comment];
-      const updatedCommentsCount = (post.commentsCount || 0) + 1;
 
+      // Ensure engagement metadata is accurate
       await this.update(postId, {
-        comments: updatedComments,
-        commentsCount: updatedCommentsCount,
+        comments: updatedComments as unknown,
+        commentsCount: updatedComments.length,
+        likesCount: (post.likes as unknown[] || []).length,
       } as Partial<Post>);
 
       console.log('💬 Comment added to post:', postId);
       return comment;
     } catch (error) {
       console.error('❌ Error adding comment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete comment from post
+   */
+  async deleteComment(postId: string, commentIndex: number, userId: string): Promise<void> {
+    try {
+      const post = await this.getById(postId);
+      if (!post) {
+        throw new Error('Post not found');
+      }
+
+      const comments = (post.comments as unknown[]) || [];
+
+      if (commentIndex < 0 || commentIndex >= comments.length) {
+        throw new Error('Comment not found');
+      }
+
+      const comment = comments[commentIndex] as PostComment;
+
+      // Check if user owns the comment or owns the post
+      if (comment.userId !== userId && post.userId !== userId) {
+        throw new Error('Unauthorized to delete this comment');
+      }
+
+      // Remove comment from array
+      const updatedComments = comments.filter((_, index) => index !== commentIndex);
+
+      // Ensure engagement metadata is accurate
+      await this.update(postId, {
+        comments: updatedComments as unknown,
+        commentsCount: updatedComments.length,
+        likesCount: (post.likes as unknown[] || []).length,
+      } as Partial<Post>);
+
+      console.log('🗑️ Comment deleted from post:', postId);
+    } catch (error) {
+      console.error('❌ Error deleting comment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Edit comment in post
+   */
+  async editComment(postId: string, commentIndex: number, userId: string, newText: string): Promise<void> {
+    try {
+      const post = await this.getById(postId);
+      if (!post) {
+        throw new Error('Post not found');
+      }
+
+      const comments = (post.comments as unknown[]) || [];
+
+      if (commentIndex < 0 || commentIndex >= comments.length) {
+        throw new Error('Comment not found');
+      }
+
+      const comment = comments[commentIndex] as PostComment;
+
+      // Check if user owns the comment
+      if (comment.userId !== userId) {
+        throw new Error('Unauthorized to edit this comment');
+      }
+
+      // Update comment text
+      const updatedComments = comments.map((c: any, index: number) => {
+        if (index === commentIndex) {
+          return {
+            ...(c as object),
+            text: newText.trim(),
+            edited: true,
+            editedAt: new Date().toISOString()
+          };
+        }
+        return c;
+      });
+
+      // Ensure engagement metadata is accurate
+      await this.update(postId, {
+        comments: updatedComments as unknown,
+        commentsCount: updatedComments.length,
+        likesCount: (post.likes as unknown[] || []).length,
+      } as Partial<Post>);
+
+      console.log('✏️ Comment edited in post:', postId);
+    } catch (error) {
+      console.error('❌ Error editing comment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Toggle like on a comment
+   */
+  async toggleCommentLike(postId: string, commentIndex: number, userId: string): Promise<void> {
+    try {
+      const post = await this.getById(postId);
+      if (!post) {
+        throw new Error('Post not found');
+      }
+
+      const comments = (post.comments as unknown[]) || [];
+
+      if (commentIndex < 0 || commentIndex >= comments.length) {
+        throw new Error('Comment not found');
+      }
+
+      const comment = comments[commentIndex] as any;
+      const likes = (comment.likes as string[]) || [];
+      const hasLiked = likes.includes(userId);
+
+      // Toggle like
+      const updatedComments = comments.map((c: any, index: number) => {
+        if (index === commentIndex) {
+          const newLikes = hasLiked
+            ? likes.filter((id: string) => id !== userId)
+            : [...likes, userId];
+
+          return {
+            ...(c as object),
+            likes: newLikes,
+            likesCount: newLikes.length
+          };
+        }
+        return c;
+      });
+
+      // Ensure engagement metadata is accurate
+      const updatePayload = {
+        comments: updatedComments as unknown,
+        commentsCount: updatedComments.length,
+        likesCount: (post.likes as unknown[] || []).length,
+      };
+
+      // Debug: Log what we're saving
+      console.log(`👍 Comment like toggled in post: ${postId}`, {
+        commentIndex,
+        userId,
+        updatedComment: updatedComments[commentIndex],
+        fullPayload: updatePayload
+      });
+
+      await this.update(postId, updatePayload as Partial<Post>);
+    } catch (error) {
+      console.error('❌ Error toggling comment like:', error);
       throw error;
     }
   }

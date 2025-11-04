@@ -62,7 +62,10 @@ export interface AuthContextValue {
   
   /** Change the current user's password */
   changePassword: (currentPassword: string, newPassword: string, isSocialUser?: boolean) => Promise<PasswordChangeResult>;
-  
+
+  /** Send password reset email to the user */
+  resetPassword: (email: string) => Promise<void>;
+
   /** Get user-friendly error message for authentication errors */
   getAuthErrorMessage: (error: unknown) => string;
   

@@ -27,6 +27,8 @@ interface PostsFeedProps {
   onDeletePost?: (postId: string, post: PostType) => void;
   onCommentSubmit?: (postId: string, commentText: string) => void;
   onDeleteComment?: (postId: string, index: number) => void;
+  onEditComment?: (postId: string, index: number, newText: string) => void;
+  onLikeComment?: (postId: string, index: number) => void;
   onUserClick?: (userId: string) => void;
 }
 
@@ -66,6 +68,8 @@ const PostsFeed: React.FC<PostsFeedProps> = memo(({
   onDeletePost,
   onCommentSubmit,
   onDeleteComment,
+  onEditComment,
+  onLikeComment,
   onUserClick
 }) => {
   // Use PostInteractionsStore for UI state
@@ -263,6 +267,8 @@ const PostsFeed: React.FC<PostsFeedProps> = memo(({
             setCommentText(postId, ''); // Clear comment after submission
           }}
           onDeleteComment={onDeleteComment!}
+          onEditComment={onEditComment || (() => {})}
+          onLikeComment={onLikeComment || (() => {})}
           onSetNewComment={setCommentText}
           onSetEditText={setEditText}
           onUserClick={onUserClick}

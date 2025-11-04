@@ -38,6 +38,8 @@ interface PostProps {
   onDeletePost: (postId: string, post: PostType) => void;
   onCommentSubmit: (postId: string, commentText: string) => void;
   onDeleteComment: (postId: string, index: number) => void;
+  onEditComment: (postId: string, index: number, newText: string) => void;
+  onLikeComment: (postId: string, index: number) => void;
   onSetNewComment: (postId: string, text: string) => void;
   onSetEditText: (text: string) => void;
   onNavigateToPost?: (postId: string) => void;
@@ -70,6 +72,8 @@ const Post: React.FC<PostProps> = ({
   onDeletePost,
   onCommentSubmit,
   onDeleteComment,
+  onEditComment,
+  onLikeComment,
   onSetNewComment,
   onSetEditText,
   onNavigateToPost,
@@ -455,6 +459,8 @@ const Post: React.FC<PostProps> = ({
               comments={post.comments || []}
               currentUserId={currentUser?.uid}
               onDelete={(index) => onDeleteComment(post.id, index)}
+              onEdit={(index, commentId, newText) => onEditComment(post.id, index, newText)}
+              onLike={(index) => onLikeComment(post.id, index)}
               context={`post-${post.id}`}
               emptyMessage="No comments yet. Be the first to comment!"
             />

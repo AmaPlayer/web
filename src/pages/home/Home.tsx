@@ -215,11 +215,44 @@ function Home(): React.JSX.Element {
   const handleDeleteComment = useCallback(async (postId: string, commentIndex: number) => {
     const firebaseUserValue = firebaseUserRef.current;
     const postsValue = postsRef.current;
-    
+
     if (!firebaseUserValue) return;
-    
+
     await handleCommentDeletion(postId, commentIndex, firebaseUserValue, postsValue, deleteComment);
   }, [deleteComment]);
+
+  const handleEditComment = useCallback(async (postId: string, commentIndex: number, newText: string) => {
+    const firebaseUserValue = firebaseUserRef.current;
+
+    if (!firebaseUserValue || !newText.trim()) return;
+
+    try {
+      const PostsService = (await import('../../services/api/postsService')).default;
+      await PostsService.editComment(postId, commentIndex, firebaseUserValue.uid, newText.trim());
+
+      // Refresh posts to show updated comment
+      await refreshPosts();
+    } catch (error) {
+      console.error('Failed to edit comment:', error);
+      alert('Failed to edit comment. Please try again.');
+    }
+  }, [refreshPosts]);
+
+  const handleLikeComment = useCallback(async (postId: string, commentIndex: number) => {
+    const firebaseUserValue = firebaseUserRef.current;
+
+    if (!firebaseUserValue) return;
+
+    try {
+      const PostsService = (await import('../../services/api/postsService')).default;
+      await PostsService.toggleCommentLike(postId, commentIndex, firebaseUserValue.uid);
+
+      // Refresh posts to show updated like count
+      await refreshPosts();
+    } catch (error) {
+      console.error('Failed to like comment:', error);
+    }
+  }, [refreshPosts]);
 
   const handleEnableNotifications = useCallback(async () => {
     const success = await enableNotifications();
@@ -297,10 +330,12 @@ function Home(): React.JSX.Element {
     onDeletePost: handleDeletePost,
     onCommentSubmit: handleCommentSubmit,
     onDeleteComment: handleDeleteComment,
+    onEditComment: handleEditComment,
+    onLikeComment: handleLikeComment,
     onUserClick: handleUserClick
   }), [posts, loading, hasMore, postsError, firebaseUser, isGuestUser,
     handleLoadMore, refreshPosts, handleLike, handleEditPost, handleSharePost,
-    handleDeletePost, handleCommentSubmit, handleDeleteComment, handleUserClick]);
+    handleDeletePost, handleCommentSubmit, handleDeleteComment, handleEditComment, handleLikeComment, handleUserClick]);
 
   return (
     <ErrorBoundary name="Home">

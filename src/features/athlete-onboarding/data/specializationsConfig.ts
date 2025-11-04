@@ -5,12 +5,16 @@ export interface SpecializationCategory {
   name: string;
   description: string;
   required: boolean;
-  options: Specialization[];
+  options?: Specialization[];
+  type?: 'select' | 'input';
+  placeholder?: string;
+  unit?: string;
 }
 
 export interface SportPositionSpecializations {
   sportId: string;
   positionId: string;
+  subcategoryId?: string;
   categories: SpecializationCategory[];
 }
 
@@ -45,6 +49,7 @@ export const SPECIALIZATIONS_CONFIG: SportPositionSpecializations[] = [
   {
     sportId: 'cricket',
     positionId: 'bowling',
+    subcategoryId: 'spin',
     categories: [
       {
         id: 'bowling-style',
@@ -53,21 +58,15 @@ export const SPECIALIZATIONS_CONFIG: SportPositionSpecializations[] = [
         required: true,
         options: [
           {
-            id: 'fast-bowling',
-            name: 'Fast Bowling',
-            description: 'High-speed bowling with pace',
+            id: 'finger-spin',
+            name: 'Finger spin',
+            description: 'Off-spin and orthodox bowling using fingers',
             category: 'bowling-style'
           },
           {
-            id: 'spin-bowling',
-            name: 'Spin Bowling',
-            description: 'Bowling with spin and variation',
-            category: 'bowling-style'
-          },
-          {
-            id: 'medium-pace',
-            name: 'Medium Pace',
-            description: 'Moderate pace with swing',
+            id: 'wrist-spin',
+            name: 'Wrist spin',
+            description: 'Leg-spin and googly bowling using wrist',
             category: 'bowling-style'
           }
         ]
@@ -91,6 +90,62 @@ export const SPECIALIZATIONS_CONFIG: SportPositionSpecializations[] = [
             category: 'bowling-arm'
           }
         ]
+      }
+    ]
+  },
+  {
+    sportId: 'cricket',
+    positionId: 'bowling',
+    subcategoryId: 'pace',
+    categories: [
+      {
+        id: 'bowling-pace',
+        name: 'Bowling Pace',
+        description: 'What type of pace bowling do you specialize in?',
+        required: true,
+        options: [
+          {
+            id: 'fast-pace',
+            name: 'Fast Pace',
+            description: 'High speed pace bowling',
+            category: 'bowling-pace'
+          },
+          {
+            id: 'medium-pace',
+            name: 'Medium Pace',
+            description: 'Medium speed pace bowling',
+            category: 'bowling-pace'
+          }
+        ]
+      },
+      {
+        id: 'bowling-arm',
+        name: 'Bowling Arm',
+        description: 'Which arm do you bowl with?',
+        required: true,
+        options: [
+          {
+            id: 'right-arm',
+            name: 'Right Arm',
+            description: 'Bowl with right arm',
+            category: 'bowling-arm'
+          },
+          {
+            id: 'left-arm',
+            name: 'Left Arm',
+            description: 'Bowl with left arm',
+            category: 'bowling-arm'
+          }
+        ]
+      },
+      {
+        id: 'bowling-speed',
+        name: 'Bowling Speed',
+        description: 'What is your approximate bowling speed?',
+        required: false,
+        type: 'input',
+        placeholder: 'e.g., 140',
+        unit: 'km/hr'
       }
     ]
   },
@@ -223,65 +278,6 @@ export const SPECIALIZATIONS_CONFIG: SportPositionSpecializations[] = [
       }
     ]
   },
-  // Basketball specializations
-  {
-    sportId: 'basketball',
-    positionId: 'point-guard',
-    categories: [
-      {
-        id: 'playing-style',
-        name: 'Playing Style',
-        description: 'What type of point guard are you?',
-        required: false,
-        options: [
-          {
-            id: 'floor-general',
-            name: 'Floor General',
-            description: 'Focus on assists and team coordination',
-            category: 'playing-style'
-          },
-          {
-            id: 'scoring-guard',
-            name: 'Scoring Guard',
-            description: 'Aggressive scorer who can also distribute',
-            category: 'playing-style'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    sportId: 'basketball',
-    positionId: 'shooting-guard',
-    categories: [
-      {
-        id: 'shooting-preference',
-        name: 'Shooting Preference',
-        description: 'What type of shots do you prefer?',
-        required: false,
-        options: [
-          {
-            id: 'three-point-specialist',
-            name: 'Three-Point Specialist',
-            description: 'Excel at long-range shooting',
-            category: 'shooting-preference'
-          },
-          {
-            id: 'mid-range-scorer',
-            name: 'Mid-Range Scorer',
-            description: 'Strong from mid-range distances',
-            category: 'shooting-preference'
-          },
-          {
-            id: 'slasher',
-            name: 'Slasher',
-            description: 'Drive to the basket aggressively',
-            category: 'shooting-preference'
-          }
-        ]
-      }
-    ]
-  },
   // Tennis specializations
   {
     sportId: 'tennis',
@@ -360,36 +356,361 @@ export const SPECIALIZATIONS_CONFIG: SportPositionSpecializations[] = [
         ]
       }
     ]
+  },
+  // Kabaddi specializations
+  {
+    sportId: 'kabaddi',
+    positionId: 'raider',
+    categories: [
+      {
+        id: 'playing-side',
+        name: 'Playing Side',
+        description: 'Which is your strong playing side?',
+        required: true,
+        options: [
+          {
+            id: 'left',
+            name: 'Left',
+            description: 'Stronger on left side',
+            category: 'playing-side'
+          },
+          {
+            id: 'right',
+            name: 'Right',
+            description: 'Stronger on right side',
+            category: 'playing-side'
+          }
+        ]
+      },
+      {
+        id: 'match-fitness',
+        name: 'Match Fitness',
+        description: 'Rate your match fitness level (0-10)',
+        required: false,
+        type: 'input',
+        placeholder: 'e.g., 8',
+        unit: '/10'
+      },
+      {
+        id: 'years-experience',
+        name: 'Years of Experience',
+        description: 'How many years have you been playing Kabaddi?',
+        required: false,
+        type: 'input',
+        placeholder: 'e.g., 5',
+        unit: 'years'
+      },
+      {
+        id: 'kabaddi-format',
+        name: 'Preferred Kabaddi Format',
+        description: 'Which format do you prefer?',
+        required: false,
+        options: [
+          {
+            id: 'circle',
+            name: 'Circle',
+            description: 'Traditional circle style Kabaddi',
+            category: 'kabaddi-format'
+          },
+          {
+            id: 'standard',
+            name: 'Standard',
+            description: 'Standard mat Kabaddi',
+            category: 'kabaddi-format'
+          }
+        ]
+      },
+      {
+        id: 'level-played',
+        name: 'Level Played',
+        description: 'What level have you competed at?',
+        required: false,
+        options: [
+          {
+            id: 'local',
+            name: 'Local level',
+            description: 'Local tournaments and competitions',
+            category: 'level-played'
+          },
+          {
+            id: 'district',
+            name: 'District level',
+            description: 'District level competitions',
+            category: 'level-played'
+          },
+          {
+            id: 'state',
+            name: 'State level',
+            description: 'State level championships',
+            category: 'level-played'
+          },
+          {
+            id: 'national',
+            name: 'National',
+            description: 'National level competitions',
+            category: 'level-played'
+          },
+          {
+            id: 'international',
+            name: 'International',
+            description: 'International level competitions',
+            category: 'level-played'
+          }
+        ]
+      }
+    ]
+  },
+  {
+    sportId: 'kabaddi',
+    positionId: 'defender',
+    categories: [
+      {
+        id: 'playing-side',
+        name: 'Playing Side',
+        description: 'Which is your strong playing side?',
+        required: true,
+        options: [
+          {
+            id: 'left',
+            name: 'Left',
+            description: 'Stronger on left side',
+            category: 'playing-side'
+          },
+          {
+            id: 'right',
+            name: 'Right',
+            description: 'Stronger on right side',
+            category: 'playing-side'
+          }
+        ]
+      },
+      {
+        id: 'match-fitness',
+        name: 'Match Fitness',
+        description: 'Rate your match fitness level (0-10)',
+        required: false,
+        type: 'input',
+        placeholder: 'e.g., 8',
+        unit: '/10'
+      },
+      {
+        id: 'years-experience',
+        name: 'Years of Experience',
+        description: 'How many years have you been playing Kabaddi?',
+        required: false,
+        type: 'input',
+        placeholder: 'e.g., 5',
+        unit: 'years'
+      },
+      {
+        id: 'kabaddi-format',
+        name: 'Preferred Kabaddi Format',
+        description: 'Which format do you prefer?',
+        required: false,
+        options: [
+          {
+            id: 'circle',
+            name: 'Circle',
+            description: 'Traditional circle style Kabaddi',
+            category: 'kabaddi-format'
+          },
+          {
+            id: 'standard',
+            name: 'Standard',
+            description: 'Standard mat Kabaddi',
+            category: 'kabaddi-format'
+          }
+        ]
+      },
+      {
+        id: 'level-played',
+        name: 'Level Played',
+        description: 'What level have you competed at?',
+        required: false,
+        options: [
+          {
+            id: 'local',
+            name: 'Local level',
+            description: 'Local tournaments and competitions',
+            category: 'level-played'
+          },
+          {
+            id: 'district',
+            name: 'District level',
+            description: 'District level competitions',
+            category: 'level-played'
+          },
+          {
+            id: 'state',
+            name: 'State level',
+            description: 'State level championships',
+            category: 'level-played'
+          },
+          {
+            id: 'national',
+            name: 'National',
+            description: 'National level competitions',
+            category: 'level-played'
+          },
+          {
+            id: 'international',
+            name: 'International',
+            description: 'International level competitions',
+            category: 'level-played'
+          }
+        ]
+      }
+    ]
+  },
+  {
+    sportId: 'kabaddi',
+    positionId: 'all-rounder',
+    categories: [
+      {
+        id: 'playing-side',
+        name: 'Playing Side',
+        description: 'Which is your strong playing side?',
+        required: true,
+        options: [
+          {
+            id: 'left',
+            name: 'Left',
+            description: 'Stronger on left side',
+            category: 'playing-side'
+          },
+          {
+            id: 'right',
+            name: 'Right',
+            description: 'Stronger on right side',
+            category: 'playing-side'
+          }
+        ]
+      },
+      {
+        id: 'match-fitness',
+        name: 'Match Fitness',
+        description: 'Rate your match fitness level (0-10)',
+        required: false,
+        type: 'input',
+        placeholder: 'e.g., 8',
+        unit: '/10'
+      },
+      {
+        id: 'years-experience',
+        name: 'Years of Experience',
+        description: 'How many years have you been playing Kabaddi?',
+        required: false,
+        type: 'input',
+        placeholder: 'e.g., 5',
+        unit: 'years'
+      },
+      {
+        id: 'kabaddi-format',
+        name: 'Preferred Kabaddi Format',
+        description: 'Which format do you prefer?',
+        required: false,
+        options: [
+          {
+            id: 'circle',
+            name: 'Circle',
+            description: 'Traditional circle style Kabaddi',
+            category: 'kabaddi-format'
+          },
+          {
+            id: 'standard',
+            name: 'Standard',
+            description: 'Standard mat Kabaddi',
+            category: 'kabaddi-format'
+          }
+        ]
+      },
+      {
+        id: 'level-played',
+        name: 'Level Played',
+        description: 'What level have you competed at?',
+        required: false,
+        options: [
+          {
+            id: 'local',
+            name: 'Local level',
+            description: 'Local tournaments and competitions',
+            category: 'level-played'
+          },
+          {
+            id: 'district',
+            name: 'District level',
+            description: 'District level competitions',
+            category: 'level-played'
+          },
+          {
+            id: 'state',
+            name: 'State level',
+            description: 'State level championships',
+            category: 'level-played'
+          },
+          {
+            id: 'national',
+            name: 'National',
+            description: 'National level competitions',
+            category: 'level-played'
+          },
+          {
+            id: 'international',
+            name: 'International',
+            description: 'International level competitions',
+            category: 'level-played'
+          }
+        ]
+      }
+    ]
   }
 ];
 
 export const getSpecializationsBySportAndPosition = (
-  sportId: string, 
-  positionId: string
+  sportId: string,
+  positionId: string,
+  subcategoryId?: string | null
 ): SpecializationCategory[] => {
-  const config = SPECIALIZATIONS_CONFIG.find(
-    sp => sp.sportId === sportId && sp.positionId === positionId
+  // First, try to find a config that matches sport, position, and subcategory
+  let config = SPECIALIZATIONS_CONFIG.find(
+    (sp) =>
+      sp.sportId === sportId &&
+      sp.positionId === positionId &&
+      sp.subcategoryId === subcategoryId
   );
+
+  // If no specific subcategory config is found, fall back to a config that only matches sport and position
+  if (!config) {
+    config = SPECIALIZATIONS_CONFIG.find(
+      (sp) =>
+        sp.sportId === sportId &&
+        sp.positionId === positionId &&
+        !sp.subcategoryId
+    );
+  }
+
   return config ? config.categories : [];
 };
 
-export const hasSpecializations = (sportId: string, positionId: string): boolean => {
-  const specializations = getSpecializationsBySportAndPosition(sportId, positionId);
+export const hasSpecializations = (sportId: string, positionId: string, subcategoryId?: string | null): boolean => {
+  const specializations = getSpecializationsBySportAndPosition(sportId, positionId, subcategoryId);
   return specializations.length > 0;
 };
 
 export const getRequiredSpecializations = (
   sportId: string, 
-  positionId: string
+  positionId: string,
+  subcategoryId?: string | null
 ): SpecializationCategory[] => {
-  const specializations = getSpecializationsBySportAndPosition(sportId, positionId);
+  const specializations = getSpecializationsBySportAndPosition(sportId, positionId, subcategoryId);
   return specializations.filter(category => category.required);
 };
 
 export const getOptionalSpecializations = (
   sportId: string, 
-  positionId: string
+  positionId: string,
+  subcategoryId?: string | null
 ): SpecializationCategory[] => {
-  const specializations = getSpecializationsBySportAndPosition(sportId, positionId);
+  const specializations = getSpecializationsBySportAndPosition(sportId, positionId, subcategoryId);
   return specializations.filter(category => !category.required);
 };

@@ -4,16 +4,16 @@ import notificationService from '../services/notificationService';
 import errorHandler from '../utils/error/errorHandler';
 import authErrorHandler from '../utils/error/authErrorHandler';
 import { runFirebaseDiagnostics } from '../utils/diagnostics/firebaseDiagnostic';
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   signInAnonymously,
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
   GoogleAuthProvider,
   OAuthProvider,
-  signOut, 
+  signOut,
   onAuthStateChanged,
   updateProfile,
   setPersistence,
@@ -22,6 +22,7 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider,
   updatePassword,
+  sendPasswordResetEmail,
   User,
   UserCredential
 } from 'firebase/auth';
@@ -549,6 +550,20 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     }
   }
 
+  async function resetPassword(email: string): Promise<void> {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      authErrorHandler.logAuthError(
+        new Error('Password reset email sent successfully'),
+        'AuthContext-ResetPassword',
+        { email }
+      );
+    } catch (error: unknown) {
+      authErrorHandler.logAuthError(error, 'AuthContext-ResetPassword', { email });
+      throw error;
+    }
+  }
+
   const value: AuthContextValue = {
     currentUser,
     isGuest,
@@ -561,6 +576,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     updateUserProfile,
     refreshAuth,
     changePassword,
+    resetPassword,
     getAuthErrorMessage,
     validateAuthState,
     refreshAuthToken

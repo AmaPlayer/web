@@ -7,28 +7,46 @@ export interface SportPositions {
 
 const ATHLETICS_POSITIONS = [
   {
-    id: 'track-event',
-    name: 'Track Event',
-    description: 'Running events on the track',
+    id: 'sprint-races',
+    name: 'Sprint Races(short distance)',
+    description: 'Short distance running events',
     icon: '🏃'
   },
   {
-    id: 'hurdles-games',
-    name: 'Hurdles Games',
-    description: 'Hurdle racing events',
+    id: 'middle-distance-races',
+    name: 'Middle-Distance Races',
+    description: 'Races over middle distances',
+    icon: '🏃'
+  },
+  {
+    id: 'long-distance-races',
+    name: 'Long-Distance Races',
+    description: 'Races over long distances',
+    icon: '🏃‍♀️'
+  },
+  {
+    id: 'hurdle-races',
+    name: 'Hurdle Races',
+    description: 'Races with hurdles',
     icon: '🏃‍♂️'
   },
   {
-    id: 'field-event',
-    name: 'Field Event',
-    description: 'Throwing and jumping events',
-    icon: '🥇'
+    id: 'steeplechase',
+    name: 'Steeplechase',
+    description: 'Distance race with obstacles',
+    icon: '🚧'
   },
   {
-    id: 'road-event',
-    name: 'Road Event',
-    description: 'Marathon and road racing',
-    icon: '🏃‍♀️'
+    id: 'relay-races',
+    name: 'Relay Races',
+    description: '4 Runner Team',
+    icon: '👨‍👨‍👧‍👦'
+  },
+  {
+    id: 'mixed-relays',
+    name: 'Mixed Relays(newer format)',
+    description: 'Relay races with mixed-gender teams',
+    icon: '👨‍👩‍👧‍👦'
   }
 ];
 
@@ -47,8 +65,8 @@ const CRICKET_POSITIONS = [
   },
   {
     id: 'wicket-keeping',
-    name: 'Wicket Keeping',
-    description: 'Specialist wicket keeper behind the stumps',
+    name: 'All rounder/Wicket keeping',
+    description: 'All-rounder player or wicket keeper behind the stumps',
     icon: '🧤'
   }
 ];
@@ -82,33 +100,21 @@ const FOOTBALL_POSITIONS = [
 
 const BASKETBALL_POSITIONS = [
   {
-    id: 'point-guard',
-    name: 'Point Guard',
-    description: 'Primary ball handler and playmaker',
+    id: 'guard',
+    name: 'Guard',
+    description: 'Ball handler and perimeter player',
     icon: '🏀'
   },
   {
-    id: 'shooting-guard',
-    name: 'Shooting Guard',
-    description: 'Primary scorer from perimeter',
-    icon: '🏀'
-  },
-  {
-    id: 'small-forward',
-    name: 'Small Forward',
-    description: 'Versatile wing player',
-    icon: '🏀'
-  },
-  {
-    id: 'power-forward',
-    name: 'Power Forward',
-    description: 'Strong inside player',
-    icon: '🏀'
-  },
-  {
-    id: 'center',
+    id: 'centre',
     name: 'Center',
-    description: 'Tallest player, plays near the basket',
+    description: 'Plays near the basket, tallest player',
+    icon: '🏀'
+  },
+  {
+    id: 'forward',
+    name: 'Forward',
+    description: 'Versatile wing and frontcourt player',
     icon: '🏀'
   }
 ];
@@ -173,6 +179,69 @@ const SWIMMING_POSITIONS = [
   }
 ];
 
+const VOLLEYBALL_POSITIONS = [
+  {
+    id: 'setters',
+    name: 'Setters',
+    description: 'Sets the ball for attackers',
+    icon: '🏐'
+  },
+  {
+    id: 'hitters',
+    name: 'Hitters',
+    description: 'Offensive attackers who spike the ball',
+    icon: '🏐'
+  },
+  {
+    id: 'defensive-specialist',
+    name: 'Defensive specialist',
+    description: 'Specialist in defense and receiving',
+    icon: '🏐'
+  }
+];
+
+const FIELD_EVENTS_POSITIONS = [
+  {
+    id: 'jumping-event',
+    name: 'Jumping event',
+    description: 'Jumping events in athletics',
+    icon: '🤸'
+  },
+  {
+    id: 'throwing-event',
+    name: 'Throwing event',
+    description: 'Throwing events in athletics',
+    icon: ' discus'
+  },
+  {
+    id: 'combined-events',
+    name: 'Combined events',
+    description: 'Events combining multiple disciplines',
+    icon: '🏅'
+  }
+];
+
+const KABADDI_POSITIONS = [
+  {
+    id: 'raider',
+    name: 'Raider',
+    description: 'Specialist in raiding and scoring points',
+    icon: '🏃'
+  },
+  {
+    id: 'defender',
+    name: 'Defender',
+    description: 'Specialist in defending and tackling raiders',
+    icon: '🛡️'
+  },
+  {
+    id: 'all-rounder',
+    name: 'All rounder',
+    description: 'Skilled in both raiding and defending',
+    icon: '⚡'
+  }
+];
+
 export const POSITIONS_CONFIG: SportPositions[] = [
   {
     sportId: 'athletics',
@@ -197,6 +266,18 @@ export const POSITIONS_CONFIG: SportPositions[] = [
   {
     sportId: 'swimming',
     positions: SWIMMING_POSITIONS
+  },
+  {
+    sportId: 'volleyball',
+    positions: VOLLEYBALL_POSITIONS
+  },
+  {
+    sportId: 'field-events',
+    positions: FIELD_EVENTS_POSITIONS
+  },
+  {
+    sportId: 'kabaddi',
+    positions: KABADDI_POSITIONS
   }
 ];
 

@@ -33,6 +33,8 @@ export interface MomentVideo {
   hasShared?: boolean;
   // Flag to identify if this is a verified talent video
   isTalentVideo?: boolean;
+  // Flag to identify if this is a post video (from posts collection)
+  isPostVideo?: boolean;
 }
 
 /**
@@ -154,7 +156,9 @@ export interface CreateMomentData {
  */
 export interface UpdateMomentData {
   caption?: string;
+  videoUrl?: string;
   thumbnailUrl?: string;
+  metadata?: VideoMetadata;
   moderationStatus?: ModerationStatus;
   isActive?: boolean;
 }

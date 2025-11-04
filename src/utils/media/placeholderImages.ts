@@ -3,6 +3,18 @@
  * Replaces external via.placeholder.com with local SVG data URLs
  */
 
+// Unicode-safe base64 encoding function
+const unicodeSafeBtoa = (str: string): string => {
+  try {
+    // Convert Unicode string to UTF-8 bytes, then encode to base64
+    return btoa(unescape(encodeURIComponent(str)));
+  } catch (error) {
+    console.error('Error encoding string to base64:', error);
+    // Fallback: use URL encoding instead of base64
+    return encodeURIComponent(str);
+  }
+};
+
 // Generate SVG data URL for placeholder images
 const generatePlaceholderSVG = (width: number, height: number, text: string, bgColor = '#2d3748', textColor = '#00ff88') => {
   const svg = `
@@ -11,7 +23,7 @@ const generatePlaceholderSVG = (width: number, height: number, text: string, bgC
       <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="${Math.min(width, height) / 8}">${text}</text>
     </svg>
   `;
-  return `data:image/svg+xml;base64,${btoa(svg)}`;
+  return `data:image/svg+xml;base64,${unicodeSafeBtoa(svg)}`;
 };
 
 // Common placeholder images

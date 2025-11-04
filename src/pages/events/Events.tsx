@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Calendar, Trophy, MapPin, Clock, Users, ExternalLink, Star, Medal, Target } from 'lucide-react';
+import { Calendar, Trophy, MapPin, Clock, Users, ExternalLink, Star, Medal, Target, Eye, Share2 } from 'lucide-react';
 import NavigationBar from '../../components/layout/NavigationBar';
 import FooterNav from '../../components/layout/FooterNav';
 import eventsService from '../../services/api/eventsService';
 import { Event } from '../../types/models/event';
+import { LazyImage } from '../../components/events/LazyImage';
+import { CountdownTimer } from '../../components/events/CountdownTimer';
+import { StatusBadge } from '../../components/events/StatusBadge';
+import { ParticipationButton } from '../../components/events/ParticipationButton';
 import './Events.css';
 
 type TabType = 'upcoming' | 'live' | 'past';
@@ -280,28 +284,26 @@ export default function Events() {
               </div>
             ) : (
               getEventsByTab().map((event) => (
-              <div key={event.id} className={`event-card ${event.status}`}>
+              <div key={event.id} className={`event-card ${event.status} enhanced`}>
                 <div className="event-image">
-                  <img src={event.image || event.imageUrl} alt={event.title} />
-                  <div className="event-status-badge">
-                    {event.status === 'live' && (
-                      <div className="live-badge">
-                        <div className="live-dot-small"></div>
-                        LIVE
-                      </div>
+                  <LazyImage
+                    src={event.thumbnailUrl || event.image || event.imageUrl || ''}
+                    alt={event.title}
+                  />
+                  <div className="event-card-badges">
+                    {event.isTrending && (
+                      <StatusBadge type="trending" size="small" />
                     )}
-                    {event.status === 'upcoming' && (
-                      <div className="upcoming-badge">UPCOMING</div>
+                    {event.isOfficial && (
+                      <StatusBadge type="official" size="small" showIcon />
                     )}
-                    {event.status === 'completed' && (
-                      <div className="completed-badge">COMPLETED</div>
-                    )}
+                    <StatusBadge type={event.status} size="small" />
                   </div>
                   <div className="event-priority">
                     {getPriorityIcon(event.priority)}
                   </div>
                 </div>
-                
+
                 <div className="event-content">
                   <div className="event-header">
                     <h3 className="event-title">{event.title}</h3>
@@ -309,19 +311,32 @@ export default function Events() {
                       {event.category}
                     </div>
                   </div>
-                  
+
+                  {/* Sport tag if available */}
+                  {event.sport && (
+                    <div className="event-sport-tag">
+                      <Trophy size={12} />
+                      {event.sport}
+                    </div>
+                  )}
+
+                  {/* Countdown Timer for Upcoming Events */}
+                  {event.status === 'upcoming' && (
+                    <CountdownTimer targetDate={event.date} compact />
+                  )}
+
                   {/* Competition Status */}
                   <div className={`competition-status ${eventsService.getCompetitionStatus(event).statusClass}`}>
                     {eventsService.getCompetitionStatus(event).displayText}
                   </div>
-                  
+
                   <div className="event-details">
                     <div className="event-detail">
                       <Clock size={16} />
-                      <span>{new Date(event.date).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
+                      <span>{new Date(event.date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
                       })}</span>
                     </div>
                     <div className="event-detail">
@@ -330,15 +345,49 @@ export default function Events() {
                     </div>
                     <div className="event-detail">
                       <Users size={16} />
-                      <span>{event.participants}</span>
+                      <span>{event.participants || `${event.participantCount || 0} participants`}</span>
                     </div>
                   </div>
-                  
+
                   <p className="event-description">{event.description}</p>
-                  
-                  <button className="event-btn">
-                    {event.status === 'live' ? 'Watch Live' : event.status === 'upcoming' ? 'Set Reminder' : 'View Results'}
-                  </button>
+
+                  {/* Engagement Metrics */}
+                  {(event.viewCount || event.shareCount || (event.participantIds && event.participantIds.length > 0)) && (
+                    <div className="event-card-metrics">
+                      {event.viewCount && event.viewCount > 0 && (
+                        <div className="metric-item">
+                          <Eye size={14} className="metric-icon" />
+                          <span className="metric-value">{event.viewCount}</span>
+                        </div>
+                      )}
+                      {event.shareCount && event.shareCount > 0 && (
+                        <div className="metric-item">
+                          <Share2 size={14} className="metric-icon" />
+                          <span className="metric-value">{event.shareCount}</span>
+                        </div>
+                      )}
+                      {event.participantIds && event.participantIds.length > 0 && (
+                        <div className="metric-item">
+                          <Users size={14} className="metric-icon" />
+                          <span className="metric-value">{event.participantIds.length} going</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Participation Button for logged-in users, regular button for guests */}
+                  {currentUser && !isGuest() ? (
+                    <ParticipationButton
+                      eventId={event.id}
+                      userId={currentUser.uid}
+                      userName={currentUser.displayName || currentUser.email || 'User'}
+                      userAvatar={currentUser.photoURL || undefined}
+                    />
+                  ) : (
+                    <button className="event-btn">
+                      {event.status === 'live' ? 'Watch Live' : event.status === 'upcoming' ? 'Set Reminder' : 'View Results'}
+                    </button>
+                  )}
                 </div>
               </div>
               ))

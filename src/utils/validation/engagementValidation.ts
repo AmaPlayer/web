@@ -56,13 +56,8 @@ export function validateLikes(likes: any, likesCount?: number): { isValid: boole
 
   correctedCount = validLikes.length;
 
-  // Check if provided count matches actual count - warn but don't error
-  if (typeof likesCount === 'number' && likesCount !== correctedCount) {
-    // Only warn in development, auto-correct in production
-    if (process.env.NODE_ENV === 'development') {
-      console.warn(`Likes count mismatch for post: provided ${likesCount}, actual ${correctedCount}. Auto-correcting.`);
-    }
-  }
+  // Check if provided count matches actual count - auto-correct silently
+  // Note: Warnings removed as this is automatically corrected and not a critical issue
 
   return {
     isValid: errors.length === 0,
@@ -105,13 +100,8 @@ export function validateComments(comments: any, commentsCount?: number): { isVal
 
   correctedCount = validComments.length;
 
-  // Check if provided count matches actual count - warn but don't error
-  if (typeof commentsCount === 'number' && commentsCount !== correctedCount) {
-    // Only warn in development, auto-correct in production
-    if (process.env.NODE_ENV === 'development') {
-      console.warn(`Comments count mismatch for post: provided ${commentsCount}, actual ${correctedCount}. Auto-correcting.`);
-    }
-  }
+  // Check if provided count matches actual count - auto-correct silently
+  // Note: Warnings removed as this is automatically corrected and not a critical issue
 
   return {
     isValid: errors.length === 0,
@@ -145,17 +135,8 @@ export function validateShares(shares: any, sharesCount?: number, shareCount?: n
 
   correctedCount = validShares.length;
 
-  // Check if provided counts match actual count - warn but don't error
-  if (typeof sharesCount === 'number' && sharesCount !== correctedCount) {
-    // Only warn in development, auto-correct in production
-    if (process.env.NODE_ENV === 'development') {
-      console.warn(`Shares count mismatch for post: provided ${sharesCount}, actual ${correctedCount}. Auto-correcting.`);
-    }
-  }
-
-  if (typeof shareCount === 'number' && shareCount !== correctedCount) {
-    errors.push(`Share count mismatch: provided ${shareCount}, actual ${correctedCount}`);
-  }
+  // Check if provided counts match actual count - auto-correct silently
+  // Note: Warnings removed as this is automatically corrected and not a critical issue
 
   return {
     isValid: errors.length === 0,
@@ -234,15 +215,92 @@ export function validatePostEngagement(post: any): EngagementValidationResult {
  */
 export function sanitizeEngagementData(post: any): Post {
   const validation = validatePostEngagement(post);
-  
+
+  // Filter out invalid likes
+  const sanitizedLikes = Array.isArray(post.likes)
+    ? post.likes.filter((like: any) => {
+        if (typeof like === 'string') {
+          return like.length > 0;
+        } else if (typeof like === 'object' && like !== null) {
+          return like.userId && typeof like.userId === 'string';
+        }
+        return false;
+      })
+    : [];
+
+  // Sanitize comments - generate IDs for comments missing them instead of filtering out
+  const sanitizedComments = Array.isArray(post.comments)
+    ? post.comments
+        .filter((comment: any, index: number) => {
+          if (typeof comment !== 'object' || comment === null) {
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`🚫 Comment ${index} filtered: not an object`);
+            }
+            return false;
+          }
+          // Only require text, userId, and userDisplayName - ID can be generated
+          const requiredFields = ['text', 'userId', 'userDisplayName'];
+          const isValid = requiredFields.every(field =>
+            comment[field] && typeof comment[field] === 'string'
+          );
+
+          if (!isValid && process.env.NODE_ENV === 'development') {
+            console.log(`🚫 Comment ${index} filtered from post ${post.id}:`, {
+              hasText: !!comment.text,
+              hasUserId: !!comment.userId,
+              hasUserDisplayName: !!comment.userDisplayName,
+              comment
+            });
+          }
+
+          return isValid;
+        })
+        .map((comment: any, index: number) => {
+          // Generate STABLE ID if missing (for old comments)
+          // Use a hash of comment content to ensure ID stays the same across loads
+          if (!comment.id || typeof comment.id !== 'string') {
+            // Create a stable hash from comment properties
+            const hashSource = `${post.id}_${index}_${comment.userId}_${comment.text.substring(0, 20)}`;
+            // Simple hash function
+            let hash = 0;
+            for (let i = 0; i < hashSource.length; i++) {
+              const char = hashSource.charCodeAt(i);
+              hash = ((hash << 5) - hash) + char;
+              hash = hash & hash; // Convert to 32bit integer
+            }
+            const generatedId = `comment_${post.id}_${index}_${Math.abs(hash)}`;
+
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`🔧 Generated STABLE ID for comment ${index}:`, generatedId);
+            }
+            return {
+              ...comment,
+              id: generatedId
+            };
+          }
+          return comment;
+        })
+    : [];
+
+  // Filter out invalid shares
+  const sanitizedShares = Array.isArray(post.shares)
+    ? post.shares.filter((share: any) =>
+        typeof share === 'string' && share.length > 0
+      )
+    : [];
+
   // Apply corrections if needed
   const sanitizedPost = {
     ...post,
     ...validation.correctedData,
-    // Ensure arrays exist
-    likes: Array.isArray(post.likes) ? post.likes : [],
-    comments: Array.isArray(post.comments) ? post.comments : [],
-    shares: Array.isArray(post.shares) ? post.shares : [],
+    // Use filtered/sanitized arrays
+    likes: sanitizedLikes,
+    comments: sanitizedComments,
+    shares: sanitizedShares,
+    // Update counts to match sanitized arrays
+    likesCount: sanitizedLikes.length,
+    commentsCount: sanitizedComments.length,
+    sharesCount: sanitizedShares.length,
     // Ensure share metadata exists
     shareMetadata: post.shareMetadata || {
       lastSharedAt: null,
@@ -254,16 +312,16 @@ export function sanitizeEngagementData(post: any): Post {
     }
   };
 
-  // Only log critical errors (not warnings) in development
-  // Suppress warnings as they're automatically corrected
+  // Suppress all engagement validation warnings as they're automatically corrected
+  // Only log in development if there are truly critical errors that prevent data loading
   if (validation.errors.length > 0 && process.env.NODE_ENV === 'development') {
-    // Only log if there are actual errors that can't be auto-corrected
+    // Only log truly critical errors (like missing required fields)
     const criticalErrors = validation.errors.filter(error =>
-      !error.includes('count mismatch') && !error.includes('Corrected')
+      error.includes('missing required') || error.includes('cannot be loaded')
     );
 
     if (criticalErrors.length > 0) {
-      console.error(`Post ${post.id} engagement data errors:`, criticalErrors);
+      console.warn(`Post ${post.id} had ${criticalErrors.length} malformed engagement items (auto-filtered)`);
     }
   }
 

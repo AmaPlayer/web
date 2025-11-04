@@ -126,6 +126,9 @@ const SubcategorySelectionPage: React.FC = () => {
           <p className="subcategory-selection-description">
             Select your specific area of expertise within {selectedPosition.name}.
           </p>
+          {selectedPosition.description && (
+            <p className="position-description">{selectedPosition.description}</p>
+          )}
           
           {/* Validation Error Display */}
           {(error || validationErrors.length > 0) && hasUserInteracted && (

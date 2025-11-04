@@ -17,6 +17,62 @@ export default function Signup() {
   const { signup, googleLogin, appleLogin } = useAuth();
   const navigate = useNavigate();
 
+  // Helper function to save pending details after authentication
+  async function savePendingDetails(): Promise<void> {
+    const { auth } = await import('../../lib/firebase');
+    const user = auth.currentUser;
+
+    if (!user) return;
+
+    const userService = (await import('../../services/api/userService')).default;
+
+    // Check for pending athlete profile and save it
+    const pendingAthleteProfile = localStorage.getItem('pendingAthleteProfile');
+    if (pendingAthleteProfile) {
+      try {
+        const athleteData = JSON.parse(pendingAthleteProfile);
+
+        await userService.updateUserProfile(user.uid, {
+          sports: athleteData.sports || [],
+          position: athleteData.position || null,
+          specializations: athleteData.specializations || {}
+        });
+
+        localStorage.removeItem('pendingAthleteProfile');
+        console.log('✅ Athlete profile saved after signup');
+      } catch (err) {
+        console.error('Error saving pending athlete profile:', err);
+      }
+    }
+
+    // Check for pending personal details and save them
+    const pendingDetails = localStorage.getItem('pendingPersonalDetails');
+    if (pendingDetails) {
+      try {
+        const details = JSON.parse(pendingDetails);
+
+        await userService.updateUserProfile(user.uid, {
+          displayName: details.fullName,
+          bio: details.bio || undefined,
+          dateOfBirth: details.dateOfBirth,
+          gender: details.gender,
+          height: details.height || undefined,
+          weight: details.weight || undefined,
+          country: details.country,
+          state: details.state,
+          city: details.city,
+          mobile: details.phone || undefined,
+          location: `${details.city}, ${details.state}, ${details.country}`
+        });
+
+        localStorage.removeItem('pendingPersonalDetails');
+        console.log('✅ Personal details saved after signup');
+      } catch (err) {
+        console.error('Error saving pending personal details:', err);
+      }
+    }
+  }
+
   async function handleDiagnostic(): Promise<void> {
     setDiagnosticLoading(true);
     try {
@@ -48,39 +104,8 @@ export default function Signup() {
       // Wait for auth state to update and get the current user
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Check for pending personal details and save them
-      const pendingDetails = localStorage.getItem('pendingPersonalDetails');
-      if (pendingDetails) {
-        try {
-          // Import auth to get current user
-          const { auth } = await import('../../../lib/firebase');
-          const user = auth.currentUser;
-
-          if (user) {
-            const details = JSON.parse(pendingDetails);
-            const userService = (await import('../../../services/api/userService')).default;
-
-            await userService.updateUserProfile(user.uid, {
-              displayName: details.fullName,
-              bio: details.bio || undefined,
-              dateOfBirth: details.dateOfBirth,
-              gender: details.gender,
-              height: details.height || undefined,
-              weight: details.weight || undefined,
-              country: details.country,
-              state: details.state,
-              city: details.city,
-              mobile: details.phone || undefined,
-              location: `${details.city}, ${details.state}, ${details.country}`
-            });
-
-            localStorage.removeItem('pendingPersonalDetails');
-            console.log('✅ Personal details saved after signup');
-          }
-        } catch (err) {
-          console.error('Error saving pending personal details:', err);
-        }
-      }
+      // Save pending details if they exist
+      await savePendingDetails();
 
       navigate('/home');
     } catch (error: any) {
@@ -98,6 +123,13 @@ export default function Signup() {
       setError('');
       setLoading(true);
       await googleLogin();
+
+      // Wait for auth state to update
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Save pending details if they exist
+      await savePendingDetails();
+
       navigate('/home');
     } catch (error) {
       setError('Failed to sign up with Google');
@@ -111,6 +143,13 @@ export default function Signup() {
       setError('');
       setLoading(true);
       await appleLogin();
+
+      // Wait for auth state to update
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Save pending details if they exist
+      await savePendingDetails();
+
       navigate('/home');
     } catch (error) {
       console.error('Apple signup error:', error);
@@ -232,3 +271,4 @@ export default function Signup() {
     </div>
   );
 }
+

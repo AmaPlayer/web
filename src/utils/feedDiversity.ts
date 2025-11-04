@@ -71,12 +71,31 @@ export function diversifyFeed<T extends FeedItem>(
   const totalItems = items.filter(item => item.userId && item.userId.trim() !== '').length;
   const maxItemsPerUser = Math.ceil(totalItems * finalConfig.maxPercentageFromSingleUser);
 
+  console.log('🔍 DiversifyFeed: Initial analysis', {
+    totalItems,
+    maxItemsPerUser,
+    maxPercentage: finalConfig.maxPercentageFromSingleUser,
+    userCounts: Array.from(userGroups.entries()).map(([userId, items]) => ({
+      userId,
+      count: items.length,
+      exceedsLimit: items.length > maxItemsPerUser
+    }))
+  });
+
   // Trim users who exceed the threshold
+  let trimmedCount = 0;
   userGroups.forEach((userItems, userId) => {
     if (userItems.length > maxItemsPerUser) {
+      const before = userItems.length;
       userGroups.set(userId, userItems.slice(0, maxItemsPerUser));
+      trimmedCount += (before - maxItemsPerUser);
+      console.log(`⚠️ Trimmed ${before - maxItemsPerUser} videos from user ${userId} (had ${before}, max ${maxItemsPerUser})`);
     }
   });
+
+  if (trimmedCount > 0) {
+    console.log(`⚠️ Total videos trimmed by percentage rule: ${trimmedCount}`);
+  }
 
   // Convert to array and sort by group size (descending) for better interleaving
   const sortedGroups = Array.from(userGroups.entries())
@@ -139,9 +158,16 @@ export function diversifyFeed<T extends FeedItem>(
 
     // If still no item added (shouldn't happen), break to avoid infinite loop
     if (!itemAdded) {
+      console.log('⚠️ DiversifyFeed: Broke out early - no more items could be added');
       break;
     }
   }
+
+  console.log('✅ DiversifyFeed: Complete', {
+    inputCount: items.length,
+    outputCount: diversified.length,
+    filtered: items.length - diversified.length
+  });
 
   return diversified;
 }

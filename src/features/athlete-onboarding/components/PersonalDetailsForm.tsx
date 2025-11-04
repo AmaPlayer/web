@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useOnboardingStore } from '../store/onboardingStore';
 import { indianStates, getCitiesByState } from '../data/indianLocations';
 import userService from '../../../services/api/userService';
 import './PersonalDetailsForm.css';
@@ -9,7 +10,8 @@ interface PersonalDetails {
   fullName: string;
   dateOfBirth: string;
   gender: string;
-  height: string;
+  heightFeet: string;
+  heightInches: string;
   weight: string;
   country: string;
   state: string;
@@ -21,6 +23,7 @@ interface PersonalDetails {
 export default function PersonalDetailsForm() {
   const navigate = useNavigate();
   const { currentUser, updateUserProfile } = useAuth();
+  const { selectedSports, selectedPosition, selectedSpecializations, saveProfile } = useOnboardingStore();
   const [loading, setLoading] = useState(false);
   const [cities, setCities] = useState<string[]>([]);
 
@@ -38,7 +41,8 @@ export default function PersonalDetailsForm() {
       fullName: currentUser?.displayName || '',
       dateOfBirth: '',
       gender: '',
-      height: '',
+      heightFeet: '',
+      heightInches: '',
       weight: '',
       country: 'India',
       state: '',
@@ -105,8 +109,12 @@ export default function PersonalDetailsForm() {
       newErrors.city = 'City is required';
     }
 
-    if (formData.height && (parseFloat(formData.height) < 50 || parseFloat(formData.height) > 300)) {
-      newErrors.height = 'Please enter a valid height (50-300 cm)';
+    if (formData.heightFeet && (parseFloat(formData.heightFeet) < 3 || parseFloat(formData.heightFeet) > 8)) {
+      newErrors.heightFeet = 'Please enter a valid height (3-8 feet)';
+    }
+
+    if (formData.heightInches && (parseFloat(formData.heightInches) < 0 || parseFloat(formData.heightInches) >= 12)) {
+      newErrors.heightInches = 'Inches must be between 0-11';
     }
 
     if (formData.weight && (parseFloat(formData.weight) < 20 || parseFloat(formData.weight) > 300)) {
@@ -131,12 +139,20 @@ export default function PersonalDetailsForm() {
     setLoading(true);
 
     try {
-      // If user is already authenticated, save directly to Firebase
+      // If user is already authenticated, save everything to Firebase
       if (currentUser) {
         // Update Firebase Auth display name
         await updateUserProfile({
           displayName: formData.fullName
         });
+
+        // Save athlete profile (sport/position/specializations) to Firestore
+        await saveProfile(currentUser.uid);
+
+        // Convert feet and inches to cm for storage
+        const heightInCm = formData.heightFeet || formData.heightInches
+          ? Math.round((parseFloat(formData.heightFeet || '0') * 30.48) + (parseFloat(formData.heightInches || '0') * 2.54))
+          : undefined;
 
         // Save personal details to Firestore
         await userService.updateUserProfile(currentUser.uid, {
@@ -144,7 +160,7 @@ export default function PersonalDetailsForm() {
           bio: formData.bio || undefined,
           dateOfBirth: formData.dateOfBirth,
           gender: formData.gender,
-          height: formData.height || undefined,
+          height: heightInCm ? heightInCm.toString() : undefined,
           weight: formData.weight || undefined,
           country: formData.country,
           state: formData.state,
@@ -153,13 +169,24 @@ export default function PersonalDetailsForm() {
           location: `${formData.city}, ${formData.state}, ${formData.country}`
         });
 
-        console.log('✅ Personal details saved successfully');
+        // Clear saved data from localStorage
+        localStorage.removeItem('pendingPersonalDetails');
+
+        console.log('✅ Personal details and athlete profile saved successfully');
         navigate('/home');
       } else {
         // No user authenticated - save to localStorage and navigate to login
         localStorage.setItem('pendingPersonalDetails', JSON.stringify(formData));
-        console.log('✅ Personal details saved to localStorage, redirecting to login');
-        navigate('/login');
+
+        // Also save athlete profile data to localStorage for after login
+        localStorage.setItem('pendingAthleteProfile', JSON.stringify({
+          sports: selectedSports,
+          position: selectedPosition,
+          specializations: selectedSpecializations
+        }));
+
+        console.log('✅ Personal details saved to localStorage, redirecting to signup');
+        navigate('/signup');
       }
     } catch (error) {
       console.error('Error saving personal details:', error);
@@ -170,9 +197,21 @@ export default function PersonalDetailsForm() {
   };
 
   const handleSkip = () => {
-    // Clear any saved data and navigate to login
+    // Clear any saved data and navigate to signup for new users
     localStorage.removeItem('pendingPersonalDetails');
-    navigate('/login');
+    navigate('/signup');
+  };
+
+  const handleBack = () => {
+    // Navigate back to subcategory selection (or specialization if no subcategories)
+    const { selectedSports, selectedPosition } = useOnboardingStore.getState();
+
+    // Check if the current position has subcategories
+    if (selectedPosition) {
+      navigate('/athlete-onboarding/subcategory');
+    } else {
+      navigate('/athlete-onboarding/specialization');
+    }
   };
 
   return (
@@ -242,21 +281,39 @@ export default function PersonalDetailsForm() {
           {/* Height and Weight */}
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="height">Height (cm)</label>
+              <label htmlFor="heightFeet">Height (Feet)</label>
               <input
                 type="number"
-                id="height"
-                name="height"
-                value={formData.height}
+                id="heightFeet"
+                name="heightFeet"
+                value={formData.heightFeet}
                 onChange={handleChange}
-                className={errors.height ? 'error' : ''}
-                placeholder="e.g., 175"
-                min="50"
-                max="300"
+                className={errors.heightFeet ? 'error' : ''}
+                placeholder="e.g., 5"
+                min="3"
+                max="8"
               />
-              {errors.height && <span className="error-message">{errors.height}</span>}
+              {errors.heightFeet && <span className="error-message">{errors.heightFeet}</span>}
             </div>
 
+            <div className="form-group">
+              <label htmlFor="heightInches">Height (Inches)</label>
+              <input
+                type="number"
+                id="heightInches"
+                name="heightInches"
+                value={formData.heightInches}
+                onChange={handleChange}
+                className={errors.heightInches ? 'error' : ''}
+                placeholder="e.g., 9"
+                min="0"
+                max="11"
+              />
+              {errors.heightInches && <span className="error-message">{errors.heightInches}</span>}
+            </div>
+          </div>
+
+          <div className="form-row">
             <div className="form-group">
               <label htmlFor="weight">Weight (kg)</label>
               <input
@@ -272,6 +329,7 @@ export default function PersonalDetailsForm() {
               />
               {errors.weight && <span className="error-message">{errors.weight}</span>}
             </div>
+            <div className="form-group"></div>
           </div>
 
           {/* Location */}
@@ -362,6 +420,14 @@ export default function PersonalDetailsForm() {
 
           {/* Buttons */}
           <div className="form-actions">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="btn-secondary"
+              disabled={loading}
+            >
+              Back
+            </button>
             <button
               type="button"
               onClick={handleSkip}

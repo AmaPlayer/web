@@ -16,6 +16,16 @@ export type EventCategory = 'Event' | 'Tournament' | 'Competition' | 'Match' | '
 export type EventPriority = 'low' | 'medium' | 'high';
 
 /**
+ * Event type for enhanced categorization
+ */
+export type EventType = 'talent_hunt' | 'community' | 'tournament' | 'general';
+
+/**
+ * Participation type
+ */
+export type ParticipationType = 'going' | 'interested' | 'maybe';
+
+/**
  * Core Event interface
  */
 export interface Event {
@@ -43,6 +53,22 @@ export interface Event {
   isActive: boolean;
   createdAt?: Timestamp | Date | string;
   updatedAt?: Timestamp | Date | string;
+
+  // Enhanced fields (Phase 1A) - All optional for backwards compatibility
+  eventType?: EventType;
+  sport?: string;
+  thumbnailUrl?: string;
+  videoUrl?: string;
+  isTrending?: boolean;
+  isOfficial?: boolean;
+  viewCount?: number;
+  shareCount?: number;
+
+  // Participation fields (Phase 1B) - All optional for backwards compatibility
+  participantIds?: string[];
+  interestedIds?: string[];
+  maybeIds?: string[];
+  participantCount?: number;
 }
 
 /**

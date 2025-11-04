@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Pause, Volume2, VolumeX, Heart, MessageCircle, Share } from 'lucide-react';
 import { MomentVideo, VideoPlayerState } from '../../../types/models/moment';
 import { MomentsService } from '../../../services/api/momentsService';
+import PostsService from '../../../services/api/postsService';
 import VideoComments from './VideoComments';
 import VideoShare from './VideoShare';
 import { useTouchGestures } from '../../../hooks/useTouchGestures';
@@ -16,6 +17,8 @@ interface VideoPlayerProps {
   moment: MomentVideo;
   isActive: boolean;
   currentUserId?: string;
+  currentUserName?: string;
+  currentUserPhotoURL?: string | null;
   onLike?: (momentId: string, liked: boolean, likesCount: number) => void;
   onComment?: (momentId: string) => void;
   onShare?: (momentId: string) => void;
@@ -45,6 +48,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   moment,
   isActive,
   currentUserId,
+  currentUserName,
+  currentUserPhotoURL,
   onLike,
   onComment,
   onShare,
@@ -62,9 +67,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Get persisted mute preference from localStorage
+  const getInitialMuteState = () => {
+    try {
+      const saved = localStorage.getItem('videoMutePreference');
+      return saved !== null ? saved === 'true' : true; // Default to muted if not set
+    } catch {
+      return true; // Default to muted on error
+    }
+  };
+
   const [playerState, setPlayerState] = useState<VideoPlayerState>({
     isPlaying: false,
-    isMuted: true, // Start muted for better UX
+    isMuted: getInitialMuteState(), // Use persisted preference
     currentTime: 0,
     duration: 0,
     isFullscreen: false,
@@ -374,6 +389,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const newMuted = !playerState.isMuted;
     video.muted = newMuted;
     setPlayerState(prev => ({ ...prev, isMuted: newMuted }));
+
+    // Persist mute preference to localStorage for all future videos
+    try {
+      localStorage.setItem('videoMutePreference', String(newMuted));
+      // Dispatch custom event to notify other video players
+      window.dispatchEvent(new CustomEvent('videoMutePreferenceChanged', {
+        detail: { isMuted: newMuted }
+      }));
+    } catch (error) {
+      console.error('Failed to save mute preference:', error);
+    }
+
     setAnnouncement(`Video ${newMuted ? 'muted' : 'unmuted'}`);
   }, [playerState.isMuted]);
 
@@ -383,13 +410,28 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     setIsLiking(true);
     try {
-      const result = await MomentsService.toggleLike(
-        moment.id,
-        currentUserId,
-        'Current User', // In real app, get from user context
-        null // In real app, get from user context
-      );
-      
+      let result;
+
+      // Route to the correct service based on video type
+      if (moment.isPostVideo) {
+        // This is a video from the posts collection
+        console.log('Liking post video:', moment.id);
+        result = await PostsService.toggleLike(
+          moment.id,
+          currentUserId,
+          { displayName: 'Current User', photoURL: null } // In real app, get from user context
+        );
+      } else {
+        // This is a video from the moments collection
+        console.log('Liking moment video:', moment.id);
+        result = await MomentsService.toggleLike(
+          moment.id,
+          currentUserId,
+          'Current User', // In real app, get from user context
+          null // In real app, get from user context
+        );
+      }
+
       onLike?.(moment.id, result.liked, result.likesCount);
       setAnnouncement(`Video ${result.liked ? 'liked' : 'unliked'}. ${result.likesCount} total likes`);
     } catch (error) {
@@ -398,7 +440,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     } finally {
       setIsLiking(false);
     }
-  }, [currentUserId, isLiking, moment.id, onLike]);
+  }, [currentUserId, isLiking, moment.id, moment.isPostVideo, onLike]);
 
   // Handle comment button click
   const handleCommentClick = useCallback(() => {
@@ -486,6 +528,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     // Only handle keyboard events when this video is active
     if (!isActive) return;
 
+    // Ignore keyboard shortcuts when user is typing in input fields
+    const target = e.target as HTMLElement;
+    if (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.isContentEditable ||
+      target.closest('input') ||
+      target.closest('textarea')
+    ) {
+      return;
+    }
+
     switch (e.key.toLowerCase()) {
       case ' ':
       case 'k':
@@ -571,6 +625,33 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     onSwipeDown
   ]);
 
+  // Listen for mute preference changes from other videos
+  useEffect(() => {
+    const handleMutePreferenceChange = (event: Event) => {
+      const customEvent = event as CustomEvent<{ isMuted: boolean }>;
+      const video = videoRef.current;
+      if (!video) return;
+
+      const newMuted = customEvent.detail.isMuted;
+      video.muted = newMuted;
+      setPlayerState(prev => ({ ...prev, isMuted: newMuted }));
+    };
+
+    window.addEventListener('videoMutePreferenceChanged', handleMutePreferenceChange);
+
+    return () => {
+      window.removeEventListener('videoMutePreferenceChanged', handleMutePreferenceChange);
+    };
+  }, []);
+
+  // Apply mute state to video element when it changes
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.muted = playerState.isMuted;
+    }
+  }, [playerState.isMuted]);
+
   // Add keyboard event listeners
   useEffect(() => {
     const container = containerRef.current;
@@ -578,7 +659,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     // Add keyboard event listener to container
     container.addEventListener('keydown', handleKeyDown);
-    
+
     return () => {
       container.removeEventListener('keydown', handleKeyDown);
     };
@@ -807,10 +888,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       <VideoComments
         momentId={moment.id}
         currentUserId={currentUserId}
-        currentUserName="Current User" // In real app, get from user context
-        currentUserPhotoURL={null} // In real app, get from user context
+        currentUserName={currentUserName}
+        currentUserPhotoURL={currentUserPhotoURL}
         isVisible={showComments}
         onClose={() => setShowComments(false)}
+        isPostVideo={moment.isPostVideo || false}
       />
 
       {/* Share Modal */}

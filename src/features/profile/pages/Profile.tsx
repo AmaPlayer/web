@@ -9,7 +9,8 @@ import RoleSpecificSections from '../components/RoleSpecificSections';
 import ProfilePictureManager from '../components/ProfilePictureManager';
 import CoverPhotoManager from '../components/CoverPhotoManager';
 import SportBanner from '../components/SportBanner';
-import { usePerformanceMonitoring, useMemoryMonitoring } from '../hooks/usePerformanceMonitoring';
+// Performance monitoring disabled - causing warnings
+// import { usePerformanceMonitoring, useMemoryMonitoring } from '../hooks/usePerformanceMonitoring';
 import {
   UserRole,
   PersonalDetails,
@@ -38,16 +39,25 @@ const Profile: React.FC = React.memo(() => {
   const [error, setError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
-  // Performance monitoring
-  const { measureRender, logRenderTime } = usePerformanceMonitoring('Profile');
-  useMemoryMonitoring();
+  // Performance monitoring - Disabled to prevent warnings
+  // const { measureRender, logRenderTime } = usePerformanceMonitoring('Profile');
+  // useMemoryMonitoring();
 
   // Measure render performance
-  measureRender();
+  // measureRender();
 
   // Determine if this is the current user's profile or another user's profile
   const isOwner = !userId || userId === firebaseUser?.uid;
 
+  // Helper function to safely extract name from object or return string value
+  const getDisplayValue = (value: any): string | undefined => {
+    if (!value) return undefined;
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object' && value !== null && 'name' in value) {
+      return value.name as string;
+    }
+    return undefined;
+  };
 
   const [personalDetails, setPersonalDetails] = useState<PersonalDetails>({
     name: 'Loading...'
@@ -982,10 +992,10 @@ const Profile: React.FC = React.memo(() => {
     }
   }, [userId, isOwner, isGuest, firebaseUser, isFollowing, announceToScreenReader]);
 
-  // Log render performance after component updates
-  useEffect(() => {
-    logRenderTime();
-  });
+  // Log render performance after component updates - Disabled
+  // useEffect(() => {
+  //   logRenderTime();
+  // });
 
   if (isLoading) {
     return (
@@ -1102,9 +1112,9 @@ const Profile: React.FC = React.memo(() => {
 
             {/* Sport Banner - Shows sport/position info below name */}
             <SportBanner
-              sport={personalDetails.sport}
-              position={personalDetails.position}
-              playerType={personalDetails.playerType}
+              sport={getDisplayValue(personalDetails.sport)}
+              position={getDisplayValue(personalDetails.position)}
+              playerType={getDisplayValue(personalDetails.playerType)}
               role={currentRole}
               organizationType={personalDetails.organizationType}
               specializations={personalDetails.specializations}
@@ -1213,19 +1223,25 @@ const Profile: React.FC = React.memo(() => {
             {currentRoleConfig.editableFields.includes('playerType') && (
               <div className="field-row">
                 <span className="field-label" id="player-type-label">PLAYER TYPE</span>
-                <span className="field-value" aria-labelledby="player-type-label">{personalDetails.playerType || 'Not specified'}</span>
+                <span className="field-value" aria-labelledby="player-type-label">
+                  {getDisplayValue(personalDetails.playerType) || 'Not specified'}
+                </span>
               </div>
             )}
             {currentRoleConfig.editableFields.includes('sport') && (
               <div className="field-row">
                 <span className="field-label" id="sport-label">SPORT</span>
-                <span className="field-value" aria-labelledby="sport-label">{personalDetails.sport || 'Not specified'}</span>
+                <span className="field-value" aria-labelledby="sport-label">
+                  {getDisplayValue(personalDetails.sport) || 'Not specified'}
+                </span>
               </div>
             )}
             {currentRoleConfig.editableFields.includes('position') && (
               <div className="field-row">
                 <span className="field-label" id="position-label">POSITION</span>
-                <span className="field-value" aria-labelledby="position-label">{personalDetails.position || 'Not specified'}</span>
+                <span className="field-value" aria-labelledby="position-label">
+                  {getDisplayValue(personalDetails.position) || 'Not specified'}
+                </span>
               </div>
             )}
             <div className="field-row">

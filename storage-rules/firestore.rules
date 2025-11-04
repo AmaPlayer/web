@@ -45,11 +45,11 @@ service cloud.firestore {
         && request.auth.uid == resource.data.userId;
     }
     
-    // Comments collection (separate from posts)
+    // Comments collection (for both posts and moments)
     match /comments/{commentId} {
       allow read: if true;
-      allow create: if request.auth != null && !isGuestUser() && validateCommentData();
-      allow update, delete: if request.auth != null 
+      allow create: if request.auth != null && !isGuestUser() && (validateCommentData() || validateMomentCommentData());
+      allow update, delete: if request.auth != null
         && !isGuestUser()
         && request.auth.uid == resource.data.userId;
     }
@@ -78,11 +78,17 @@ service cloud.firestore {
     }
     
     function onlyCommentsChanged() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments']);
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments', 'commentsCount', 'updatedAt']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments', 'commentsCount']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments', 'updatedAt']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments']);
     }
-    
+
     function onlyLikesChanged() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']);
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likesCount', 'updatedAt']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likesCount']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'updatedAt']) ||
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']);
     }
     
     function onlySharesChanged() {
@@ -625,14 +631,6 @@ service cloud.firestore {
         && request.auth.uid == resource.data.userId;
     }
 
-    // Moment comments collection (separate from moments)
-    match /comments/{commentId} {
-      allow read: if true;
-      allow create: if request.auth != null && !isGuestUser() && validateMomentCommentData();
-      allow update, delete: if request.auth != null
-        && !isGuestUser()
-        && request.auth.uid == resource.data.userId;
-    }
 
     // Moment interactions collection (for analytics)
     match /interactions/{interactionId} {

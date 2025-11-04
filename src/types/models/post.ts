@@ -29,6 +29,12 @@ export interface Post {
   mediaUrl?: string | null;
   mediaType?: MediaType;
   mediaMetadata?: MediaMetadata;
+  // Video-specific fields for moments feed compatibility
+  videoUrl?: string | null;
+  type?: 'image' | 'video' | 'text';
+  duration?: number; // Video duration in seconds
+  videoDuration?: number; // Alternative video duration field
+  mediaUrls?: string[]; // Array of media URLs
   timestamp: Timestamp | Date | string;
   editedAt?: Timestamp | Date | string;
   createdAt?: Timestamp | Date | string;
@@ -109,6 +115,8 @@ export interface CreatePostData {
   userPhotoURL: string | null;
   caption: string;
   mediaFile?: File;
+  type?: 'image' | 'video' | 'text';
+  duration?: number; // Video duration in seconds
   visibility?: PostVisibility;
   location?: string;
   tags?: string[];

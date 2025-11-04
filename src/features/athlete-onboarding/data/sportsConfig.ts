@@ -42,6 +42,27 @@ export const SPORTS_CONFIG: Sport[] = [
     icon: '',
     image: '',
     description: ''
+  },
+  {
+    id: 'volleyball',
+    name: 'Volleyball',
+    icon: '',
+    image: '',
+    description: ''
+  },
+  {
+    id: 'field-events',
+    name: 'Field events',
+    icon: '',
+    image: '',
+    description: ''
+  },
+  {
+    id: 'kabaddi',
+    name: 'Kabaddi',
+    icon: '',
+    image: '',
+    description: ''
   }
 ];
 
