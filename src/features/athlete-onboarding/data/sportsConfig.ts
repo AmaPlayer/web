@@ -63,6 +63,76 @@ export const SPORTS_CONFIG: Sport[] = [
     icon: '',
     image: '',
     description: ''
+  },
+  {
+    id: 'kho-kho',
+    name: 'Kho-Kho',
+    icon: '',
+    image: '',
+    description: ''
+  },
+  {
+    id: 'wrestling',
+    name: 'Wrestling',
+    icon: '',
+    image: '',
+    description: ''
+  },
+  {
+    id: 'weightlifting',
+    name: 'Weight Lifting',
+    icon: '',
+    image: '',
+    description: ''
+  },
+  {
+    id: 'cycling',
+    name: 'Cycling',
+    icon: '',
+    image: '',
+    description: ''
+  },
+  {
+    id: 'badminton',
+    name: 'Badminton',
+    icon: '',
+    image: '',
+    description: ''
+  },
+  {
+    id: 'table-tennis',
+    name: 'Table Tennis',
+    icon: '',
+    image: '',
+    description: ''
+  },
+  {
+    id: 'archery',
+    name: 'Archery',
+    icon: '',
+    image: '',
+    description: ''
+  },
+  {
+    id: 'shooting',
+    name: 'Shooting',
+    icon: '',
+    image: '',
+    description: ''
+  },
+  {
+    id: 'boxing',
+    name: 'Boxing',
+    icon: '',
+    image: '',
+    description: ''
+  },
+  {
+    id: 'golf',
+    name: 'Golf',
+    icon: '',
+    image: '',
+    description: ''
   }
 ];
 

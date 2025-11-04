@@ -242,6 +242,174 @@ const KABADDI_POSITIONS = [
   }
 ];
 
+const KHO_KHO_POSITIONS = [
+  {
+    id: 'chaser',
+    name: 'Chaser',
+    description: 'Player who chases and tags opponents',
+    icon: '🏃‍♂️'
+  },
+  {
+    id: 'runner',
+    name: 'Runner',
+    description: 'Player who runs and dodges chasers',
+    icon: '🏃‍♀️'
+  }
+];
+
+const WRESTLING_POSITIONS = [
+  {
+    id: 'freestyle-wrestling',
+    name: 'Freestyle Wrestling',
+    description: 'Freestyle wrestling with techniques and holds',
+    icon: '🤼'
+  },
+  {
+    id: 'greco-roman-wrestling',
+    name: 'Greco-Roman Wrestling',
+    description: 'Greco-Roman wrestling style with upper body focus',
+    icon: '🤼‍♂️'
+  }
+];
+
+const WEIGHTLIFTING_POSITIONS = [
+  {
+    id: 'male',
+    name: 'Male',
+    description: 'Male weightlifting category',
+    icon: '🏋️‍♂️'
+  },
+  {
+    id: 'female',
+    name: 'Female',
+    description: 'Female weightlifting category',
+    icon: '🏋️‍♀️'
+  }
+];
+
+const CYCLING_POSITIONS = [
+  {
+    id: 'track-cyclist',
+    name: 'Track Cyclist',
+    description: 'Velodrome track cycling specialist',
+    icon: '🚴'
+  },
+  {
+    id: 'road-cyclist',
+    name: 'Road Cyclist',
+    description: 'Road cycling specialist',
+    icon: '🚴‍♂️'
+  },
+  {
+    id: 'mountain-biker',
+    name: 'Mountain Biker',
+    description: 'Mountain biking specialist',
+    icon: '🚵'
+  },
+  {
+    id: 'bmx-rider',
+    name: 'BMX Rider',
+    description: 'BMX cycling specialist',
+    icon: '🚴‍♀️'
+  }
+];
+
+const BADMINTON_POSITIONS = [
+  {
+    id: 'singles-player',
+    name: 'Singles Player',
+    description: 'Specialist in singles matches',
+    icon: '🏸'
+  },
+  {
+    id: 'doubles-player',
+    name: 'Doubles Player',
+    description: 'Specialist in doubles matches',
+    icon: '🏸'
+  },
+  {
+    id: 'mixed-doubles-player',
+    name: 'Mixed Doubles Player',
+    description: 'Specialist in mixed doubles matches',
+    icon: '🏸'
+  }
+];
+
+const TABLE_TENNIS_POSITIONS = [
+  {
+    id: 'table-tennis-singles',
+    name: 'Singles Player',
+    description: 'Specialist in singles table tennis',
+    icon: '🏓'
+  },
+  {
+    id: 'table-tennis-doubles',
+    name: 'Doubles Player',
+    description: 'Specialist in doubles table tennis',
+    icon: '🏓'
+  }
+];
+
+const ARCHERY_POSITIONS = [
+  {
+    id: 'recurve-archer',
+    name: 'Recurve Archer',
+    description: 'Specialist in recurve bow archery',
+    icon: '🏹'
+  },
+  {
+    id: 'compound-archer',
+    name: 'Compound Archer',
+    description: 'Specialist in compound bow archery',
+    icon: '🏹'
+  }
+];
+
+const SHOOTING_POSITIONS = [
+  {
+    id: 'pistol-shooter',
+    name: 'Pistol Shooter',
+    description: 'Specialist in pistol shooting',
+    icon: '🔫'
+  },
+  {
+    id: 'rifle-shooter',
+    name: 'Rifle Shooter',
+    description: 'Specialist in rifle shooting',
+    icon: '🔫'
+  },
+  {
+    id: 'shotgun-shooter',
+    name: 'Shotgun Shooter',
+    description: 'Specialist in shotgun shooting',
+    icon: '🔫'
+  }
+];
+
+const BOXING_POSITIONS = [
+  {
+    id: 'boxer',
+    name: 'Boxer',
+    description: 'Professional boxer',
+    icon: '🥊'
+  }
+];
+
+const GOLF_POSITIONS = [
+  {
+    id: 'professional-golfer',
+    name: 'Professional Golfer',
+    description: 'Professional competitive golfer',
+    icon: '⛳'
+  },
+  {
+    id: 'amateur-golfer',
+    name: 'Amateur Golfer',
+    description: 'Amateur competitive golfer',
+    icon: '⛳'
+  }
+];
+
 export const POSITIONS_CONFIG: SportPositions[] = [
   {
     sportId: 'athletics',
@@ -278,6 +446,46 @@ export const POSITIONS_CONFIG: SportPositions[] = [
   {
     sportId: 'kabaddi',
     positions: KABADDI_POSITIONS
+  },
+  {
+    sportId: 'kho-kho',
+    positions: KHO_KHO_POSITIONS
+  },
+  {
+    sportId: 'wrestling',
+    positions: WRESTLING_POSITIONS
+  },
+  {
+    sportId: 'weightlifting',
+    positions: WEIGHTLIFTING_POSITIONS
+  },
+  {
+    sportId: 'cycling',
+    positions: CYCLING_POSITIONS
+  },
+  {
+    sportId: 'badminton',
+    positions: BADMINTON_POSITIONS
+  },
+  {
+    sportId: 'table-tennis',
+    positions: TABLE_TENNIS_POSITIONS
+  },
+  {
+    sportId: 'archery',
+    positions: ARCHERY_POSITIONS
+  },
+  {
+    sportId: 'shooting',
+    positions: SHOOTING_POSITIONS
+  },
+  {
+    sportId: 'boxing',
+    positions: BOXING_POSITIONS
+  },
+  {
+    sportId: 'golf',
+    positions: GOLF_POSITIONS
   }
 ];
 

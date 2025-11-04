@@ -663,6 +663,840 @@ export const SPECIALIZATIONS_CONFIG: SportPositionSpecializations[] = [
         ]
       }
     ]
+  },
+  // Wrestling - Freestyle specializations
+  {
+    sportId: 'wrestling',
+    positionId: 'freestyle-wrestling',
+    categories: [
+      {
+        id: 'weight-class',
+        name: 'Weight Class',
+        description: 'Select your competition weight class',
+        required: true,
+        options: [
+          {
+            id: '57kg',
+            name: '57kg',
+            description: 'Lightweight category - 57 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '65kg',
+            name: '65kg',
+            description: 'Welterweight category - 65 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '74kg',
+            name: '74kg',
+            description: 'Middleweight category - 74 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '86kg',
+            name: '86kg',
+            description: 'Light heavyweight category - 86 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '97kg',
+            name: '97kg',
+            description: 'Heavyweight category - 97 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '125kg',
+            name: '125kg',
+            description: 'Super heavyweight category - 125 kilograms',
+            category: 'weight-class'
+          }
+        ]
+      }
+    ]
+  },
+  // Wrestling - Greco-Roman specializations
+  {
+    sportId: 'wrestling',
+    positionId: 'greco-roman-wrestling',
+    categories: [
+      {
+        id: 'weight-class',
+        name: 'Weight Class',
+        description: 'Select your competition weight class',
+        required: true,
+        options: [
+          {
+            id: '57kg',
+            name: '57kg',
+            description: 'Lightweight category - 57 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '65kg',
+            name: '65kg',
+            description: 'Welterweight category - 65 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '74kg',
+            name: '74kg',
+            description: 'Middleweight category - 74 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '86kg',
+            name: '86kg',
+            description: 'Light heavyweight category - 86 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '97kg',
+            name: '97kg',
+            description: 'Heavyweight category - 97 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '125kg',
+            name: '125kg',
+            description: 'Super heavyweight category - 125 kilograms',
+            category: 'weight-class'
+          }
+        ]
+      }
+    ]
+  },
+  // Weightlifting - Male specializations
+  {
+    sportId: 'weightlifting',
+    positionId: 'male',
+    categories: [
+      {
+        id: 'weight-class',
+        name: 'Weight Class',
+        description: 'Select your competition weight class',
+        required: true,
+        options: [
+          {
+            id: '55kg',
+            name: '55 kg',
+            description: 'Bantamweight category - 55 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '61kg',
+            name: '61 kg',
+            description: 'Featherweight category - 61 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '67kg',
+            name: '67 kg',
+            description: 'Lightweight category - 67 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '73kg',
+            name: '73 kg',
+            description: 'Middleweight category - 73 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '81kg',
+            name: '81 kg',
+            description: 'Light heavyweight category - 81 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '89kg',
+            name: '89 kg',
+            description: 'Heavyweight category - 89 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '96kg',
+            name: '96 kg',
+            description: 'Heavyweight category - 96 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '102kg',
+            name: '102 kg (Super Heavyweight)',
+            description: 'Super heavyweight category - 102 kilograms',
+            category: 'weight-class'
+          }
+        ]
+      }
+    ]
+  },
+  // Weightlifting - Female specializations
+  {
+    sportId: 'weightlifting',
+    positionId: 'female',
+    categories: [
+      {
+        id: 'weight-class',
+        name: 'Weight Class',
+        description: 'Select your competition weight class',
+        required: true,
+        options: [
+          {
+            id: '49kg',
+            name: '49 kg',
+            description: 'Flyweight category - 49 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '59kg',
+            name: '59 kg',
+            description: 'Lightweight category - 59 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '71kg',
+            name: '71 kg',
+            description: 'Middleweight category - 71 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '81kg',
+            name: '81 kg',
+            description: 'Light heavyweight category - 81 kilograms',
+            category: 'weight-class'
+          },
+          {
+            id: '81plus-kg',
+            name: '81+ kg (Super Heavyweight)',
+            description: 'Super heavyweight category - over 81 kilograms',
+            category: 'weight-class'
+          }
+        ]
+      }
+    ]
+  },
+  // Archery - Recurve Archer - Individual Event
+  {
+    sportId: 'archery',
+    positionId: 'recurve-archer',
+    subcategoryId: 'individual',
+    categories: [
+      {
+        id: 'range-focus',
+        name: 'Range Focus',
+        description: 'Select your range specialization',
+        required: true,
+        options: [
+          {
+            id: 'short-range',
+            name: 'Short Range Specialist',
+            description: 'Specializes in short-range archery',
+            category: 'range-focus'
+          },
+          {
+            id: 'mid-range',
+            name: 'Mid Range Specialist',
+            description: 'Specializes in mid-range archery',
+            category: 'range-focus'
+          },
+          {
+            id: 'long-range',
+            name: 'Long Range Specialist',
+            description: 'Specializes in long-range archery',
+            category: 'range-focus'
+          }
+        ]
+      },
+      {
+        id: 'venue-type',
+        name: 'Competition Venue',
+        description: 'Select your preferred competition venue',
+        required: true,
+        options: [
+          {
+            id: 'indoor-competitor',
+            name: 'Indoor Competitor',
+            description: 'Specializes in indoor archery competitions',
+            category: 'venue-type'
+          },
+          {
+            id: 'outdoor-competitor',
+            name: 'Outdoor Competitor',
+            description: 'Specializes in outdoor archery competitions',
+            category: 'venue-type'
+          }
+        ]
+      }
+    ]
+  },
+  // Archery - Recurve Archer - Team Event
+  {
+    sportId: 'archery',
+    positionId: 'recurve-archer',
+    subcategoryId: 'team-event',
+    categories: [
+      {
+        id: 'range-focus',
+        name: 'Range Focus',
+        description: 'Select your range specialization',
+        required: true,
+        options: [
+          {
+            id: 'short-range',
+            name: 'Short Range Specialist',
+            description: 'Specializes in short-range archery',
+            category: 'range-focus'
+          },
+          {
+            id: 'mid-range',
+            name: 'Mid Range Specialist',
+            description: 'Specializes in mid-range archery',
+            category: 'range-focus'
+          },
+          {
+            id: 'long-range',
+            name: 'Long Range Specialist',
+            description: 'Specializes in long-range archery',
+            category: 'range-focus'
+          }
+        ]
+      },
+      {
+        id: 'venue-type',
+        name: 'Competition Venue',
+        description: 'Select your preferred competition venue',
+        required: true,
+        options: [
+          {
+            id: 'indoor-competitor',
+            name: 'Indoor Competitor',
+            description: 'Specializes in indoor archery competitions',
+            category: 'venue-type'
+          },
+          {
+            id: 'outdoor-competitor',
+            name: 'Outdoor Competitor',
+            description: 'Specializes in outdoor archery competitions',
+            category: 'venue-type'
+          }
+        ]
+      }
+    ]
+  },
+  // Archery - Compound Archer - Individual Event
+  {
+    sportId: 'archery',
+    positionId: 'compound-archer',
+    subcategoryId: 'individual',
+    categories: [
+      {
+        id: 'range-focus',
+        name: 'Range Focus',
+        description: 'Select your range specialization',
+        required: true,
+        options: [
+          {
+            id: 'short-range',
+            name: 'Short Range Specialist',
+            description: 'Specializes in short-range archery',
+            category: 'range-focus'
+          },
+          {
+            id: 'mid-range',
+            name: 'Mid Range Specialist',
+            description: 'Specializes in mid-range archery',
+            category: 'range-focus'
+          },
+          {
+            id: 'long-range',
+            name: 'Long Range Specialist',
+            description: 'Specializes in long-range archery',
+            category: 'range-focus'
+          }
+        ]
+      },
+      {
+        id: 'venue-type',
+        name: 'Competition Venue',
+        description: 'Select your preferred competition venue',
+        required: true,
+        options: [
+          {
+            id: 'indoor-competitor',
+            name: 'Indoor Competitor',
+            description: 'Specializes in indoor archery competitions',
+            category: 'venue-type'
+          },
+          {
+            id: 'outdoor-competitor',
+            name: 'Outdoor Competitor',
+            description: 'Specializes in outdoor archery competitions',
+            category: 'venue-type'
+          }
+        ]
+      }
+    ]
+  },
+  // Archery - Compound Archer - Team Event
+  {
+    sportId: 'archery',
+    positionId: 'compound-archer',
+    subcategoryId: 'team-event',
+    categories: [
+      {
+        id: 'range-focus',
+        name: 'Range Focus',
+        description: 'Select your range specialization',
+        required: true,
+        options: [
+          {
+            id: 'short-range',
+            name: 'Short Range Specialist',
+            description: 'Specializes in short-range archery',
+            category: 'range-focus'
+          },
+          {
+            id: 'mid-range',
+            name: 'Mid Range Specialist',
+            description: 'Specializes in mid-range archery',
+            category: 'range-focus'
+          },
+          {
+            id: 'long-range',
+            name: 'Long Range Specialist',
+            description: 'Specializes in long-range archery',
+            category: 'range-focus'
+          }
+        ]
+      },
+      {
+        id: 'venue-type',
+        name: 'Competition Venue',
+        description: 'Select your preferred competition venue',
+        required: true,
+        options: [
+          {
+            id: 'indoor-competitor',
+            name: 'Indoor Competitor',
+            description: 'Specializes in indoor archery competitions',
+            category: 'venue-type'
+          },
+          {
+            id: 'outdoor-competitor',
+            name: 'Outdoor Competitor',
+            description: 'Specializes in outdoor archery competitions',
+            category: 'venue-type'
+          }
+        ]
+      }
+    ]
+  },
+  // Boxing - Flyweight
+  {
+    sportId: 'boxing',
+    positionId: 'boxer',
+    subcategoryId: 'flyweight',
+    categories: [
+      {
+        id: 'style-of-play',
+        name: 'Style of Play',
+        description: 'Select your boxing style',
+        required: true,
+        options: [
+          {
+            id: 'out-boxer',
+            name: 'Out-Boxer (Distance Fighter)',
+            description: 'Fights from distance using long-range punches',
+            category: 'style-of-play'
+          },
+          {
+            id: 'pressure-fighter',
+            name: 'Pressure Fighter',
+            description: 'Applies constant forward pressure on opponent',
+            category: 'style-of-play'
+          },
+          {
+            id: 'counter-puncher',
+            name: 'Counter Puncher',
+            description: 'Defensive style focusing on counterattacking',
+            category: 'style-of-play'
+          },
+          {
+            id: 'swarmer',
+            name: 'Swarmer',
+            description: 'Aggressive in-fighting style with close-range combat',
+            category: 'style-of-play'
+          }
+        ]
+      }
+    ]
+  },
+  // Boxing - Featherweight
+  {
+    sportId: 'boxing',
+    positionId: 'boxer',
+    subcategoryId: 'featherweight',
+    categories: [
+      {
+        id: 'style-of-play',
+        name: 'Style of Play',
+        description: 'Select your boxing style',
+        required: true,
+        options: [
+          {
+            id: 'out-boxer',
+            name: 'Out-Boxer (Distance Fighter)',
+            description: 'Fights from distance using long-range punches',
+            category: 'style-of-play'
+          },
+          {
+            id: 'pressure-fighter',
+            name: 'Pressure Fighter',
+            description: 'Applies constant forward pressure on opponent',
+            category: 'style-of-play'
+          },
+          {
+            id: 'counter-puncher',
+            name: 'Counter Puncher',
+            description: 'Defensive style focusing on counterattacking',
+            category: 'style-of-play'
+          },
+          {
+            id: 'swarmer',
+            name: 'Swarmer',
+            description: 'Aggressive in-fighting style with close-range combat',
+            category: 'style-of-play'
+          }
+        ]
+      }
+    ]
+  },
+  // Boxing - Lightweight
+  {
+    sportId: 'boxing',
+    positionId: 'boxer',
+    subcategoryId: 'lightweight',
+    categories: [
+      {
+        id: 'style-of-play',
+        name: 'Style of Play',
+        description: 'Select your boxing style',
+        required: true,
+        options: [
+          {
+            id: 'out-boxer',
+            name: 'Out-Boxer (Distance Fighter)',
+            description: 'Fights from distance using long-range punches',
+            category: 'style-of-play'
+          },
+          {
+            id: 'pressure-fighter',
+            name: 'Pressure Fighter',
+            description: 'Applies constant forward pressure on opponent',
+            category: 'style-of-play'
+          },
+          {
+            id: 'counter-puncher',
+            name: 'Counter Puncher',
+            description: 'Defensive style focusing on counterattacking',
+            category: 'style-of-play'
+          },
+          {
+            id: 'swarmer',
+            name: 'Swarmer',
+            description: 'Aggressive in-fighting style with close-range combat',
+            category: 'style-of-play'
+          }
+        ]
+      }
+    ]
+  },
+  // Boxing - Welterweight
+  {
+    sportId: 'boxing',
+    positionId: 'boxer',
+    subcategoryId: 'welterweight',
+    categories: [
+      {
+        id: 'style-of-play',
+        name: 'Style of Play',
+        description: 'Select your boxing style',
+        required: true,
+        options: [
+          {
+            id: 'out-boxer',
+            name: 'Out-Boxer (Distance Fighter)',
+            description: 'Fights from distance using long-range punches',
+            category: 'style-of-play'
+          },
+          {
+            id: 'pressure-fighter',
+            name: 'Pressure Fighter',
+            description: 'Applies constant forward pressure on opponent',
+            category: 'style-of-play'
+          },
+          {
+            id: 'counter-puncher',
+            name: 'Counter Puncher',
+            description: 'Defensive style focusing on counterattacking',
+            category: 'style-of-play'
+          },
+          {
+            id: 'swarmer',
+            name: 'Swarmer',
+            description: 'Aggressive in-fighting style with close-range combat',
+            category: 'style-of-play'
+          }
+        ]
+      }
+    ]
+  },
+  // Boxing - Middleweight
+  {
+    sportId: 'boxing',
+    positionId: 'boxer',
+    subcategoryId: 'middleweight',
+    categories: [
+      {
+        id: 'style-of-play',
+        name: 'Style of Play',
+        description: 'Select your boxing style',
+        required: true,
+        options: [
+          {
+            id: 'out-boxer',
+            name: 'Out-Boxer (Distance Fighter)',
+            description: 'Fights from distance using long-range punches',
+            category: 'style-of-play'
+          },
+          {
+            id: 'pressure-fighter',
+            name: 'Pressure Fighter',
+            description: 'Applies constant forward pressure on opponent',
+            category: 'style-of-play'
+          },
+          {
+            id: 'counter-puncher',
+            name: 'Counter Puncher',
+            description: 'Defensive style focusing on counterattacking',
+            category: 'style-of-play'
+          },
+          {
+            id: 'swarmer',
+            name: 'Swarmer',
+            description: 'Aggressive in-fighting style with close-range combat',
+            category: 'style-of-play'
+          }
+        ]
+      }
+    ]
+  },
+  // Boxing - Heavyweight
+  {
+    sportId: 'boxing',
+    positionId: 'boxer',
+    subcategoryId: 'heavyweight',
+    categories: [
+      {
+        id: 'style-of-play',
+        name: 'Style of Play',
+        description: 'Select your boxing style',
+        required: true,
+        options: [
+          {
+            id: 'out-boxer',
+            name: 'Out-Boxer (Distance Fighter)',
+            description: 'Fights from distance using long-range punches',
+            category: 'style-of-play'
+          },
+          {
+            id: 'pressure-fighter',
+            name: 'Pressure Fighter',
+            description: 'Applies constant forward pressure on opponent',
+            category: 'style-of-play'
+          },
+          {
+            id: 'counter-puncher',
+            name: 'Counter Puncher',
+            description: 'Defensive style focusing on counterattacking',
+            category: 'style-of-play'
+          },
+          {
+            id: 'swarmer',
+            name: 'Swarmer',
+            description: 'Aggressive in-fighting style with close-range combat',
+            category: 'style-of-play'
+          }
+        ]
+      }
+    ]
+  },
+  // Golf - Professional - Long Drive Specialist
+  {
+    sportId: 'golf',
+    positionId: 'professional-golfer',
+    subcategoryId: 'long-drive-specialist',
+    categories: [
+      {
+        id: 'tournament-type',
+        name: 'Tournament Type',
+        description: 'Select your preferred tournament type',
+        required: true,
+        options: [
+          {
+            id: 'stroke-play',
+            name: 'Stroke Play',
+            description: 'Total strokes counted throughout the round',
+            category: 'tournament-type'
+          },
+          {
+            id: 'match-play',
+            name: 'Match Play',
+            description: 'Head-to-head competition by holes won',
+            category: 'tournament-type'
+          }
+        ]
+      }
+    ]
+  },
+  // Golf - Professional - Short Game Specialist
+  {
+    sportId: 'golf',
+    positionId: 'professional-golfer',
+    subcategoryId: 'short-game-specialist',
+    categories: [
+      {
+        id: 'tournament-type',
+        name: 'Tournament Type',
+        description: 'Select your preferred tournament type',
+        required: true,
+        options: [
+          {
+            id: 'stroke-play',
+            name: 'Stroke Play',
+            description: 'Total strokes counted throughout the round',
+            category: 'tournament-type'
+          },
+          {
+            id: 'match-play',
+            name: 'Match Play',
+            description: 'Head-to-head competition by holes won',
+            category: 'tournament-type'
+          }
+        ]
+      }
+    ]
+  },
+  // Golf - Professional - All-Rounder
+  {
+    sportId: 'golf',
+    positionId: 'professional-golfer',
+    subcategoryId: 'all-rounder',
+    categories: [
+      {
+        id: 'tournament-type',
+        name: 'Tournament Type',
+        description: 'Select your preferred tournament type',
+        required: true,
+        options: [
+          {
+            id: 'stroke-play',
+            name: 'Stroke Play',
+            description: 'Total strokes counted throughout the round',
+            category: 'tournament-type'
+          },
+          {
+            id: 'match-play',
+            name: 'Match Play',
+            description: 'Head-to-head competition by holes won',
+            category: 'tournament-type'
+          }
+        ]
+      }
+    ]
+  },
+  // Golf - Amateur - Long Drive Specialist
+  {
+    sportId: 'golf',
+    positionId: 'amateur-golfer',
+    subcategoryId: 'long-drive-specialist',
+    categories: [
+      {
+        id: 'tournament-type',
+        name: 'Tournament Type',
+        description: 'Select your preferred tournament type',
+        required: true,
+        options: [
+          {
+            id: 'stroke-play',
+            name: 'Stroke Play',
+            description: 'Total strokes counted throughout the round',
+            category: 'tournament-type'
+          },
+          {
+            id: 'match-play',
+            name: 'Match Play',
+            description: 'Head-to-head competition by holes won',
+            category: 'tournament-type'
+          }
+        ]
+      }
+    ]
+  },
+  // Golf - Amateur - Short Game Specialist
+  {
+    sportId: 'golf',
+    positionId: 'amateur-golfer',
+    subcategoryId: 'short-game-specialist',
+    categories: [
+      {
+        id: 'tournament-type',
+        name: 'Tournament Type',
+        description: 'Select your preferred tournament type',
+        required: true,
+        options: [
+          {
+            id: 'stroke-play',
+            name: 'Stroke Play',
+            description: 'Total strokes counted throughout the round',
+            category: 'tournament-type'
+          },
+          {
+            id: 'match-play',
+            name: 'Match Play',
+            description: 'Head-to-head competition by holes won',
+            category: 'tournament-type'
+          }
+        ]
+      }
+    ]
+  },
+  // Golf - Amateur - All-Rounder
+  {
+    sportId: 'golf',
+    positionId: 'amateur-golfer',
+    subcategoryId: 'all-rounder',
+    categories: [
+      {
+        id: 'tournament-type',
+        name: 'Tournament Type',
+        description: 'Select your preferred tournament type',
+        required: true,
+        options: [
+          {
+            id: 'stroke-play',
+            name: 'Stroke Play',
+            description: 'Total strokes counted throughout the round',
+            category: 'tournament-type'
+          },
+          {
+            id: 'match-play',
+            name: 'Match Play',
+            description: 'Head-to-head competition by holes won',
+            category: 'tournament-type'
+          }
+        ]
+      }
+    ]
   }
 ];
 
