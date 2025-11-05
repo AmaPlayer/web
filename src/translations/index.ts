@@ -125,6 +125,7 @@ export const translations: Translations = {
     keepMeLoggedIn: 'Keep me logged in',
     signingIn: 'Signing in...',
     connecting: 'Connecting...',
+    redirecting: 'Redirecting...',
     joinAmaPlayerWithGoogle: 'Join AmaPlayer with Google',
     signInWithAppleButton: 'Sign in with Apple',
     hidePassword: 'Hide password',
@@ -601,6 +602,7 @@ export const translations: Translations = {
     loginAs: 'इस रूप में लॉगिन करें',
     enterCredentials: 'जारी रखने के लिए अपनी साख दर्ज करें',
     loginFunctionalityComingSoon: 'लॉगिन कार्यक्षमता जल्द ही उपलब्ध होगी।',
+    redirecting: 'रीडायरेक्ट हो रहा है...',
     
     // Common
     loading: 'लोड हो रहा है...',

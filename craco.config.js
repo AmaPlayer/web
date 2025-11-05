@@ -29,6 +29,12 @@ module.exports = {
     client: {
       webSocketURL: 'auto://0.0.0.0:0/ws',
     },
+    // Add headers to fix COOP issues
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      'Cross-Origin-Embedder-Policy': 'unsafe-none',
+      'Referrer-Policy': 'strict-origin-when-cross-origin'
+    },
     // Suppress WebSocket errors in console
     onListening: function (devServer) {
       if (!devServer) {

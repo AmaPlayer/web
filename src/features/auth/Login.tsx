@@ -35,6 +35,26 @@ export default function Login() {
     }
   }, [role]);
 
+  // Handle redirect result from social login
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        // This will be handled by AuthContext's useEffect
+        // Just check if we're in a loading state from a redirect
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('mode') === 'signIn' || window.location.hash.includes('access_token')) {
+          setLoading(true);
+          showWarning('Processing authentication...', 'Please wait while we complete your login.');
+        }
+      } catch (error) {
+        console.error('Error handling redirect result:', error);
+        setLoading(false);
+      }
+    };
+
+    handleRedirectResult();
+  }, [showWarning]);
+
   // Clear field-specific errors when user starts typing
   const handleEmailChange = (value: string): void => {
     setEmail(value);
@@ -157,8 +177,11 @@ export default function Login() {
       setLoading(true);
       setCanRetry(false);
       
+      // Show user that redirect is happening
+      showWarning(t('redirecting'), 'You will be redirected to Google for authentication...');
+      
       await googleLogin();
-      handleSuccessfulLogin();
+      // Note: handleSuccessfulLogin will be called after redirect in useEffect
     } catch (error) {
       const errorInfo = authErrorHandler.formatErrorForDisplay(error);
       const errorMessage = errorInfo.message + (errorInfo.action ? ` ${errorInfo.action}` : '');
@@ -166,7 +189,6 @@ export default function Login() {
       setError(errorMessage);
       setCanRetry(errorInfo.canRetry);
       showError(t('googleLoginFailed'), errorMessage);
-    } finally {
       setLoading(false);
     }
   }
@@ -179,8 +201,11 @@ export default function Login() {
       setLoading(true);
       setCanRetry(false);
       
+      // Show user that redirect is happening
+      showWarning(t('redirecting'), 'You will be redirected to Apple for authentication...');
+      
       await appleLogin();
-      handleSuccessfulLogin();
+      // Note: handleSuccessfulLogin will be called after redirect in useEffect
     } catch (error) {
       const errorInfo = authErrorHandler.formatErrorForDisplay(error);
       const errorMessage = errorInfo.message + (errorInfo.action ? ` ${errorInfo.action}` : '');
@@ -188,7 +213,6 @@ export default function Login() {
       setError(errorMessage);
       setCanRetry(errorInfo.canRetry);
       showError(t('appleLoginFailed'), errorMessage);
-    } finally {
       setLoading(false);
     }
   }

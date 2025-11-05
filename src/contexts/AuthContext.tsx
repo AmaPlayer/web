@@ -187,43 +187,100 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   async function googleLogin(): Promise<UserCredential | void> {
     const provider = new GoogleAuthProvider();
     
+    // Add additional scopes for better user experience
+    provider.addScope('email');
+    provider.addScope('profile');
+    
+    // Set custom parameters to avoid COOP issues
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
+    
     try {
-      // First try popup method
-      return await signInWithPopup(auth, provider);
+      // Use redirect method by default to avoid COOP issues
+      console.log('🔄 Starting Google login with redirect method...');
+      return await signInWithRedirect(auth, provider);
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
-      errorHandler.handleAuthError(err, { 
-        method: 'google_login_popup',
-        errorCode: (error as { code?: string }).code 
-      });
-      
-      // If popup fails due to CORS, popup blocked, or other popup issues, fallback to redirect
       const errorCode = (error as { code?: string }).code;
       const errorMessage = (error as { message?: string }).message;
       
-      if (errorCode === 'auth/popup-blocked' || 
-          errorCode === 'auth/popup-closed-by-user' ||
-          errorCode === 'auth/cancelled-popup-request' ||
-          errorMessage?.includes('Cross-Origin-Opener-Policy') ||
-          errorMessage?.includes('popup')) {
+      console.error('❌ Google login error:', { errorCode, errorMessage });
+      
+      errorHandler.handleAuthError(err, { 
+        method: 'google_login_redirect',
+        errorCode: errorCode 
+      });
+      
+      // If redirect also fails, try popup as fallback (though less likely to work with COOP)
+      if (errorCode === 'auth/redirect-cancelled-by-user' || 
+          errorCode === 'auth/redirect-operation-pending') {
         
-        errorHandler.logError(err, 'Auth-GoogleLogin-Fallback', 'warning', {
-          fallbackMethod: 'redirect',
-          originalError: errorCode
-        });
+        console.log('🔄 Redirect failed, attempting popup fallback...');
         
-        return signInWithRedirect(auth, provider);
+        try {
+          return await signInWithPopup(auth, provider);
+        } catch (popupError: unknown) {
+          const popupErr = popupError instanceof Error ? popupError : new Error(String(popupError));
+          console.error('❌ Popup fallback also failed:', popupErr);
+          
+          errorHandler.logError(popupErr, 'Auth-GoogleLogin-PopupFallback', 'error', {
+            originalError: errorCode,
+            fallbackError: (popupError as { code?: string }).code
+          });
+          
+          throw popupError;
+        }
       }
+      
       throw error;
     }
   }
 
-  function appleLogin(): Promise<UserCredential> {
+  async function appleLogin(): Promise<UserCredential | void> {
     const provider = new OAuthProvider('apple.com');
     // Request additional scopes if needed
     provider.addScope('email');
     provider.addScope('name');
-    return signInWithPopup(auth, provider);
+    
+    try {
+      // Use redirect method by default to avoid COOP issues
+      console.log('🔄 Starting Apple login with redirect method...');
+      return await signInWithRedirect(auth, provider);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      const errorCode = (error as { code?: string }).code;
+      
+      console.error('❌ Apple login error:', { errorCode });
+      
+      errorHandler.handleAuthError(err, { 
+        method: 'apple_login_redirect',
+        errorCode: errorCode 
+      });
+      
+      // If redirect fails, try popup as fallback
+      if (errorCode === 'auth/redirect-cancelled-by-user' || 
+          errorCode === 'auth/redirect-operation-pending') {
+        
+        console.log('🔄 Redirect failed, attempting popup fallback...');
+        
+        try {
+          return await signInWithPopup(auth, provider);
+        } catch (popupError: unknown) {
+          const popupErr = popupError instanceof Error ? popupError : new Error(String(popupError));
+          console.error('❌ Popup fallback also failed:', popupErr);
+          
+          errorHandler.logError(popupErr, 'Auth-AppleLogin-PopupFallback', 'error', {
+            originalError: errorCode,
+            fallbackError: (popupError as { code?: string }).code
+          });
+          
+          throw popupError;
+        }
+      }
+      
+      throw error;
+    }
   }
 
   function logout(): Promise<void> {
