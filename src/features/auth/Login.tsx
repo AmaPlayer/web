@@ -22,7 +22,7 @@ export default function Login() {
   const [passwordError, setPasswordError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [canRetry, setCanRetry] = useState<boolean>(false);
-  const { login, guestLogin, googleLogin, appleLogin, getAuthErrorMessage } = useAuth();
+  const { login, guestLogin, googleLogin, appleLogin, getAuthErrorMessage, testGoogleAuthSetup } = useAuth();
   const { t } = useLanguage();
   const { toasts, showSuccess, showError, showWarning } = useToast();
   const navigate = useNavigate();
@@ -177,11 +177,8 @@ export default function Login() {
       setLoading(true);
       setCanRetry(false);
       
-      // Show user that redirect is happening
-      showWarning(t('redirecting'), 'You will be redirected to Google for authentication...');
-      
       await googleLogin();
-      // Note: handleSuccessfulLogin will be called after redirect in useEffect
+      handleSuccessfulLogin();
     } catch (error) {
       const errorInfo = authErrorHandler.formatErrorForDisplay(error);
       const errorMessage = errorInfo.message + (errorInfo.action ? ` ${errorInfo.action}` : '');
@@ -189,6 +186,7 @@ export default function Login() {
       setError(errorMessage);
       setCanRetry(errorInfo.canRetry);
       showError(t('googleLoginFailed'), errorMessage);
+    } finally {
       setLoading(false);
     }
   }
@@ -201,11 +199,8 @@ export default function Login() {
       setLoading(true);
       setCanRetry(false);
       
-      // Show user that redirect is happening
-      showWarning(t('redirecting'), 'You will be redirected to Apple for authentication...');
-      
       await appleLogin();
-      // Note: handleSuccessfulLogin will be called after redirect in useEffect
+      handleSuccessfulLogin();
     } catch (error) {
       const errorInfo = authErrorHandler.formatErrorForDisplay(error);
       const errorMessage = errorInfo.message + (errorInfo.action ? ` ${errorInfo.action}` : '');
@@ -213,6 +208,7 @@ export default function Login() {
       setError(errorMessage);
       setCanRetry(errorInfo.canRetry);
       showError(t('appleLoginFailed'), errorMessage);
+    } finally {
       setLoading(false);
     }
   }
@@ -324,6 +320,27 @@ export default function Login() {
             )}
           </button>
         </form>
+        
+        {/* Debug button for development */}
+        {process.env.NODE_ENV === 'development' && testGoogleAuthSetup && (
+          <div style={{ margin: '10px 0', textAlign: 'center' }}>
+            <button
+              type="button"
+              onClick={() => testGoogleAuthSetup()}
+              style={{
+                padding: '5px 10px',
+                fontSize: '12px',
+                backgroundColor: '#f0f0f0',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              🧪 Test Google Auth Setup
+            </button>
+          </div>
+        )}
+        
         <div className="social-login">
           <button
             disabled={loading}

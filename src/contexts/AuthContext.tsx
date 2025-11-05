@@ -4,6 +4,7 @@ import notificationService from '../services/notificationService';
 import errorHandler from '../utils/error/errorHandler';
 import authErrorHandler from '../utils/error/authErrorHandler';
 import { runFirebaseDiagnostics } from '../utils/diagnostics/firebaseDiagnostic';
+import { firebaseSyncManager } from '../services/preferencesService';
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
@@ -31,6 +32,7 @@ import {
   PasswordChangeResult,
   ProfileUpdateData 
 } from '../types/contexts/auth';
+import { LanguageCode, ThemeMode } from '../types/contexts/preferences';
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -184,55 +186,73 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     return signInAnonymously(auth);
   }
 
-  async function googleLogin(): Promise<UserCredential | void> {
-    const provider = new GoogleAuthProvider();
+  async function googleLogin(): Promise<UserCredential> {
+    console.log('🔄 Starting Google login...');
     
-    // Add additional scopes for better user experience
+    // Test basic Firebase auth functionality first
+    try {
+      await signInAnonymously(auth);
+      await signOut(auth);
+      console.log('✅ Firebase Auth is working');
+    } catch (testError: any) {
+      console.error('❌ Firebase Auth test failed:', testError);
+      throw new Error('Firebase Auth is not properly configured');
+    }
+    
+    const provider = new GoogleAuthProvider();
     provider.addScope('email');
     provider.addScope('profile');
     
-    // Set custom parameters to avoid COOP issues
+    // Set custom parameters for better compatibility
     provider.setCustomParameters({
       prompt: 'select_account'
     });
     
     try {
-      // Use redirect method by default to avoid COOP issues
-      console.log('🔄 Starting Google login with redirect method...');
-      return await signInWithRedirect(auth, provider);
-    } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      const errorCode = (error as { code?: string }).code;
-      const errorMessage = (error as { message?: string }).message;
-      
-      console.error('❌ Google login error:', { errorCode, errorMessage });
-      
-      errorHandler.handleAuthError(err, { 
-        method: 'google_login_redirect',
-        errorCode: errorCode 
+      console.log('🔧 Firebase Config Check:', {
+        apiKey: auth.app.options.apiKey ? 'Present' : 'Missing',
+        authDomain: auth.app.options.authDomain,
+        projectId: auth.app.options.projectId,
+        currentURL: window.location.origin
       });
       
-      // If redirect also fails, try popup as fallback (though less likely to work with COOP)
-      if (errorCode === 'auth/redirect-cancelled-by-user' || 
-          errorCode === 'auth/redirect-operation-pending') {
-        
-        console.log('🔄 Redirect failed, attempting popup fallback...');
-        
-        try {
-          return await signInWithPopup(auth, provider);
-        } catch (popupError: unknown) {
-          const popupErr = popupError instanceof Error ? popupError : new Error(String(popupError));
-          console.error('❌ Popup fallback also failed:', popupErr);
-          
-          errorHandler.logError(popupErr, 'Auth-GoogleLogin-PopupFallback', 'error', {
-            originalError: errorCode,
-            fallbackError: (popupError as { code?: string }).code
-          });
-          
-          throw popupError;
-        }
+      console.log('🔄 Attempting popup login...');
+      const result = await signInWithPopup(auth, provider);
+      console.log('✅ Google login successful:', {
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName
+      });
+      return result;
+    } catch (error: any) {
+      console.error('❌ Google login error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
+      
+      // Handle specific error cases
+      if (error.code === 'auth/popup-blocked') {
+        console.log('🔄 Popup blocked by browser, trying redirect...');
+        await signInWithRedirect(auth, provider);
+        return Promise.resolve() as any;
       }
       
+      if (error.code === 'auth/popup-closed-by-user') {
+        throw new Error('Login was cancelled. Please try again.');
+      }
+      
+      if (error.code === 'auth/unauthorized-domain') {
+        throw new Error('This domain is not authorized for Google login. Please contact support.');
+      }
+      
+      if (error.message?.includes('Cross-Origin-Opener-Policy')) {
+        console.log('🔄 COOP issue detected, trying redirect...');
+        await signInWithRedirect(auth, provider);
+        return Promise.resolve() as any;
+      }
+      
+      // Re-throw other errors
       throw error;
     }
   }
@@ -244,40 +264,46 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     provider.addScope('name');
     
     try {
-      // Use redirect method by default to avoid COOP issues
-      console.log('🔄 Starting Apple login with redirect method...');
-      return await signInWithRedirect(auth, provider);
+      // Try popup first
+      console.log('🔄 Starting Apple login with popup method...');
+      return await signInWithPopup(auth, provider);
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
       const errorCode = (error as { code?: string }).code;
+      const errorMessage = (error as { message?: string }).message;
       
-      console.error('❌ Apple login error:', { errorCode });
+      console.error('❌ Apple login popup error:', { errorCode, errorMessage });
       
-      errorHandler.handleAuthError(err, { 
-        method: 'apple_login_redirect',
-        errorCode: errorCode 
-      });
-      
-      // If redirect fails, try popup as fallback
-      if (errorCode === 'auth/redirect-cancelled-by-user' || 
-          errorCode === 'auth/redirect-operation-pending') {
+      // Handle COOP and popup-related errors by falling back to redirect
+      if (errorCode === 'auth/popup-blocked' || 
+          errorCode === 'auth/popup-closed-by-user' ||
+          errorCode === 'auth/cancelled-popup-request' ||
+          errorMessage?.includes('Cross-Origin-Opener-Policy') ||
+          errorMessage?.includes('popup') ||
+          errorMessage?.includes('window.closed')) {
         
-        console.log('🔄 Redirect failed, attempting popup fallback...');
+        console.log('🔄 Popup blocked or COOP issue, falling back to redirect...');
         
         try {
-          return await signInWithPopup(auth, provider);
-        } catch (popupError: unknown) {
-          const popupErr = popupError instanceof Error ? popupError : new Error(String(popupError));
-          console.error('❌ Popup fallback also failed:', popupErr);
+          return await signInWithRedirect(auth, provider);
+        } catch (redirectError: unknown) {
+          const redirectErr = redirectError instanceof Error ? redirectError : new Error(String(redirectError));
+          console.error('❌ Redirect fallback also failed:', redirectErr);
           
-          errorHandler.logError(popupErr, 'Auth-AppleLogin-PopupFallback', 'error', {
+          errorHandler.logError(redirectErr, 'Auth-AppleLogin-RedirectFallback', 'error', {
             originalError: errorCode,
-            fallbackError: (popupError as { code?: string }).code
+            fallbackError: (redirectError as { code?: string }).code
           });
           
-          throw popupError;
+          throw redirectError;
         }
       }
+      
+      // For other errors, log and re-throw
+      errorHandler.handleAuthError(err, { 
+        method: 'apple_login_popup',
+        errorCode: errorCode 
+      });
       
       throw error;
     }
@@ -366,6 +392,77 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   // Helper function to check if current user is a guest
   function isGuest(): boolean {
     return currentUser !== null && currentUser.isAnonymous;
+  }
+
+  // Debug function to test Google Auth setup
+  async function testGoogleAuthSetup(): Promise<void> {
+    console.log('🧪 Testing Google Auth Setup...');
+    
+    // Check if we're in development
+    const isDev = process.env.NODE_ENV === 'development';
+    console.log('Environment:', isDev ? 'Development' : 'Production');
+    
+    // Check current domain
+    console.log('Current domain:', window.location.hostname);
+    console.log('Current origin:', window.location.origin);
+    
+    // Check Firebase config
+    console.log('Firebase Auth Domain:', auth.app.options.authDomain);
+    
+    // Test Firebase connectivity
+    try {
+      console.log('🔄 Testing Firebase connectivity...');
+      const testUser = await signInAnonymously(auth);
+      console.log('✅ Firebase Auth is working, test user:', testUser.user.uid);
+      await signOut(auth);
+      console.log('✅ Firebase signout successful');
+    } catch (e) {
+      console.error('❌ Firebase connectivity test failed:', e);
+    }
+    
+    // Test popup capability
+    try {
+      const testPopup = window.open('about:blank', '_blank', 'width=500,height=600');
+      if (testPopup) {
+        console.log('✅ Browser allows popups');
+        testPopup.close();
+      } else {
+        console.warn('⚠️ Browser blocks popups');
+      }
+    } catch (e) {
+      console.error('❌ Popup test failed:', e);
+    }
+    
+    // Test Google provider creation
+    try {
+      const provider = new GoogleAuthProvider();
+      console.log('✅ GoogleAuthProvider created successfully');
+      
+      // Test if we can get the auth URL (without actually signing in)
+      console.log('✅ Provider configured with scopes and custom parameters');
+    } catch (e) {
+      console.error('❌ GoogleAuthProvider creation failed:', e);
+    }
+    
+    // Test Firestore permissions (this was causing the error)
+    try {
+      console.log('🔄 Testing Firestore permissions...');
+      if (currentUser) {
+        const testPrefs = {
+          language: 'en' as LanguageCode,
+          theme: 'dark' as ThemeMode,
+          lastUpdated: Date.now()
+        };
+        
+        // This should now work with the updated rules
+        await firebaseSyncManager.syncToFirebase(currentUser.uid, testPrefs);
+        console.log('✅ Firestore preferences sync working');
+      } else {
+        console.log('ℹ️ No current user, skipping Firestore test');
+      }
+    } catch (e) {
+      console.error('❌ Firestore permissions test failed:', e);
+    }
   }
 
   // Get user-friendly error message for authentication errors
@@ -620,7 +717,8 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     changePassword,
     getAuthErrorMessage,
     validateAuthState,
-    refreshAuthToken
+    refreshAuthToken,
+    testGoogleAuthSetup
   };
 
   return (

@@ -71,6 +71,9 @@ export interface AuthContextValue {
   
   /** Refresh authentication token */
   refreshAuthToken: () => Promise<void>;
+  
+  /** Test Google Auth setup (debug function) */
+  testGoogleAuthSetup?: () => Promise<void>;
 }
 
 /**
