@@ -49,7 +49,7 @@ export interface AuthContextValue {
   googleLogin: () => Promise<UserCredential | void>;
   
   /** Log in with Apple OAuth */
-  appleLogin: () => Promise<UserCredential>;
+  appleLogin: () => Promise<UserCredential | void>;
   
   /** Log out the current user */
   logout: () => Promise<void>;
