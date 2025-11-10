@@ -29,7 +29,7 @@ export const useNotifications = (currentUser: User | null, isGuest: boolean): Us
    * Check if notification prompt should be shown
    */
   useEffect(() => {
-    if (currentUser && !isGuest && Notification.permission === 'default') {
+    if (currentUser && !isGuest && typeof Notification !== 'undefined' && Notification.permission === 'default') {
       // Check if user has already dismissed the prompt
       const dismissed = localStorage.getItem('notificationPromptDismissed');
       if (!dismissed) {
@@ -95,7 +95,7 @@ export const useNotifications = (currentUser: User | null, isGuest: boolean): Us
    * @returns {string} Permission status ('default', 'granted', 'denied')
    */
   const getPermissionStatus = useCallback((): NotificationPermission => {
-    return Notification.permission;
+    return typeof Notification !== 'undefined' ? Notification.permission : 'default';
   }, []);
 
   /**

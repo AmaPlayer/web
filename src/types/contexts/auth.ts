@@ -1,11 +1,11 @@
 /**
  * Authentication Context Type Definitions
- * 
+ *
  * Defines types for the AuthContext which manages user authentication state
  * and provides authentication-related methods throughout the application.
  */
 
-import { User, UserCredential } from 'firebase/auth';
+import { User, UserCredential, AuthCredential } from 'firebase/auth';
 import { ReactNode } from 'react';
 
 /**
@@ -32,7 +32,10 @@ export interface ProfileUpdateData {
 export interface AuthContextValue {
   /** The currently authenticated user, or null if not authenticated */
   currentUser: User | null;
-  
+
+  /** Whether the auth state is still loading */
+  loading: boolean;
+
   /** Check if the current user is a guest (anonymous) */
   isGuest: () => boolean;
   
@@ -46,7 +49,7 @@ export interface AuthContextValue {
   guestLogin: () => Promise<UserCredential>;
   
   /** Log in with Google OAuth */
-  googleLogin: () => Promise<UserCredential | void>;
+  googleLogin: () => Promise<UserCredential>;
   
   /** Log in with Apple OAuth */
   appleLogin: () => Promise<UserCredential>;
@@ -68,12 +71,21 @@ export interface AuthContextValue {
 
   /** Get user-friendly error message for authentication errors */
   getAuthErrorMessage: (error: unknown) => string;
-  
+
   /** Validate current authentication state */
   validateAuthState: () => Promise<boolean>;
-  
+
   /** Refresh authentication token */
   refreshAuthToken: () => Promise<void>;
+
+  /** Check what sign-in methods are available for an email */
+  checkSignInMethods: (email: string) => Promise<string[]>;
+
+  /** Link Google credential with existing account */
+  linkGoogleAccount: (credential: AuthCredential) => Promise<UserCredential>;
+
+  /** Sign in with email/password and link Google credential */
+  signInAndLinkGoogle: (email: string, password: string, googleCredential: AuthCredential) => Promise<UserCredential>;
 }
 
 /**

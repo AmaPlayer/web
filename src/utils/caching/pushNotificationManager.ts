@@ -184,30 +184,30 @@ class PushNotificationManager {
 
   // Check and update permission status
   async checkPermissionStatus() {
-    if (!this.isSupported) return;
-    
+    if (!this.isSupported || typeof Notification === 'undefined') return;
+
     const permission = Notification.permission;
     this.isPermissionGranted = permission === 'granted';
     this.subscriptionStatus = permission;
-    
+
     console.log(`🔐 Notification permission: ${permission}`);
   }
 
   // Request notification permissions
   async requestPermission() {
-    if (!this.isSupported) {
+    if (!this.isSupported || typeof Notification === 'undefined') {
       throw new Error('Push notifications are not supported in this browser');
     }
-    
+
     if (Notification.permission === 'granted') {
       this.isPermissionGranted = true;
       return 'granted';
     }
-    
+
     if (Notification.permission === 'denied') {
       throw new Error('Notification permissions have been denied. Please enable them in browser settings.');
     }
-    
+
     try {
       const permission = await Notification.requestPermission();
       this.isPermissionGranted = permission === 'granted';

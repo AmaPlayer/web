@@ -10,11 +10,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Comment } from '../types/models';
-
-// Mock notification service
-const notificationService = {
-  sendCommentNotification: async (...args: any[]) => {}
-};
+import notificationService from '../services/notificationService';
 
 // Mock implementations for content filtering
 const filterChatMessage = (text: string) => ({

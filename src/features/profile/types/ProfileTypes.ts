@@ -1,4 +1,5 @@
 // TypeScript interfaces for enhanced profile functionality
+import { TalentVideo } from './TalentVideoTypes';
 
 export type UserRole = 'athlete' | 'organization' | 'parents' | 'coaches';
 
@@ -99,20 +100,6 @@ export interface ProfileEnhancedState {
   posts: Post[];
   personalDetails: PersonalDetails;
   physicalAttributes: PhysicalAttributes;
-}
-
-// Import TalentVideo type
-export interface TalentVideo {
-  id: string;
-  title: string;
-  description: string;
-  videoUrl: string;
-  thumbnailUrl: string;
-  sport: string;
-  skillCategory: string;
-  uploadDate: Date;
-  duration: number;
-  viewCount: number;
 }
 
 export interface RoleConfig {

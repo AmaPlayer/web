@@ -83,7 +83,7 @@ const PhysicalAttributesSection: React.FC<PhysicalAttributesSectionProps> = ({
               </div>
               <div className="attribute-content">
                 <span className="attribute-label">Height</span>
-                <span className="attribute-value">{physicalAttributes.height}</span>
+                <span className="attribute-value">{physicalAttributes.height} cm</span>
               </div>
             </div>
           )}
@@ -99,7 +99,7 @@ const PhysicalAttributesSection: React.FC<PhysicalAttributesSectionProps> = ({
               </div>
               <div className="attribute-content">
                 <span className="attribute-label">Weight</span>
-                <span className="attribute-value">{physicalAttributes.weight}</span>
+                <span className="attribute-value">{physicalAttributes.weight} kg</span>
               </div>
             </div>
           )}

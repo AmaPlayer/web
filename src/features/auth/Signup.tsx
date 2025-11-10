@@ -1,9 +1,8 @@
-import { useState, FormEvent, ChangeEvent } from 'react';
+import { useState, useEffect, FormEvent, ChangeEvent, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import ThemeToggle from '../../components/common/ui/ThemeToggle';
 import LanguageSelector from '../../components/common/forms/LanguageSelector';
-import { runFirebaseDiagnostics } from '../../utils/diagnostics/firebaseDiagnostic';
 import './Auth.css';
 
 export default function Signup() {
@@ -13,9 +12,25 @@ export default function Signup() {
   const [displayName, setDisplayName] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  const [diagnosticLoading, setDiagnosticLoading] = useState<boolean>(false);
-  const { signup, googleLogin, appleLogin } = useAuth();
+  const { signup, googleLogin, appleLogin, currentUser } = useAuth();
   const navigate = useNavigate();
+
+  // Load full name from personal details if available
+  useEffect(() => {
+    const pendingDetails = localStorage.getItem('pendingPersonalDetails');
+    if (pendingDetails) {
+      try {
+        const details = JSON.parse(pendingDetails);
+        if (details.fullName) {
+          setDisplayName(details.fullName);
+        }
+      } catch (err) {
+        console.error('Error parsing pending personal details:', err);
+      }
+    }
+  }, []);
+
+  // No longer need to check for redirect since we're using popup method
 
   // Helper function to save pending details after authentication
   async function savePendingDetails(): Promise<void> {
@@ -32,14 +47,25 @@ export default function Signup() {
       try {
         const athleteData = JSON.parse(pendingAthleteProfile);
 
-        await userService.updateUserProfile(user.uid, {
-          sports: athleteData.sports || [],
-          position: athleteData.position || null,
-          specializations: athleteData.specializations || {}
-        });
+        // Use athleteProfileService for proper data saving with denormalization
+        const athleteProfileService = (await import('../../services/api/athleteProfileService')).default;
 
-        localStorage.removeItem('pendingAthleteProfile');
-        console.log('✅ Athlete profile saved after signup');
+        // Ensure we have all required fields
+        if (athleteData.sports && athleteData.sports.length > 0 &&
+            athleteData.position && athleteData.subcategory) {
+          await athleteProfileService.createAthleteProfile({
+            userId: user.uid,
+            sports: athleteData.sports,
+            position: athleteData.position,
+            subcategory: athleteData.subcategory,
+            specializations: athleteData.specializations || {}
+          });
+
+          localStorage.removeItem('pendingAthleteProfile');
+          console.log('✅ Athlete profile saved after signup with athleteProfileService');
+        } else {
+          console.warn('⚠️ Incomplete athlete profile data, skipping save');
+        }
       } catch (err) {
         console.error('Error saving pending athlete profile:', err);
       }
@@ -51,38 +77,35 @@ export default function Signup() {
       try {
         const details = JSON.parse(pendingDetails);
 
-        await userService.updateUserProfile(user.uid, {
+        // Convert height if provided
+        const heightInCm = details.heightFeet || details.heightInches
+          ? Math.round((parseFloat(details.heightFeet || '0') * 30.48) + (parseFloat(details.heightInches || '0') * 2.54))
+          : null;
+
+        // Build profile data object, only including fields with values
+        const profileData: any = {
           displayName: details.fullName,
-          bio: details.bio || undefined,
           dateOfBirth: details.dateOfBirth,
           gender: details.gender,
-          height: details.height || undefined,
-          weight: details.weight || undefined,
           country: details.country,
           state: details.state,
           city: details.city,
-          mobile: details.phone || undefined,
           location: `${details.city}, ${details.state}, ${details.country}`
-        });
+        };
+
+        // Only add optional fields if they have values
+        if (details.bio) profileData.bio = details.bio;
+        if (heightInCm) profileData.height = heightInCm.toString();
+        if (details.weight) profileData.weight = details.weight;
+        if (details.phone) profileData.mobile = details.phone;
+
+        await userService.updateUserProfile(user.uid, profileData);
 
         localStorage.removeItem('pendingPersonalDetails');
         console.log('✅ Personal details saved after signup');
       } catch (err) {
         console.error('Error saving pending personal details:', err);
       }
-    }
-  }
-
-  async function handleDiagnostic(): Promise<void> {
-    setDiagnosticLoading(true);
-    try {
-      await runFirebaseDiagnostics();
-      alert('Diagnostic complete! Check the browser console for results.');
-    } catch (error) {
-      console.error('Diagnostic error:', error);
-      alert('Diagnostic failed. Check the browser console for details.');
-    } finally {
-      setDiagnosticLoading(false);
     }
   }
 
@@ -122,20 +145,20 @@ export default function Signup() {
     try {
       setError('');
       setLoading(true);
-      await googleLogin();
 
-      // Wait for auth state to update
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // googleLogin() now uses signInWithPopup - returns user credential directly
+      const userCredential = await googleLogin();
+      console.log('Google signup successful, handling user:', userCredential.user.email);
 
-      // Save pending details if they exist
+      // Save pending athlete profile data and navigate to home
       await savePendingDetails();
-
       navigate('/home');
     } catch (error) {
       setError('Failed to sign up with Google');
       console.error('Google signup error:', error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   async function handleAppleSignup(): Promise<void> {
@@ -235,29 +258,7 @@ export default function Signup() {
             Sign up with Apple
           </button>
         </div>
-        
-        {/* Diagnostic button for debugging */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="diagnostic-section" style={{ marginTop: '20px', padding: '10px', border: '1px dashed #ccc', borderRadius: '5px' }}>
-            <p style={{ fontSize: '12px', color: '#666', margin: '0 0 10px 0' }}>
-              Development Tools
-            </p>
-            <button 
-              disabled={diagnosticLoading}
-              className="auth-btn"
-              onClick={handleDiagnostic}
-              style={{ 
-                backgroundColor: '#f0f0f0', 
-                color: '#333', 
-                fontSize: '12px',
-                padding: '8px 16px'
-              }}
-            >
-              {diagnosticLoading ? 'Running Diagnostics...' : 'Test Firebase Connection'}
-            </button>
-          </div>
-        )}
-        
+
         <div className="auth-link-section">
           <p>Already have an account?</p>
           <button 

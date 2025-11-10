@@ -85,6 +85,7 @@ class AthleteProfileService {
         positionName: position.name,
         subcategory: subcategory?.id || null,
         subcategoryName: subcategory?.name || null,
+        playerType: subcategory?.name || null, // Save subcategory as playerType for profile display
         specializations: specializationValues,
 
         updatedAt: serverTimestamp(),
@@ -175,6 +176,7 @@ class AthleteProfileService {
       if (updatedProfile.subcategory) {
         denormalizedUpdate.subcategory = updatedProfile.subcategory.id;
         denormalizedUpdate.subcategoryName = updatedProfile.subcategory.name;
+        denormalizedUpdate.playerType = updatedProfile.subcategory.name; // Save subcategory as playerType for profile display
       }
 
       // Update event types and specializations

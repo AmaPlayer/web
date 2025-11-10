@@ -71,9 +71,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const getInitialMuteState = () => {
     try {
       const saved = localStorage.getItem('videoMutePreference');
-      return saved !== null ? saved === 'true' : true; // Default to muted if not set
+      return saved !== null ? saved === 'true' : false; // Default to unmuted if not set
     } catch {
-      return true; // Default to muted on error
+      return false; // Default to unmuted on error
     }
   };
 
@@ -257,12 +257,30 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         }
 
         // Auto-play video when active
+        // First try to play with current sound settings
         try {
           await video.play();
           setPlayerState(prev => ({ ...prev, isPlaying: true }));
         } catch (error) {
-          console.error('Auto-play failed:', error);
-          setPlayerState(prev => ({ ...prev, isPlaying: false }));
+          console.warn('Auto-play with sound failed, trying muted:', error);
+
+          // If autoplay failed (likely due to browser policy with unmuted video),
+          // try muting and playing again
+          try {
+            video.muted = true;
+            await video.play();
+            setPlayerState(prev => ({ ...prev, isPlaying: true, isMuted: true }));
+
+            // Update localStorage to reflect that autoplay required muting
+            try {
+              localStorage.setItem('videoMutePreference', 'true');
+            } catch (e) {
+              console.warn('Failed to save mute preference:', e);
+            }
+          } catch (mutedError) {
+            console.error('Auto-play failed even when muted:', mutedError);
+            setPlayerState(prev => ({ ...prev, isPlaying: false }));
+          }
         }
       } else {
         video.pause();

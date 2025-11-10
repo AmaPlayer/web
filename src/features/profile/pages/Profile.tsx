@@ -84,6 +84,7 @@ const Profile: React.FC = React.memo(() => {
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [uploadingProfilePicture, setUploadingProfilePicture] = useState(false);
   const [uploadingCoverPhoto, setUploadingCoverPhoto] = useState(false);
+  const [athleteSports, setAthleteSports] = useState<Array<{ id: string; name: string }>>([]);
 
 
 
@@ -171,6 +172,14 @@ const Profile: React.FC = React.memo(() => {
             const userData = userDoc.data();
 
             // Set personal details from Firestore data
+            // Handle sport data: use sportDetails (array of objects) or fall back to sport field
+            const sportData = userData.sportDetails && userData.sportDetails.length > 0
+              ? userData.sportDetails[0].name // Use first sport's name
+              : userData.sport;
+
+            // Handle position data: use positionName or fall back to position field
+            const positionData = userData.positionName || userData.position;
+
             setPersonalDetails({
               name: userData.displayName || userData.name || firebaseUser?.displayName || 'User',
               dateOfBirth: userData.dateOfBirth,
@@ -182,8 +191,8 @@ const Profile: React.FC = React.memo(() => {
               state: userData.state,
               country: userData.country,
               playerType: userData.playerType,
-              sport: userData.sport,
-              position: userData.position,
+              sport: sportData,
+              position: positionData,
               // Organization fields
               organizationName: userData.organizationName,
               organizationType: userData.organizationType,
@@ -219,6 +228,7 @@ const Profile: React.FC = React.memo(() => {
             setTalentVideos(userData.talentVideos || []);
             setProfilePicture(userData.profilePicture || userData.photoURL || null);
             setCoverPhoto(userData.coverPhoto || null);
+            setAthleteSports(userData.sportDetails || []);
 
             // Load saved role from Firestore if it exists (for profile owner only)
             if (isOwner && userData.role) {
@@ -1120,15 +1130,6 @@ const Profile: React.FC = React.memo(() => {
               specializations={personalDetails.specializations}
             />
 
-            {/* Role Selector - only show for profile owner */}
-            {isOwner && (
-              <RoleSelector
-                currentRole={currentRole}
-                onRoleChange={handleRoleChange}
-                className="profile-role-selector"
-              />
-            )}
-
             <div className="profile-stats" role="group" aria-label="Profile statistics">
               <div className="stat-item">
                 <span className="stat-number" aria-label={`${profileStats.posts} posts`}>{profileStats.posts}</span>
@@ -1178,74 +1179,54 @@ const Profile: React.FC = React.memo(() => {
               <span className="field-label" id="name-label">NAME</span>
               <span className="field-value" aria-labelledby="name-label">{personalDetails.name}</span>
             </div>
-            {currentRoleConfig.editableFields.includes('dateOfBirth') && (
-              <div className="field-row">
-                <span className="field-label" id="dob-label">DATE OF BIRTH</span>
-                <span className="field-value" aria-labelledby="dob-label">{personalDetails.dateOfBirth || 'Not specified'}</span>
-              </div>
-            )}
-            {currentRoleConfig.editableFields.includes('gender') && (
-              <div className="field-row">
-                <span className="field-label" id="gender-label">GENDER</span>
-                <span className="field-value" aria-labelledby="gender-label">{personalDetails.gender || 'Not specified'}</span>
-              </div>
-            )}
-            {currentRoleConfig.editableFields.includes('mobile') && (
-              <div className="field-row">
-                <span className="field-label" id="mobile-label">MOBILE</span>
-                <span className="field-value" aria-labelledby="mobile-label">{personalDetails.mobile || 'Not specified'}</span>
-              </div>
-            )}
-            {currentRoleConfig.editableFields.includes('email') && (
-              <div className="field-row">
-                <span className="field-label" id="email-label">EMAIL</span>
-                <span className="field-value" aria-labelledby="email-label">{personalDetails.email || 'Not specified'}</span>
-              </div>
-            )}
-            {currentRoleConfig.editableFields.includes('city') && (
-              <div className="field-row">
-                <span className="field-label" id="city-label">CITY</span>
-                <span className="field-value" aria-labelledby="city-label">{personalDetails.city || 'Not specified'}</span>
-              </div>
-            )}
-            {personalDetails.state && (
-              <div className="field-row">
-                <span className="field-label" id="state-label">STATE</span>
-                <span className="field-value" aria-labelledby="state-label">{personalDetails.state}</span>
-              </div>
-            )}
-            {personalDetails.country && (
-              <div className="field-row">
-                <span className="field-label" id="country-label">COUNTRY</span>
-                <span className="field-value" aria-labelledby="country-label">{personalDetails.country}</span>
-              </div>
-            )}
-            {currentRoleConfig.editableFields.includes('playerType') && (
-              <div className="field-row">
-                <span className="field-label" id="player-type-label">PLAYER TYPE</span>
-                <span className="field-value" aria-labelledby="player-type-label">
-                  {getDisplayValue(personalDetails.playerType) || 'Not specified'}
-                </span>
-              </div>
-            )}
-            {currentRoleConfig.editableFields.includes('sport') && (
-              <div className="field-row">
-                <span className="field-label" id="sport-label">SPORT</span>
-                <span className="field-value" aria-labelledby="sport-label">
-                  {getDisplayValue(personalDetails.sport) || 'Not specified'}
-                </span>
-              </div>
-            )}
-            {currentRoleConfig.editableFields.includes('position') && (
-              <div className="field-row">
-                <span className="field-label" id="position-label">POSITION</span>
-                <span className="field-value" aria-labelledby="position-label">
-                  {getDisplayValue(personalDetails.position) || 'Not specified'}
-                </span>
-              </div>
-            )}
             <div className="field-row">
-              <span className="field-label" id="role-label">ROLE</span>
+              <span className="field-label" id="dob-label">DATE OF BIRTH</span>
+              <span className="field-value" aria-labelledby="dob-label">{personalDetails.dateOfBirth || 'Not specified'}</span>
+            </div>
+            <div className="field-row">
+              <span className="field-label" id="gender-label">GENDER</span>
+              <span className="field-value" aria-labelledby="gender-label">{personalDetails.gender || 'Not specified'}</span>
+            </div>
+            <div className="field-row">
+              <span className="field-label" id="mobile-label">MOBILE</span>
+              <span className="field-value" aria-labelledby="mobile-label">{personalDetails.mobile || 'Not specified'}</span>
+            </div>
+            <div className="field-row">
+              <span className="field-label" id="email-label">EMAIL</span>
+              <span className="field-value" aria-labelledby="email-label">{personalDetails.email || 'Not specified'}</span>
+            </div>
+            <div className="field-row">
+              <span className="field-label" id="city-label">CITY</span>
+              <span className="field-value" aria-labelledby="city-label">{personalDetails.city || 'Not specified'}</span>
+            </div>
+            <div className="field-row">
+              <span className="field-label" id="state-label">STATE</span>
+              <span className="field-value" aria-labelledby="state-label">{personalDetails.state || 'Not specified'}</span>
+            </div>
+            <div className="field-row">
+              <span className="field-label" id="country-label">COUNTRY</span>
+              <span className="field-value" aria-labelledby="country-label">{personalDetails.country || 'Not specified'}</span>
+            </div>
+            <div className="field-row">
+              <span className="field-label" id="player-type-label">PLAYER TYPE</span>
+              <span className="field-value" aria-labelledby="player-type-label">
+                {getDisplayValue(personalDetails.playerType) || 'Not specified'}
+              </span>
+            </div>
+            <div className="field-row">
+              <span className="field-label" id="sport-label">SPORT</span>
+              <span className="field-value" aria-labelledby="sport-label">
+                {getDisplayValue(personalDetails.sport) || 'Not specified'}
+              </span>
+            </div>
+            <div className="field-row">
+              <span className="field-label" id="position-label">POSITION</span>
+              <span className="field-value" aria-labelledby="position-label">
+                {getDisplayValue(personalDetails.position) || 'Not specified'}
+              </span>
+            </div>
+            <div className="field-row">
+              <span className="field-label" id="role-label">ACCOUNT TYPE</span>
               <span className="field-value" aria-labelledby="role-label">{currentRoleConfig.displayName}</span>
             </div>
           </div>
@@ -1302,6 +1283,7 @@ const Profile: React.FC = React.memo(() => {
               <TalentVideosSection
                 videos={talentVideos}
                 isOwner={isOwner}
+                athleteSports={athleteSports}
                 {...videoHandlers}
                 onOpenEditModal={handleOpenEditModal}
               />

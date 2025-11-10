@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactElement } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactElement } from 'react';
 import { auth } from '../lib/firebase';
 import notificationService from '../services/notificationService';
 import errorHandler from '../utils/error/errorHandler';
@@ -23,8 +23,11 @@ import {
   EmailAuthProvider,
   updatePassword,
   sendPasswordResetEmail,
+  linkWithCredential,
+  fetchSignInMethodsForEmail,
   User,
-  UserCredential
+  UserCredential,
+  AuthCredential
 } from 'firebase/auth';
 import { 
   AuthContextValue, 
@@ -46,6 +49,7 @@ export function useAuth(): AuthContextValue {
 export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const redirectCheckRef = useRef(false);
 
   // Test Firebase connection
   async function testFirebaseConnection(): Promise<boolean> {
@@ -185,36 +189,89 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     return signInAnonymously(auth);
   }
 
-  async function googleLogin(): Promise<UserCredential | void> {
+  async function googleLogin(): Promise<UserCredential> {
     const provider = new GoogleAuthProvider();
-    
+    provider.addScope('email');
+    provider.addScope('profile');
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
+
+    console.log('🔵 Using POPUP method for Google Sign-In...');
+
     try {
-      // First try popup method
-      return await signInWithPopup(auth, provider);
-    } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      errorHandler.handleAuthError(err, { 
-        method: 'google_login_popup',
-        errorCode: (error as { code?: string }).code 
-      });
-      
-      // If popup fails due to CORS, popup blocked, or other popup issues, fallback to redirect
-      const errorCode = (error as { code?: string }).code;
-      const errorMessage = (error as { message?: string }).message;
-      
-      if (errorCode === 'auth/popup-blocked' || 
-          errorCode === 'auth/popup-closed-by-user' ||
-          errorCode === 'auth/cancelled-popup-request' ||
-          errorMessage?.includes('Cross-Origin-Opener-Policy') ||
-          errorMessage?.includes('popup')) {
-        
-        errorHandler.logError(err, 'Auth-GoogleLogin-Fallback', 'warning', {
-          fallbackMethod: 'redirect',
-          originalError: errorCode
-        });
-        
-        return signInWithRedirect(auth, provider);
+      // Use popup method - simpler, no redirect issues
+      const result = await signInWithPopup(auth, provider);
+      console.log('✅ Google popup login successful!', result.user.email);
+      return result;
+    } catch (error: any) {
+      console.error('❌ Error with Google popup:', error);
+
+      // Check if the error is due to account already existing with different credential
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        console.log('⚠️ Account exists with different credential - needs linking');
+        // Attach the credential and email to the error so UI can handle it
+        error.credential = GoogleAuthProvider.credentialFromError(error);
+        error.email = error.customData?.email;
       }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Check what sign-in methods are available for an email
+   */
+  async function checkSignInMethods(email: string): Promise<string[]> {
+    try {
+      const methods = await fetchSignInMethodsForEmail(auth, email);
+      return methods;
+    } catch (error) {
+      console.error('Error checking sign-in methods:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Link Google credential with existing email/password account
+   * Used when user has email/password account and wants to add Google sign-in
+   */
+  async function linkGoogleAccount(credential: AuthCredential): Promise<UserCredential> {
+    if (!currentUser) {
+      throw new Error('No user is currently signed in');
+    }
+
+    try {
+      console.log('🔗 Linking Google credential to existing account...');
+      const result = await linkWithCredential(currentUser, credential);
+      console.log('✅ Google account linked successfully!');
+      return result;
+    } catch (error) {
+      console.error('❌ Error linking Google account:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sign in with email/password and then link Google credential
+   * Used when user tries Google login but already has email/password account
+   */
+  async function signInAndLinkGoogle(email: string, password: string, googleCredential: AuthCredential): Promise<UserCredential> {
+    try {
+      console.log('🔐 Signing in with email/password to link Google account...');
+
+      // First, sign in with email/password
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
+      console.log('✅ Email/password sign-in successful');
+
+      // Then link the Google credential
+      console.log('🔗 Now linking Google credential...');
+      const result = await linkWithCredential(userCred.user, googleCredential);
+      console.log('✅ Google account linked successfully!');
+
+      return result;
+    } catch (error) {
+      console.error('❌ Error signing in and linking Google:', error);
       throw error;
     }
   }
@@ -228,6 +285,11 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   }
 
   function logout(): Promise<void> {
+    // Clear ALL redirect flags on logout
+    localStorage.removeItem('googleRedirectPending');
+    localStorage.removeItem('googleRedirectStartedAt');
+    localStorage.removeItem('googleRedirectCheckDone');
+    console.log('🚪 Logging out and clearing all redirect flags');
     return signOut(auth);
   }
 
@@ -254,40 +316,29 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   }
 
   useEffect(() => {
-    // Handle redirect result from Google OAuth
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) {
-          errorHandler.logError(new Error('Google redirect login successful'), 'Auth-GoogleRedirect', 'warning', {
-            userId: result.user.uid,
-            method: 'redirect_success'
-          });
-          setCurrentUser(result.user);
-        }
-      })
-      .catch((error: unknown) => {
-        const err = error instanceof Error ? error : new Error(String(error));
-        errorHandler.handleAuthError(err, { 
-          method: 'google_redirect_result',
-          errorCode: (error as { code?: string }).code 
-        });
-      });
+    // Using popup method now, no need to check for redirect results
+    console.log('🔵 Auth initialization (popup method - no redirect check needed)');
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('🔄 Auth state changed:', {
+        hasUser: !!user,
+        email: user?.email,
+        isAnonymous: user?.isAnonymous
+      });
       setCurrentUser(user);
       setLoading(false);
       
       // Only initialize notifications if permission is already granted and user is on authenticated pages
-      if (user && !user.isAnonymous && Notification.permission === 'granted') {
+      // Check if Notification API is supported (not available on iOS Safari/Chrome)
+      if (user && !user.isAnonymous && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
         // Check if we're on an authenticated page (not landing/login/signup)
         const currentPath = window.location.pathname;
         const isAuthenticatedPage = !['/','', '/landing', '/login', '/signup'].includes(currentPath);
-        
+
         if (isAuthenticatedPage) {
           try {
-            await notificationService.initialize();
-            await notificationService.getAndSaveToken(user.uid);
-            
+            await notificationService.initialize(user.uid);
+
             console.log('✅ Notifications initialized successfully', {
               userId: user.uid,
               page: currentPath
@@ -566,6 +617,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
 
   const value: AuthContextValue = {
     currentUser,
+    loading,
     isGuest,
     signup,
     login,
@@ -579,7 +631,10 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     resetPassword,
     getAuthErrorMessage,
     validateAuthState,
-    refreshAuthToken
+    refreshAuthToken,
+    checkSignInMethods,
+    linkGoogleAccount,
+    signInAndLinkGoogle
   };
 
   return (

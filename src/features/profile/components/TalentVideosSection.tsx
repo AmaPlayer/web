@@ -9,6 +9,7 @@ import '../styles/TalentVideosSection.css';
 const TalentVideosSection: React.FC<TalentVideosSectionProps> = ({
   videos,
   isOwner,
+  athleteSports = [],
   onAddVideo,
   onEditVideo,
   onDeleteVideo,
@@ -38,15 +39,29 @@ const TalentVideosSection: React.FC<TalentVideosSectionProps> = ({
     }
 
     if (selectedCategory) {
-      filtered = filtered.filter(video => video.skillCategory === selectedCategory);
+      // Support both sport-specific skills and generic categories
+      filtered = filtered.filter(video =>
+        video.specificSkill === selectedCategory ||
+        video.mainCategory === selectedCategory ||
+        video.skillCategory === selectedCategory
+      );
     }
 
     // Sort by upload date (newest first)
     filtered.sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
 
-    // Get unique sports and categories for filter options
+    // Get unique sports for filter options (use sportName if available)
     const sports = [...new Set(videos.map(video => video.sport))].sort();
-    const categories = [...new Set(videos.map(video => video.skillCategory))].sort();
+
+    // Get unique categories/skills for filter options
+    // Combine specific skills, main categories, and generic skill categories
+    const categoriesSet = new Set<string>();
+    videos.forEach(video => {
+      if (video.specificSkill) categoriesSet.add(video.specificSkill);
+      if (video.mainCategory) categoriesSet.add(video.mainCategory);
+      if (video.skillCategory) categoriesSet.add(video.skillCategory);
+    });
+    const categories = [...categoriesSet].sort();
 
     return {
       filteredVideos: filtered,
@@ -87,6 +102,10 @@ const TalentVideosSection: React.FC<TalentVideosSectionProps> = ({
           title: videoData.title,
           description: videoData.description,
           sport: videoData.sport,
+          sportName: videoData.sportName,
+          mainCategory: videoData.mainCategory,
+          mainCategoryName: videoData.mainCategoryName,
+          specificSkill: videoData.specificSkill,
           skillCategory: videoData.skillCategory,
         };
         onEditVideo?.(updatedVideo);
@@ -148,6 +167,10 @@ const TalentVideosSection: React.FC<TalentVideosSectionProps> = ({
           videoUrl: videoUrl,
           thumbnailUrl: thumbnailUrl,
           sport: videoData.sport,
+          sportName: videoData.sportName,
+          mainCategory: videoData.mainCategory,
+          mainCategoryName: videoData.mainCategoryName,
+          specificSkill: videoData.specificSkill,
           skillCategory: videoData.skillCategory,
           uploadDate: new Date(),
           duration: Math.round(videoDuration),
@@ -494,7 +517,11 @@ const TalentVideosSection: React.FC<TalentVideosSectionProps> = ({
                   )}
                 </div>
                 <div className="video-meta">
-                  <span className="video-sport">{video.sport}</span>
+                  <span className="video-sport">
+                    {video.specificSkill
+                      ? `${video.sportName || video.sport} • ${video.specificSkill}`
+                      : video.sportName || video.sport}
+                  </span>
                   <span className="video-separator">•</span>
                   <span className="video-views">{formatViewCount(video.viewCount)}</span>
                   <span className="video-separator">•</span>
@@ -535,6 +562,7 @@ const TalentVideosSection: React.FC<TalentVideosSectionProps> = ({
         onSave={handleSaveVideo}
         editingVideo={editingVideo}
         isLoading={isLoading}
+        athleteSports={athleteSports}
       />
     </div>
   );

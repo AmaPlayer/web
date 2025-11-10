@@ -16,8 +16,17 @@ export interface TalentVideo {
   description: string;
   videoUrl: string;
   thumbnailUrl: string;
-  sport: string;
-  skillCategory: string;
+
+  // Sport-specific categorization (NEW)
+  sport: string; // Sport ID (e.g., 'cricket', 'football')
+  sportName?: string; // Display name (e.g., 'Cricket', 'Football')
+  mainCategory?: string; // Category ID (e.g., 'batting', 'shooting')
+  mainCategoryName?: string; // Display name (e.g., 'Batting', 'Shooting')
+  specificSkill?: string; // Skill name (e.g., 'Cover Drive', 'Volley')
+
+  // Legacy field (for backwards compatibility)
+  skillCategory?: string; // Generic category (e.g., 'Highlights', 'Training')
+
   uploadDate: Date;
   duration: number;
   viewCount: number;
@@ -34,6 +43,7 @@ export interface TalentVideo {
 export interface TalentVideosSectionProps {
   videos: TalentVideo[];
   isOwner: boolean;
+  athleteSports?: Array<{ id: string; name: string }>; // Athlete's selected sports
   onAddVideo?: () => void;
   onEditVideo?: (video: TalentVideo) => void;
   onDeleteVideo?: (videoId: string) => void;
@@ -51,6 +61,10 @@ export interface VideoFormData {
   title: string;
   description: string;
   sport: string;
-  skillCategory: string;
+  sportName?: string;
+  mainCategory?: string;
+  mainCategoryName?: string;
+  specificSkill?: string;
+  skillCategory?: string; // Legacy field for backwards compatibility
   videoFile?: File;
 }

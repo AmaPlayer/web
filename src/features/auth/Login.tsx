@@ -1,4 +1,4 @@
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Home, Eye, EyeOff } from 'lucide-react';
@@ -27,7 +27,15 @@ export default function Login() {
   const [resetEmailSent, setResetEmailSent] = useState<boolean>(false);
   const [resetError, setResetError] = useState<string>('');
   const [resetLoading, setResetLoading] = useState<boolean>(false);
-  const { login, guestLogin, googleLogin, appleLogin, resetPassword, getAuthErrorMessage } = useAuth();
+
+  // Account linking states
+  const [showLinkAccountModal, setShowLinkAccountModal] = useState<boolean>(false);
+  const [pendingGoogleCredential, setPendingGoogleCredential] = useState<any>(null);
+  const [linkingEmail, setLinkingEmail] = useState<string>('');
+  const [linkingPassword, setLinkingPassword] = useState<string>('');
+  const [linkingLoading, setLinkingLoading] = useState<boolean>(false);
+
+  const { login, guestLogin, googleLogin, appleLogin, resetPassword, getAuthErrorMessage, currentUser, signInAndLinkGoogle } = useAuth();
   const { t } = useLanguage();
   const { toasts, showSuccess, showError, showWarning } = useToast();
   const navigate = useNavigate();
@@ -39,6 +47,8 @@ export default function Login() {
       localStorage.setItem('selectedUserRole', role);
     }
   }, [role]);
+
+  // No longer need to check for redirect since we're using popup method
 
   // Clear field-specific errors when user starts typing
   const handleEmailChange = (value: string): void => {
@@ -93,16 +103,26 @@ export default function Login() {
         try {
           const athleteData = JSON.parse(pendingAthleteProfile);
 
-          // Save athlete profile to Firestore
-          await userService.updateUserProfile(user.uid, {
-            sports: athleteData.sports || [],
-            position: athleteData.position || null,
-            specializations: athleteData.specializations || {}
-          });
+          // Use athleteProfileService for proper data saving with denormalization
+          const athleteProfileService = (await import('../../services/api/athleteProfileService')).default;
 
-          // Clear the pending athlete profile data
-          localStorage.removeItem('pendingAthleteProfile');
-          console.log('✅ Athlete profile saved after login');
+          // Ensure we have all required fields
+          if (athleteData.sports && athleteData.sports.length > 0 &&
+              athleteData.position && athleteData.subcategory) {
+            await athleteProfileService.createAthleteProfile({
+              userId: user.uid,
+              sports: athleteData.sports,
+              position: athleteData.position,
+              subcategory: athleteData.subcategory,
+              specializations: athleteData.specializations || {}
+            });
+
+            // Clear the pending athlete profile data
+            localStorage.removeItem('pendingAthleteProfile');
+            console.log('✅ Athlete profile saved after login with athleteProfileService');
+          } else {
+            console.warn('⚠️ Incomplete athlete profile data, skipping save');
+          }
         } catch (error) {
           console.error('Error saving pending athlete profile:', error);
         }
@@ -114,20 +134,30 @@ export default function Login() {
         try {
           const details = JSON.parse(pendingDetails);
 
-          // Save personal details to Firestore
-          await userService.updateUserProfile(user.uid, {
+          // Convert height if provided (from feet and inches to cm)
+          const heightInCm = details.heightFeet || details.heightInches
+            ? Math.round((parseFloat(details.heightFeet || '0') * 30.48) + (parseFloat(details.heightInches || '0') * 2.54))
+            : null;
+
+          // Build profile data object, only including fields with values
+          const profileData: any = {
             displayName: details.fullName,
-            bio: details.bio || undefined,
             dateOfBirth: details.dateOfBirth,
             gender: details.gender,
-            height: details.height || undefined,
-            weight: details.weight || undefined,
             country: details.country,
             state: details.state,
             city: details.city,
-            mobile: details.phone || undefined,
             location: `${details.city}, ${details.state}, ${details.country}`
-          });
+          };
+
+          // Only add optional fields if they have values
+          if (details.bio) profileData.bio = details.bio;
+          if (heightInCm) profileData.height = heightInCm.toString();
+          if (details.weight) profileData.weight = details.weight;
+          if (details.phone) profileData.mobile = details.phone;
+
+          // Save personal details to Firestore
+          await userService.updateUserProfile(user.uid, profileData);
 
           // Clear the pending data
           localStorage.removeItem('pendingPersonalDetails');
@@ -218,21 +248,103 @@ export default function Login() {
       setPasswordError('');
       setLoading(true);
       setCanRetry(false);
-      
-      const result = await googleLogin();
-      if (result && result.user) {
-        handleSuccessfulLogin(result.user);
+
+      // googleLogin() now uses signInWithPopup - returns user credential directly
+      const userCredential = await googleLogin();
+      console.log('Google login successful, handling user:', userCredential.user.email);
+
+      // Handle successful login
+      await handleSuccessfulLogin(userCredential.user);
+    } catch (error: any) {
+      // Check if error is due to account existing with different credential
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        console.log('🔗 Account exists - showing link account modal');
+
+        // Extract the credential and email from the error
+        const credential = error.credential;
+        const email = error.email || error.customData?.email;
+
+        if (credential && email) {
+          // Show modal to ask user if they want to link accounts
+          setPendingGoogleCredential(credential);
+          setLinkingEmail(email);
+          setShowLinkAccountModal(true);
+          showWarning(
+            'Account Already Exists',
+            `An account with ${email} already exists. Sign in with your password to link your Google account.`
+          );
+        } else {
+          setError('An account with this email already exists. Please sign in with your email and password first.');
+          showError('Account Exists', 'Please sign in with your email and password first.');
+        }
+      } else {
+        const errorInfo = authErrorHandler.formatErrorForDisplay(error);
+        const errorMessage = errorInfo.message + (errorInfo.action ? ` ${errorInfo.action}` : '');
+
+        setError(errorMessage);
+        setCanRetry(errorInfo.canRetry);
+        showError('Google Login Failed', errorMessage);
       }
-    } catch (error) {
-      const errorInfo = authErrorHandler.formatErrorForDisplay(error);
-      const errorMessage = errorInfo.message + (errorInfo.action ? ` ${errorInfo.action}` : '');
-      
-      setError(errorMessage);
-      setCanRetry(errorInfo.canRetry);
-      showError('Google Login Failed', errorMessage);
     } finally {
       setLoading(false);
     }
+  }
+
+  // Handle account linking after user enters password
+  async function handleLinkAccounts(): Promise<void> {
+    if (!pendingGoogleCredential || !linkingEmail) {
+      setError('Missing linking information. Please try again.');
+      return;
+    }
+
+    if (!linkingPassword) {
+      setError('Please enter your password to link accounts.');
+      return;
+    }
+
+    try {
+      setLinkingLoading(true);
+      setError('');
+
+      console.log('🔗 Attempting to link Google account...');
+
+      // Sign in with email/password and link Google credential
+      const result = await signInAndLinkGoogle(linkingEmail, linkingPassword, pendingGoogleCredential);
+
+      console.log('✅ Accounts linked successfully!');
+      showSuccess('Accounts Linked!', 'You can now sign in with either email/password or Google.');
+
+      // Close modal and reset states
+      setShowLinkAccountModal(false);
+      setPendingGoogleCredential(null);
+      setLinkingEmail('');
+      setLinkingPassword('');
+
+      // Handle successful login
+      await handleSuccessfulLogin(result.user);
+    } catch (error: any) {
+      console.error('❌ Error linking accounts:', error);
+
+      if (error.code === 'auth/wrong-password') {
+        setError('Incorrect password. Please try again.');
+      } else {
+        const errorInfo = authErrorHandler.formatErrorForDisplay(error);
+        setError(errorInfo.message);
+      }
+
+      showError('Linking Failed', 'Could not link accounts. Please check your password and try again.');
+    } finally {
+      setLinkingLoading(false);
+    }
+  }
+
+  // Cancel account linking
+  function cancelLinking(): void {
+    setShowLinkAccountModal(false);
+    setPendingGoogleCredential(null);
+    setLinkingEmail('');
+    setLinkingPassword('');
+    setError('');
   }
 
   async function handleAppleLogin(): Promise<void> {
@@ -540,6 +652,81 @@ export default function Login() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Account Linking Modal */}
+    {showLinkAccountModal && (
+      <div className="modal-overlay" onClick={cancelLinking}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h2>Link Your Accounts</h2>
+          </div>
+          <div className="modal-body">
+            <p className="link-account-message">
+              An account with <strong>{linkingEmail}</strong> already exists.
+            </p>
+            <p className="link-account-message">
+              Enter your password to link your Google account with your existing email/password account.
+              After linking, you'll be able to sign in with either method.
+            </p>
+
+            {error && <div className="error">{error}</div>}
+
+            <div className="form-group">
+              <label>Email</label>
+              <input
+                type="email"
+                value={linkingEmail}
+                disabled
+                className="input-disabled"
+              />
+            </div>
+
+            <div className="form-group password-group">
+              <label>Password</label>
+              <div className="password-input-wrapper">
+                <input
+                  type="password"
+                  placeholder="Enter your password"
+                  value={linkingPassword}
+                  onChange={(e) => setLinkingPassword(e.target.value)}
+                  disabled={linkingLoading}
+                  autoFocus
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !linkingLoading) {
+                      handleLinkAccounts();
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="modal-actions">
+            <button
+              className="btn-secondary"
+              onClick={cancelLinking}
+              disabled={linkingLoading}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn-primary"
+              onClick={handleLinkAccounts}
+              disabled={linkingLoading || !linkingPassword}
+            >
+              {linkingLoading ? (
+                <>
+                  <LoadingSpinner size="small" color="white" className="in-button" />
+                  Linking...
+                </>
+              ) : (
+                'Link Accounts'
+              )}
+            </button>
           </div>
         </div>
       </div>

@@ -71,13 +71,13 @@ class NotificationService {
   private isSupported: boolean = false;
   private initialized: boolean = false;
 
-  async initialize(): Promise<void> {
+  async initialize(userId?: string): Promise<void> {
     if (this.initialized) return;
-    
+
     try {
       // Check if notifications are supported
       this.isSupported = 'Notification' in window && 'serviceWorker' in navigator && !!messaging;
-      
+
       if (!this.isSupported) {
         console.log('🔔 Push notifications not supported');
         this.initialized = true;
@@ -87,15 +87,15 @@ class NotificationService {
       // Check existing permission without requesting
       const permission = Notification.permission;
       console.log('🔔 Current notification permission:', permission);
-      
+
       if (permission === 'granted') {
-        await this.getAndSaveToken();
+        await this.getAndSaveToken(userId || null);
       }
-      
+
       // Set up foreground message listener
       this.setupForegroundListener();
       this.initialized = true;
-      
+
     } catch (error) {
       console.error('Error initializing notifications:', error);
       this.initialized = true;
@@ -162,25 +162,45 @@ class NotificationService {
         return null;
       }
 
+      // Check if service worker is available and ready
+      if (!('serviceWorker' in navigator)) {
+        console.log('Service workers not supported - push notifications disabled');
+        return null;
+      }
+
+      // Check if service worker is registered
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        console.log('No service worker registered - push notifications disabled');
+        return null;
+      }
+
       const fcmToken = await getToken(messaging as Messaging, {
-        vapidKey: vapidKey
+        vapidKey: vapidKey,
+        serviceWorkerRegistration: registration
       });
 
       if (fcmToken) {
         console.log('🔔 FCM Token received:', fcmToken.substring(0, 20) + '...');
         this.token = fcmToken;
-        
+
         if (userId) {
           await this.saveTokenToDatabase(userId, fcmToken);
         }
-        
+
         return fcmToken;
       } else {
         console.log('🚫 No registration token available');
         return null;
       }
-    } catch (error) {
-      console.error('Error getting FCM token:', error);
+    } catch (error: any) {
+      // Only log as error if it's not a service worker issue
+      if (error?.code === 'messaging/failed-service-worker-registration' ||
+          error?.name === 'AbortError') {
+        console.log('🔕 Push notifications unavailable - service worker not ready');
+      } else {
+        console.error('Error getting FCM token:', error);
+      }
       return null;
     }
   }

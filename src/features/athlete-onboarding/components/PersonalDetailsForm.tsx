@@ -23,7 +23,7 @@ interface PersonalDetails {
 export default function PersonalDetailsForm() {
   const navigate = useNavigate();
   const { currentUser, updateUserProfile } = useAuth();
-  const { selectedSports, selectedPosition, selectedSpecializations, saveProfile } = useOnboardingStore();
+  const { selectedSports, selectedPosition, selectedSubcategory, selectedSpecializations, saveProfile } = useOnboardingStore();
   const [loading, setLoading] = useState(false);
   const [cities, setCities] = useState<string[]>([]);
 
@@ -109,16 +109,16 @@ export default function PersonalDetailsForm() {
       newErrors.city = 'City is required';
     }
 
-    if (formData.heightFeet && (parseFloat(formData.heightFeet) < 3 || parseFloat(formData.heightFeet) > 8)) {
-      newErrors.heightFeet = 'Please enter a valid height (3-8 feet)';
+    if (formData.heightFeet && (parseFloat(formData.heightFeet) < 1 || parseFloat(formData.heightFeet) > 8)) {
+      newErrors.heightFeet = 'Please enter a valid height (1-8 feet)';
     }
 
     if (formData.heightInches && (parseFloat(formData.heightInches) < 0 || parseFloat(formData.heightInches) >= 12)) {
       newErrors.heightInches = 'Inches must be between 0-11';
     }
 
-    if (formData.weight && (parseFloat(formData.weight) < 20 || parseFloat(formData.weight) > 300)) {
-      newErrors.weight = 'Please enter a valid weight (20-300 kg)';
+    if (formData.weight && (parseFloat(formData.weight) < 10 || parseFloat(formData.weight) > 150)) {
+      newErrors.weight = 'Please enter a valid weight (10-150 kg)';
     }
 
     if (formData.phone && !/^[6-9]\d{9}$/.test(formData.phone)) {
@@ -152,22 +152,27 @@ export default function PersonalDetailsForm() {
         // Convert feet and inches to cm for storage
         const heightInCm = formData.heightFeet || formData.heightInches
           ? Math.round((parseFloat(formData.heightFeet || '0') * 30.48) + (parseFloat(formData.heightInches || '0') * 2.54))
-          : undefined;
+          : null;
 
-        // Save personal details to Firestore
-        await userService.updateUserProfile(currentUser.uid, {
+        // Build profile data object, only including fields with values
+        const profileData: any = {
           displayName: formData.fullName,
-          bio: formData.bio || undefined,
           dateOfBirth: formData.dateOfBirth,
           gender: formData.gender,
-          height: heightInCm ? heightInCm.toString() : undefined,
-          weight: formData.weight || undefined,
           country: formData.country,
           state: formData.state,
           city: formData.city,
-          mobile: formData.phone || undefined,
           location: `${formData.city}, ${formData.state}, ${formData.country}`
-        });
+        };
+
+        // Only add optional fields if they have values
+        if (formData.bio) profileData.bio = formData.bio;
+        if (heightInCm) profileData.height = heightInCm.toString();
+        if (formData.weight) profileData.weight = formData.weight;
+        if (formData.phone) profileData.mobile = formData.phone;
+
+        // Save personal details to Firestore
+        await userService.updateUserProfile(currentUser.uid, profileData);
 
         // Clear saved data from localStorage
         localStorage.removeItem('pendingPersonalDetails');
@@ -182,6 +187,7 @@ export default function PersonalDetailsForm() {
         localStorage.setItem('pendingAthleteProfile', JSON.stringify({
           sports: selectedSports,
           position: selectedPosition,
+          subcategory: selectedSubcategory,
           specializations: selectedSpecializations
         }));
 
@@ -253,6 +259,8 @@ export default function PersonalDetailsForm() {
               onChange={handleChange}
               className={errors.dateOfBirth ? 'error' : ''}
               max={new Date().toISOString().split('T')[0]}
+              placeholder="dd/mm/yyyy"
+              title="dd/mm/yyyy"
             />
             {errors.dateOfBirth && <span className="error-message">{errors.dateOfBirth}</span>}
           </div>
@@ -282,33 +290,35 @@ export default function PersonalDetailsForm() {
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="heightFeet">Height (Feet)</label>
-              <input
-                type="number"
+              <select
                 id="heightFeet"
                 name="heightFeet"
                 value={formData.heightFeet}
                 onChange={handleChange}
                 className={errors.heightFeet ? 'error' : ''}
-                placeholder="e.g., 5"
-                min="3"
-                max="8"
-              />
+              >
+                <option value="">Select Feet</option>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map(feet => (
+                  <option key={feet} value={feet.toString()}>{feet}</option>
+                ))}
+              </select>
               {errors.heightFeet && <span className="error-message">{errors.heightFeet}</span>}
             </div>
 
             <div className="form-group">
               <label htmlFor="heightInches">Height (Inches)</label>
-              <input
-                type="number"
+              <select
                 id="heightInches"
                 name="heightInches"
                 value={formData.heightInches}
                 onChange={handleChange}
                 className={errors.heightInches ? 'error' : ''}
-                placeholder="e.g., 9"
-                min="0"
-                max="11"
-              />
+              >
+                <option value="">Select Inches</option>
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(inches => (
+                  <option key={inches} value={inches.toString()}>{inches}</option>
+                ))}
+              </select>
               {errors.heightInches && <span className="error-message">{errors.heightInches}</span>}
             </div>
           </div>
@@ -316,17 +326,18 @@ export default function PersonalDetailsForm() {
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="weight">Weight (kg)</label>
-              <input
-                type="number"
+              <select
                 id="weight"
                 name="weight"
                 value={formData.weight}
                 onChange={handleChange}
                 className={errors.weight ? 'error' : ''}
-                placeholder="e.g., 70"
-                min="20"
-                max="300"
-              />
+              >
+                <option value="">Select Weight</option>
+                {Array.from({ length: 141 }, (_, i) => i + 10).map(weight => (
+                  <option key={weight} value={weight.toString()}>{weight}</option>
+                ))}
+              </select>
               {errors.weight && <span className="error-message">{errors.weight}</span>}
             </div>
             <div className="form-group"></div>

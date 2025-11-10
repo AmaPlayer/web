@@ -16,10 +16,7 @@ import { usePostsStore } from '../store/appStore';
 import { usePerformanceMonitor } from './usePerformanceMonitor';
 import postsService from '../services/api/postsService';
 import { sanitizeEngagementData } from '../utils/validation/engagementValidation';
-
-const notificationService = {
-  sendLikeNotification: async (...args: any[]) => { }
-};
+import notificationService from '../services/notificationService';
 
 const filterPostContent = (text: string, options?: any) => ({
   isClean: true,

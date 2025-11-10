@@ -143,6 +143,11 @@ const AUTH_ERROR_MESSAGES: Record<string, AuthErrorMapping> = {
     action: 'Please contact support.',
     severity: 'error'
   },
+  'auth/account-exists-with-different-credential': {
+    message: 'An account already exists with this email.',
+    action: 'You can link your accounts to use multiple sign-in methods.',
+    severity: 'info'
+  },
 
   // Token and session errors
   'auth/expired-action-code': {
