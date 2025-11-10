@@ -85,10 +85,12 @@ service cloud.firestore {
     }
 
     function onlyLikesChanged() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likesCount', 'updatedAt']) ||
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likesCount']) ||
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'updatedAt']) ||
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']);
+      let affectedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return affectedKeys.hasOnly(['likes', 'likesCount', 'updatedAt']) ||
+             affectedKeys.hasOnly(['likes', 'likesCount']) ||
+             affectedKeys.hasOnly(['likes', 'updatedAt']) ||
+             affectedKeys.hasOnly(['likes']) ||
+             affectedKeys.hasOnly(['likesCount']);
     }
     
     function onlySharesChanged() {
